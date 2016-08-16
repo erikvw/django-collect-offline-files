@@ -1,0 +1,2 @@
+REMOTE = 'remote'
+LOCALHOST = 'localhost'
