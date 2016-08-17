@@ -29,12 +29,12 @@ class TestFetchMediaFiles(TestCase):
         print(request.data)
 
     def test_put_history(self):
-        self.factory.put(reverse("edc-sync:create-history"), {'filename': 'New File Name'})
+        self.factory.put(reverse("edc-sync-files:create-history"), {'filename': 'New File Name'})
         self.assertEqual(1, History.objects.all().count())
 
     def test_client_put_history(self):
         token = Token.objects.get(user__username='django')
         client = APIClient(enforce_csrf_checks=True)
         client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
-        client.put(reverse("edc-sync:create-history"), {'filename': 'New File Name'}, format='json')
+        client.put(reverse("edc-sync-files:create-history"), {'filename': 'New File Name'}, format='json')
         self.assertEqual(1, History.objects.all().count())

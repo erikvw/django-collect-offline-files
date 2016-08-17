@@ -1,0 +1,126 @@
+//var mediaCountUrl = Urls[ 'edc-sync:media-count' ]();
+
+function edcSyncMediaFilesReady(hosts, url) {
+	/* Prepare page elements */
+	var hosts = JSON.parse( hosts );
+
+	// make elements for each host, set the onClick event
+	$.each( hosts, function( host ) {
+		ip_address = host;
+		var divId = 'id-nav-pull-resources';
+		makePageElementsMediaDiv( divId, host, userName );
+		mediaCount( ip_address );
+		/* this is the onClick event that starts the data transfer for this host.*/
+		$( '#id-link-pull-' + host.replace( ':', '-' ).split( '.' ).join( '-' ) ).click( function (e) {
+			e.preventDefault();
+			$( "#alert-progress-status" ).show();
+			var mediaData = mediaCount( $( this ).val() );
+			mediaData.done( function( data ) {
+				$.each( data.mediafiles, function(idx, filename ) {
+					 $( "#id-tx-spinner" ).addClass('fa-spin');
+					 displayProgresStatus('Transferring files from host: '+response_data.host, 'alert-info');
+					 processMediaFiles( data.host, filename, url , idx, data.mediafiles.length);
+				});
+			});
+			mediaData.fail(function( data ) {
+				displayProgresStatus('An error occurred trying to copy media file from:'+response_data.host, 'alert-danger');
+			} ); 
+		});
+	});
+}
+
+function mediaCount(host) {
+	/* 
+	 * Count media files on a remote machine.
+	 * 1. GET on the server.
+	 * 2. Connect to remote machine with paramiko
+	 * 3. Get remote machine file information and check it again the server
+	 * 4. return a list of media file to copy.
+	 */
+
+	var mediaCountResponse = $.ajax({
+		url: url,
+		type: 'GET',
+		dataType: 'json',
+		data: {
+			host: host,
+			action: 'media-count'
+		},
+	}).promise();
+
+	mediaCountResponse.done(function( data ) {
+		/* On a success display the result */
+		var mediaCount = data.mediafiles.length;
+		$( "#id-link-pull-" + host ).text( mediaCount );
+	} );
+	return mediaCountResponse;
+}
+
+function processMediaFiles ( host, filename, url, sent_media, total_media) {
+	/*
+	 * Pull a single media from a host.
+	 * 1. GET on a server to pull media file.
+	 * 2. Connect to host with paramiko then sftp.get file.
+	 * 3. On success, create a history record in the server.
+	 */
+
+	$("#id-tx-spinner").addClass( 'fa-spin' );
+
+	var pendingMediaFiles = $.ajax({
+		url: url,
+		type: 'GET',
+		dataType: 'json',
+		data: {
+			action: 'pull',
+			host: host,
+			filename: filename,
+		}
+	}).promise();
+
+	pendingMediaFiles.done(function( response_data ) {
+		/* on success */ 
+		$("#id-media-count").text( " " + sent_media + "/" + total_media + " sent." );
+		if( sent_media == 0 && total_media == 0){
+			displayProgresStatus('No media found on host: '+response_data.host, 'alert-success');	
+		}else if (sent_media == total_media) {
+			displayProgresStatus('All media file transferred to server from host:'+response_data.host, 'alert-success');
+		} else {
+			displayProgresStatus('Transferring files from host:'+response_data.host, 'alert-info');
+		}
+	});
+
+	pendingMediaFiles.fail(function( response_data ) {
+		/* Display error */
+		displayProgresStatus('An error occurred trying to copy media file from:'+response_data.host, 'alert-danger');
+	});
+
+	pendingMediaFiles.always(function() {
+		/* stop the spinner */
+		$("#id-tx-spinner").removeClass( 'fa-spin' );
+	});
+}
+
+function makePageElementsMediaDiv ( divId, host, userName ) {
+	/* Make and update page elements.
+	   The "id-link-fetch- ... " onClick function pokes the API and starts the data
+	   transfer and updates.*/
+	var host_string = host.replace( ':', '-' ).split( '.' ).join( '-' );
+	var anchorId = 'id-link-pull-' + host_string;
+	var li = '<li><a id="' + anchorId + '">Fetch \'Media Files\' from ' + host + '&nbsp;<span id="id-hostname-' + host_string +'"></span>&nbsp;<span id="id-media-count-' + host_string + '" class="badge pull-right">?</span></a></li>';
+	$( '#id-nav-pull-resources' ).append( li );
+	$( '#id-link-pull-' + host_string ).attr( 'href', '#' );
+	$( '#id-link-pull-' + host_string ).val(host);
+}
+
+function displayProgresStatus(message, alert_class) {
+	if (alert_class == 'alert-danger' ) {
+		$("#alert-progress-status").text( message );
+		$("#alert-progress-status").removeClass( 'alert-info' ).addClass( 'alert-danger' );	
+	} else if ( alert_class == 'alert-success' ) {
+		$("#alert-progress-status").text( message );
+		$("#alert-progress-status").removeClass( 'alert-info' ).addClass( 'alert-success' );	
+	} else {
+		$("#alert-progress-status").text( message );
+		$("#alert-progress-status").removeClass( 'alert-danger' ).addClass( 'alert-info' );	
+	}
+}

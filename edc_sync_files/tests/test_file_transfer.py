@@ -13,8 +13,8 @@ class TestFileTransfer(TestCase):
 
     def setUp(self):
         self.transfer = FileTransfer()
-        self.file_server_folder = os.path.join(settings.BASE_DIR, "tests", "media", "file_server_folder")
-        self.media_dir = os.path.join(settings.BASE_DIR, "tests", "media", "upload")
+        self.file_server_folder = os.path.join(settings.BASE_DIR, "tests", "media", "source_folder")
+        self.media_dir = os.path.join(settings.BASE_DIR, "tests", "media", "destination_folder")
 
     def test_connect_to_localhost(self):
         """Assert  Connection to localhost """
@@ -48,28 +48,15 @@ class TestFileTransfer(TestCase):
         self.assertEqual(len(media_to_transfer), 2)
         for f in ['media_c', 'media_d']:
             self.assertIn(f, media_to_transfer)
-#
-#         sent_media = ['media_a', 'media_b', 'media_c']
-#         localhost_media_files = ['media_a', 'media_b', 'media_c', 'media_d']
-#         media_to_transfer = []
-#         for filename in localhost_media_files:
-#             if filename in sent_media:
-#                 continue
-#             media_to_transfer.append(filename)
-#         self.assertEqual(media_to_transfer, 1)
-# 
-#         for f in ['media_d']:
-#             self.assertIn(f, media_to_transfer)
-# 
-#     def test_count_media_sent(self):
-#         media_count = 5
-#         sent = 3
-#         initial = media_count - sent
 
-        #         for filename in sent_media:
-#             transfer.create_history(filename)
-#         self.assertEqual(History.objects.all().count(), 2)
-# 
-#         initial_count = len(transfer.local_media_files)
+        sent_media = ['media_a', 'media_b', 'media_c']
+        localhost_media_files = ['media_a', 'media_b', 'media_c', 'media_d']
+        media_to_transfer = []
+        for filename in localhost_media_files:
+            if filename in sent_media:
+                continue
+            media_to_transfer.append(filename)
+        self.assertEqual(media_to_transfer, 1)
 
-
+        for f in ['media_d']:
+            self.assertIn(f, media_to_transfer)

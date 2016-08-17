@@ -58,7 +58,7 @@ class PullMediaFileView(EdcBaseViewMixin, EdcSyncViewMixin, TemplateView):
         transfer = FileTransfer(
             file_server=host, filename=filename
         )
-        return transfer.pull_media_files()
+        return transfer.copy_media_file()
 
     def get(self, request, *args, **kwargs):
         result = {}
