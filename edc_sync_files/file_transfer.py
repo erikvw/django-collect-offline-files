@@ -72,23 +72,24 @@ class FileTransfer(object):
 
     def __init__(self, device_ip=None, media_folders=None, filename=None, user=None, source_folder=None, destination_folder=None, hostname=None):
         self.filename = filename
+        self.user = user or self.edc_sync_app_config.user
+        self.hostname = hostname
         self.device_ip = device_ip or self.edc_sync_app_config.device_ip
         self.source_folder = source_folder or self.edc_sync_app_config.source_folder
-        self.user = user or self.edc_sync_app_config.user
-        self.media_folders = media_folders or self.edc_sync_app_config.media_folders
         self.destination_folder = destination_folder or self.edc_sync_app_config.destination_folder
-        self.hostname = hostname or self.device_hostname
+        self.media_folders = media_folders or self.edc_sync_app_config.media_folders
+        print(self.device_ip, self.source_folder, self.destination_folder)
 
     @property
     def edc_sync_app_config(self):
-        return django_apps.get_app_config('edc_sync')
+        return django_apps.get_app_config('edc_sync_files')
 
     def connect_to_device(self, device):
         device, username = (self.device_ip, self.user) if device == REMOTE else (LOCALHOST, getpass.getuser())
         try:
             client = paramiko.SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(device, username=username, look_for_keys=True)
+            client.connect(device, username=username, look_for_keys=True, timeout=10)
         except paramiko.SSHException:
             return False
         return client
@@ -120,7 +121,8 @@ class FileTransfer(object):
         media_file_to_copy = []
         for filename in self.device_media_filenames:
             try:
-                History.objects.get(filename=filename, hostname=self.hostname)
+                hostname = self.hostname or self.device_hostname
+                History.objects.get(filename=filename, hostname=hostname)
             except History.DoesNotExist:
                 media_file_to_copy.append(filename)
         return media_file_to_copy

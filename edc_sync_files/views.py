@@ -24,14 +24,14 @@ class HistoryCreateView(CreateAPIView):
         serializer.save(user_created=self.request.user)
 
 
-class MediaFilesAPIView(APIView):
-    """
-    A view that returns the count  of transactions.
-    """
-    renderer_classes = (JSONRenderer, )
-
-    def get(self, request, format=None):
-        return Response(json.dumps(FileTransfer().pending_media_files()))
+# class MediaFilesAPIView(APIView):
+#     """
+#     A view that returns the count  of transactions.
+#     """
+#     renderer_classes = (JSONRenderer, )
+# 
+#     def get(self, request, format=None):
+#         return Response(json.dumps(FileTransfer().pending_media_files()))
 
 
 class PullMediaFileView(EdcBaseViewMixin, EdcSyncViewMixin, TemplateView):
@@ -65,17 +65,17 @@ class PullMediaFileView(EdcBaseViewMixin, EdcSyncViewMixin, TemplateView):
         if request.is_ajax():
             host = request.GET.get('host')
             ip_address = host[:-5] if '8000' in host else host
-            print(ip_address)
             action = request.GET.get('action')
             if action == 'pull':
                 filename = request.GET.get('filename')
+                print("inside", ip_address)
                 if self.copy_media_file(ip_address, filename):
                     result = {'filename': filename, 'host': ip_address, 'status': True}
                 else:
                     result = {'filename': filename, 'host': ip_address, 'status': False}
             elif action == 'media-count':
                 transfer = FileTransfer(
-                    file_server=host,
+                    device_ip=ip_address,
                 )
                 result = {'mediafiles': transfer.media_files_to_copy(), 'host': host}
         return HttpResponse(json.dumps(result), content_type='application/json')

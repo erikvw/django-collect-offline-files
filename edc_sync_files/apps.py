@@ -1,4 +1,3 @@
-import os
 import sys
 
 from django.apps import AppConfig as DjangoAppConfig
@@ -18,12 +17,8 @@ class AppConfig(ConfigParserMixin, DjangoAppConfig):
     source_folder = '~/edc_sync_files'
     destination_folder = None
     media_folders = []
-    config_filename = 'edc_sync.ini'
-    # these attrs will be overwritten with values in edc_sync.ini, see ready()
-    config_attrs = {
-        'edc_sync': ['user', 'password', 'device_ip', 'source_folder', 'role', 'destination_folder'],
-        'corsheaders': [('cors_origin_whitelist', tuple), ('cors_origin_allow_all', bool)]
-    }
+    config_filename = 'edc_sync_files.ini'
+
     cors_origin_whitelist = None  # a tuple of host:port, host:port, ...
     cors_origin_allow_all = True
 

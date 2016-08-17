@@ -8,28 +8,32 @@ function edcSyncMediaFilesReady(hosts, url) {
 	$.each( hosts, function( host ) {
 		ip_address = host;
 		var divId = 'id-nav-pull-resources';
-		makePageElementsMediaDiv( divId, host, userName );
-		mediaCount( ip_address );
+		makePageElementsMediaDiv( divId, host );
+		mediaCount( ip_address, url);
 		/* this is the onClick event that starts the data transfer for this host.*/
 		$( '#id-link-pull-' + host.replace( ':', '-' ).split( '.' ).join( '-' ) ).click( function (e) {
 			e.preventDefault();
-			$( "#alert-progress-status" ).show();
-			var mediaData = mediaCount( $( this ).val() );
+			//$( "#alert-progress-status" ).show();
+			ip_address = $( this ).val();
+			 $( "#id-tx-spinner" ).addClass('fa-spin');
+			var mediaData = mediaCount( ip_address, url );
 			mediaData.done( function( data ) {
 				$.each( data.mediafiles, function(idx, filename ) {
-					 $( "#id-tx-spinner" ).addClass('fa-spin');
 					 displayProgresStatus('Transferring files from host: '+response_data.host, 'alert-info');
 					 processMediaFiles( data.host, filename, url , idx, data.mediafiles.length);
 				});
 			});
-			mediaData.fail(function( data ) {
-				displayProgresStatus('An error occurred trying to copy media file from:'+response_data.host, 'alert-danger');
-			} ); 
+			mediaData.fail(function( jqXHR, textStatus, errorThrown ) {
+				displayProgresStatus('An error occurred trying to copy media file from:'+ip_address+ '. Got '+ errorThrown, 'alert-danger');
+			} );
+			mediaData.always(function(){
+				 $( "#id-tx-spinner" ).removeClass('fa-spin');
+			});
 		});
 	});
 }
 
-function mediaCount(host) {
+function mediaCount(host, url) {
 	/* 
 	 * Count media files on a remote machine.
 	 * 1. GET on the server.
@@ -53,6 +57,10 @@ function mediaCount(host) {
 		var mediaCount = data.mediafiles.length;
 		$( "#id-link-pull-" + host ).text( mediaCount );
 	} );
+	mediaCountResponse.fail(function() {
+		console.log("Error occurred");
+		//displayProgresStatus('An error occurred trying to copy media file from:'+errorThrown, 'alert-danger');
+	} ); 
 	return mediaCountResponse;
 }
 
@@ -100,7 +108,7 @@ function processMediaFiles ( host, filename, url, sent_media, total_media) {
 	});
 }
 
-function makePageElementsMediaDiv ( divId, host, userName ) {
+function makePageElementsMediaDiv ( divId, host ) {
 	/* Make and update page elements.
 	   The "id-link-fetch- ... " onClick function pokes the API and starts the data
 	   transfer and updates.*/
@@ -123,4 +131,5 @@ function displayProgresStatus(message, alert_class) {
 		$("#alert-progress-status").text( message );
 		$("#alert-progress-status").removeClass( 'alert-danger' ).addClass( 'alert-info' );	
 	}
+	$( "#alert-progress-status" ).show();
 }
