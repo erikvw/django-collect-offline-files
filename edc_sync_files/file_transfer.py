@@ -89,7 +89,7 @@ class FileTransfer(object):
         try:
             client = paramiko.SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(device, username=username, look_for_keys=True, timeout=10)
+            client.connect(device, username=username, look_for_keys=True, timeout=30)
         except paramiko.SSHException:
             return False
         return client
@@ -132,10 +132,11 @@ class FileTransfer(object):
         try:
             device = self.connect_to_device(REMOTE)
             device_sftp = device.open_sftp()
+            hostname = self.hostname or self.device_hostname
             connector = FileConnector(
-                remote_device_sftp=device_sftp, pull=True, filename=self.filename, is_archived=False,
+                device_sftp=device_sftp, pull=True, filename=self.filename, is_archived=False,
                 source_folder=self.source_folder, destination_folder=self.destination_folder,
-                hostname=self.hostname
+                hostname=hostname
             )
             connector.copy()
             device.close()

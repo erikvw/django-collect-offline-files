@@ -13,21 +13,28 @@ function edcSyncMediaFilesReady(hosts, url) {
 		/* this is the onClick event that starts the data transfer for this host.*/
 		$( '#id-link-pull-' + host.replace( ':', '-' ).split( '.' ).join( '-' ) ).click( function (e) {
 			e.preventDefault();
-			//$( "#alert-progress-status" ).show();
 			ip_address = $( this ).val();
+			displayProgresStatus('Transferring files from host:'+host, 'alert-info');
+			//$( "#alert-progress-status" ).show();
 			 $( "#id-tx-spinner" ).addClass('fa-spin');
 			var mediaData = mediaCount( ip_address, url );
 			mediaData.done( function( data ) {
 				$.each( data.mediafiles, function(idx, filename ) {
-					 displayProgresStatus('Transferring files from host: '+response_data.host, 'alert-info');
+					 idx = idx + 1;
+					 displayProgresStatus('Transferring files from host:'+data.host, 'alert-info');
 					 processMediaFiles( data.host, filename, url , idx, data.mediafiles.length);
 				});
+				if (data.mediafiles.length == 0) {
+					displayProgresStatus('No media files found on host: '+ip_address, 'alert-success');
+					$( "#id-tx-spinner" ).removeClass('fa-spin');
+				}
 			});
 			mediaData.fail(function( jqXHR, textStatus, errorThrown ) {
+				$( "#id-tx-spinner" ).removeClass('fa-spin');
 				displayProgresStatus('An error occurred trying to copy media file from:'+ip_address+ '. Got '+ errorThrown, 'alert-danger');
 			} );
-			mediaData.always(function(){
-				 $( "#id-tx-spinner" ).removeClass('fa-spin');
+			mediaData.then(function(){
+				displayProgresStatus('Transferring files from host:'+data.host, 'alert-info');
 			});
 		});
 	});
@@ -71,9 +78,9 @@ function processMediaFiles ( host, filename, url, sent_media, total_media) {
 	 * 2. Connect to host with paramiko then sftp.get file.
 	 * 3. On success, create a history record in the server.
 	 */
-
 	$("#id-tx-spinner").addClass( 'fa-spin' );
-
+	$("#id-media-count").text( " " + sent_media + "/" +  total_media + "." );
+	
 	var pendingMediaFiles = $.ajax({
 		url: url,
 		type: 'GET',
@@ -85,21 +92,20 @@ function processMediaFiles ( host, filename, url, sent_media, total_media) {
 		}
 	}).promise();
 
-	pendingMediaFiles.done(function( response_data ) {
+	pendingMediaFiles.done(function( data ) {
 		/* on success */ 
-		$("#id-media-count").text( " " + sent_media + "/" + total_media + " sent." );
-		if( sent_media == 0 && total_media == 0){
-			displayProgresStatus('No media found on host: '+response_data.host, 'alert-success');	
-		}else if (sent_media == total_media) {
-			displayProgresStatus('All media file transferred to server from host:'+response_data.host, 'alert-success');
+		if( sent_media == 0 && total_media == 0) {
+			displayProgresStatus('No media found on host: '+data.host, 'alert-success');	
+		} else if (sent_media == total_media) {
+			displayProgresStatus('All media file(s) have been transferred to server. Copied from host:'+data.host+'. ', 'alert-success');
 		} else {
-			displayProgresStatus('Transferring files from host:'+response_data.host, 'alert-info');
+			//displayProgresStatus('Transferring files from host:'+data.host, 'alert-info');
 		}
 	});
 
-	pendingMediaFiles.fail(function( response_data ) {
+	pendingMediaFiles.fail(function(jqXHR, textStatus, errorThrown) {
 		/* Display error */
-		displayProgresStatus('An error occurred trying to copy media file from:'+response_data.host, 'alert-danger');
+		displayProgresStatus('An error occurred trying to copy media file from:'+host+'. Got '+errorThrown, 'alert-danger');
 	});
 
 	pendingMediaFiles.always(function() {
@@ -122,13 +128,13 @@ function makePageElementsMediaDiv ( divId, host ) {
 
 function displayProgresStatus(message, alert_class) {
 	if (alert_class == 'alert-danger' ) {
-		$("#alert-progress-status").text( message );
+		$("#id-media-message").text( message );
 		$("#alert-progress-status").removeClass( 'alert-info' ).addClass( 'alert-danger' );	
 	} else if ( alert_class == 'alert-success' ) {
-		$("#alert-progress-status").text( message );
+		$("#id-media-message").text( message );
 		$("#alert-progress-status").removeClass( 'alert-info' ).addClass( 'alert-success' );	
 	} else {
-		$("#alert-progress-status").text( message );
+		$("#id-media-message").text( message );
 		$("#alert-progress-status").removeClass( 'alert-danger' ).addClass( 'alert-info' );	
 	}
 	$( "#alert-progress-status" ).show();
