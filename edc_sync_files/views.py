@@ -69,13 +69,13 @@ class PullMediaFileView(EdcBaseViewMixin, EdcSyncViewMixin, TemplateView):
             if action == 'pull':
                 filename = request.GET.get('filename')
                 print("inside", ip_address)
-                if self.copy_media_file('10.113.200.22', filename):
+                if self.copy_media_file(ip_address, filename):
                     result = {'filename': filename, 'host': ip_address, 'status': True}
                 else:
                     result = {'filename': filename, 'host': ip_address, 'status': False}
             elif action == 'media-count':
                 transfer = FileTransfer(
-                    device_ip='10.113.200.22',
+                    device_ip=ip_address,
                 )
                 result = {'mediafiles': transfer.media_files_to_copy(), 'host': host}
         return HttpResponse(json.dumps(result), content_type='application/json')
