@@ -17,7 +17,6 @@ from django.utils import timezone
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
 # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-GIT_DIR = BASE_DIR.ancestor(1)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
@@ -82,7 +81,21 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+    },
+    # required for tests when acting as a server but not attempting to deserialize
+    'server': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    },
+    # required for tests when acting as a client
+    'client': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    },
+    'test_server': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    },
 }
 
 
@@ -145,4 +158,4 @@ LANGUAGES = (
 DEVICE_ID = '15'
 SERVER_DEVICE_ID_LIST = ['99']
 
-APP_LABEL = 'edc_sync'
+APP_LABEL = 'edc_sync_files'
