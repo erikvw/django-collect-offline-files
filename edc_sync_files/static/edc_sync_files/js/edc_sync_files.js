@@ -22,6 +22,7 @@ function edcSyncMediaFilesReady(hosts, url) {
 				$.each( data.mediafiles, function(idx, filename ) {
 					 idx = idx + 1;
 					 displayProgresStatus('Transferring files from host:'+data.host, 'alert-info');
+					 //addRowProgressStatus(filename);
 					 processMediaFiles( data.host, filename, url , idx, data.mediafiles.length);
 				});
 				if (data.mediafiles.length == 0) {
@@ -31,7 +32,7 @@ function edcSyncMediaFilesReady(hosts, url) {
 			});
 			mediaData.fail(function( jqXHR, textStatus, errorThrown ) {
 				$( "#id-tx-spinner" ).removeClass('fa-spin');
-				displayProgresStatus('An error occurred trying to copy media file from:'+ip_address+ '. Got '+ errorThrown, 'alert-danger');
+				displayProgresStatus('An error occurred while trying to copy media file from:'+ip_address+ '. Got '+ errorThrown, 'alert-danger');
 			} );
 			mediaData.then(function(){
 				displayProgresStatus('Transferring files from host:'+data.host, 'alert-info');
@@ -134,8 +135,13 @@ function displayProgresStatus(message, alert_class) {
 		$("#id-media-message").text( message );
 		$("#alert-progress-status").removeClass( 'alert-info' ).addClass( 'alert-success' );	
 	} else {
+		
 		$("#id-media-message").text( message );
 		$("#alert-progress-status").removeClass( 'alert-danger' ).addClass( 'alert-info' );	
 	}
 	$( "#alert-progress-status" ).show();
 }
+
+//function addRowProgressStatus(filename) {
+//	$("<tr><td>"+filename+"</td><td>Doe</td><td>john@example.com</td></tr>").appendTo("#id-table-body");
+//}

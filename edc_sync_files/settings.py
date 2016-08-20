@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'edc_base.apps.AppConfig',
+    'edc_sync_files.apps.AppConfig',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -66,6 +67,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                #'django.template.context_processors.media',
             ],
         },
     },
@@ -138,11 +140,11 @@ MEDIA_URL = '/media/'
 
 # List of finder classes that know how to find static files in
 # various locations.
-STATICFILES_FINDERS = (
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    'django.contrib.staticfiles.finders.DefaultStorageFinder',
-)
+# STATICFILES_FINDERS = (
+#     'django.contrib.staticfiles.finders.FileSystemFinder',
+#     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+#     'django.contrib.staticfiles.finders.DefaultStorageFinder',
+# )
 
 
 GIT_DIR = BASE_DIR.ancestor(1)
