@@ -2,6 +2,8 @@ import getpass
 import os.path
 import paramiko
 
+from hurry.filesize import size
+
 from datetime import datetime
 from django.apps import apps as django_apps
 
@@ -27,10 +29,13 @@ class FileConnector(object):
     def copy(self):
         """ Copy the file to remote device otherwise copies it to a local folder. Push (put) or Pull (get)."""
         if self.pull:
-            local_filename = os.path.join(self.destination_folder, self.filename)
-            remote_file_name = os.path.join(self.source_folder, self.filename)
-            sftp_attr = self.device_sftp.get(remote_file_name, local_filename)
-            self.create_history()
+            try:
+                local_filename = os.path.join(self.destination_folder, self.filename)
+                remote_file_name = os.path.join(self.source_folder, self.filename)
+                sftp_attr = self.device_sftp.get(remote_file_name, local_filename)
+                self.create_history()
+            except TypeError as e:
+                raise Exception('An error occured. {}'.format(e))
         else:
             local_filename = os.path.join(self.source_folder, self.filename)
             remote_file_name = os.path.join(self.destination_folder, self.filename)
@@ -117,7 +122,7 @@ class FileTransfer(object):
         device_sftp.close()
         return filenames
 
-    def media_files_to_copy(self):
+    def media_filenames_to_copy(self):
         media_file_to_copy = []
         for filename in self.device_media_filenames:
             try:
@@ -126,6 +131,20 @@ class FileTransfer(object):
             except History.DoesNotExist:
                 media_file_to_copy.append(filename)
         return media_file_to_copy
+
+    def media_file_attributes(self):
+        media_file_attributes = []
+        device = self.connect_to_device(REMOTE)
+        device_sftp = device.open_sftp()
+        for filename in self.media_filenames_to_copy():
+            source_filename = os.path.join(self.source_folder, filename)
+            file_attr = device_sftp.lstat(source_filename)
+            data = dict({
+                'filename': filename,
+                'filesize': size(file_attr.st_size),
+            })
+            media_file_attributes.append(data)
+        return media_file_attributes
 
     def copy_media_file(self):
         """ Copies the files from the remote machine into local machine """
