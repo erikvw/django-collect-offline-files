@@ -28,5 +28,6 @@ class AppConfig(ConfigParserMixin, DjangoAppConfig):
             sys.stdout.write(style.NOTICE(
                 ' Warning: Project uses \'edc_sync_files\' but has not defined a role for this'
                 'app instance. See AppConfig.\n'))
+        self.overwrite_config_attrs_on_class(self.name)
         sys.stdout.write(' * role is {}.\n'.format(self.role.upper()))
         sys.stdout.write(' Done loading {}.\n'.format(self.verbose_name))
