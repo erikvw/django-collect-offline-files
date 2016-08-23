@@ -68,14 +68,33 @@ class PullMediaFileView(EdcBaseViewMixin, EdcSyncViewMixin, TemplateView):
             action = request.GET.get('action')
             if action == 'pull':
                 filename = request.GET.get('filename')
-                print("inside", ip_address)
-                if self.copy_media_file(ip_address, filename):
+                print("-------------------------", filename)
+                if self.copy_media_file('10.113.200.123', filename):
                     result = {'filename': filename, 'host': ip_address, 'status': True}
                 else:
                     result = {'filename': filename, 'host': ip_address, 'status': False}
             elif action == 'media-count':
                 transfer = FileTransfer(
-                    device_ip=ip_address,
+                    device_ip='10.113.200.123',
                 )
-                result = {'mediafiles': transfer.media_files_to_copy(), 'host': host}
+                print("*********************", len(transfer.media_filenames_to_copy()))
+                result = {'mediafiles': transfer.media_filenames_to_copy(), 'host': host}
+            elif action == 'media-files':
+                transfer = FileTransfer(
+                    device_ip='10.113.200.123',
+                )
+                result = {'mediafiles': transfer.media_file_attributes(), 'host': host}
+            elif action == 'track-transfer':
+                files = request.GET.get('mediaFiles').split(',')
+                result = self.file_transfer_status(files)
         return HttpResponse(json.dumps(result), content_type='application/json')
+
+    def file_transfer_status(self, files):
+        file_transfer_status = []
+        for filename in files:
+            try:
+                History.objects.get(filename=filename)
+                file_transfer_status.append(dict({'filename': True}))
+            except History.DoesNotExist:
+                file_transfer_status.append(dict({'filename': False}))
+        return file_transfer_status

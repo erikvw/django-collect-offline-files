@@ -11,7 +11,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='edc-sync-files',
-#     version='0.1dev2',
+    version='0.0.1',
     author=u'Erik van Widenfelt',
     author_email='ew2789@gmail.com',
     packages=find_packages(),
@@ -24,8 +24,6 @@ setup(
     keywords='django data synchronization offline',
     install_requires=[
         'djangorestframework',
-        #'rest_framework_swagger',
-        #'django-js-reverse',
         'django-cors-headers',
         'requests',
         'paramiko',

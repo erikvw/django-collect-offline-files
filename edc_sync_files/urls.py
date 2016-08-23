@@ -15,12 +15,12 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
+from edc_sync_files.admin import edc_sync_files_admin
+
 
 from .views import PullMediaFileView
 
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
-#     url(r'^api/create-history/$', HistoryCreateView.as_view(), name='create-history'),
-#     url(r'^api/media-count/$', MediaFilesAPIView.as_view(), name='media-count'),
     url(r'^pull-media-file/$', PullMediaFileView.as_view(), name='pull-media-file'),
+    url(r'^admin/', edc_sync_files_admin.urls),
 ]

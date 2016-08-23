@@ -1,5 +1,4 @@
 Django
 paramiko
 git+https://github.com/botswana-harvard/edc-base@develop#egg=edc-base
-#git+https://github.com/botswana-harvard/edc-sync@develop#egg=edc-sync
 git+https://github.com/erikvw/django-appconfig-ini@develop#egg=django-appconfig-ini

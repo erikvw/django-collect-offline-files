@@ -5,37 +5,35 @@ function edcSyncMediaFilesReady(hosts, url) {
 	var hosts = JSON.parse( hosts );
 
 	// make elements for each host, set the onClick event
+	idx = 0;
 	$.each( hosts, function( host ) {
 		ip_address = host;
 		var divId = 'id-nav-pull-resources';
 		makePageElementsMediaDiv( divId, host );
 		mediaCount( ip_address, url);
+		
 		/* this is the onClick event that starts the data transfer for this host.*/
 		$( '#id-link-pull-' + host.replace( ':', '-' ).split( '.' ).join( '-' ) ).click( function (e) {
 			e.preventDefault();
 			ip_address = $( this ).val();
-			displayProgresStatus('Transferring files from host:'+host, 'alert-info');
-			//$( "#alert-progress-status" ).show();
+			displayProgresStatus('Checking for media files from host:'+host+'. Please wait this may take a few minutes.', 'alert-info');
 			 $( "#id-tx-spinner" ).addClass('fa-spin');
-			var mediaData = mediaCount( ip_address, url );
-			mediaData.done( function( data ) {
-				$.each( data.mediafiles, function(idx, filename ) {
-					 idx = idx + 1;
-					 displayProgresStatus('Transferring files from host:'+data.host, 'alert-info');
-					 processMediaFiles( data.host, filename, url , idx, data.mediafiles.length);
-				});
-				if (data.mediafiles.length == 0) {
-					displayProgresStatus('No media files found on host: '+ip_address, 'alert-success');
-					$( "#id-tx-spinner" ).removeClass('fa-spin');
-				}
-			});
-			mediaData.fail(function( jqXHR, textStatus, errorThrown ) {
-				$( "#id-tx-spinner" ).removeClass('fa-spin');
-				displayProgresStatus('An error occurred trying to copy media file from:'+ip_address+ '. Got '+ errorThrown, 'alert-danger');
-			} );
-			mediaData.then(function(){
-				displayProgresStatus('Transferring files from host:'+data.host, 'alert-info');
-			});
+			 getFiles(ip_address, url);
+			 $("#btn-copy-files").val(ip_address);
+		});
+	});
+
+	$("#btn-copy-files").on('click', function () {
+		mediaFiles = []
+		$(this).text("Copying...");
+		$('#id-table-body tr').each(function() {
+		    var filename = $(this).find("td").eq(1).html();
+		    mediaFiles.push(filename);
+		    ip_address = $( this ).val();
+		    $(this).find("td").eq(3).append("<span class='fa fa-spinner fa-spin'></span>");
+		    transferFile(ip_address, filename, url);
+		    $(this).find("td").eq(3).remove();
+		    $(this).find("td").eq(3).append("<span class='glyphicon glyphicon-saved'></span>"); 
 		});
 	});
 }
@@ -71,17 +69,47 @@ function mediaCount(host, url) {
 	return mediaCountResponse;
 }
 
-function processMediaFiles ( host, filename, url, sent_media, total_media) {
-	/*
-	 * Pull a single media from a host.
-	 * 1. GET on a server to pull media file.
-	 * 2. Connect to host with paramiko then sftp.get file.
-	 * 3. On success, create a history record in the server.
-	 */
-	$("#id-tx-spinner").addClass( 'fa-spin' );
-	$("#id-media-count").text( " " + sent_media + "/" +  total_media + "." );
+function getFiles(host, url) {
+	var mediaFiles = $.ajax({
+		url: url,
+		type: 'GET',
+		dataType: 'json',
+		data: {
+			host: host,
+			action: 'media-files'
+		},
+	}).promise();
 	
-	var pendingMediaFiles = $.ajax({
+	mediaFiles.done(function( data ) {
+		idx = 0;
+		$("#id-table-body tr").remove();
+		var files = []
+		$.each( data.mediafiles, function(idx,  mediaFile  ) {
+			idx = idx + 1;
+			spanElemStatus = "<span id="+mediaFile.filename+"></span>"
+			files.push(mediaFile.filename);
+			$("<tr><td>"+idx+"</td><td>"+mediaFile.filename+"</td><td>"+mediaFile.filesize+"</td><td>"+spanElemStatus+"</td></tr>").appendTo("#id-table-body");
+		});
+		$("#id-tx-spinner").removeClass( 'fa-spin' );
+		$("#id-host-media-files").val(files.toString());
+		if (data.mediafiles.length > 0) {
+			$("#id-file-table").show();
+			$("#btn-copy-files").show();
+			$("#btn-copy-div").show();
+			displayProgresStatus('Files to be transfer from from:'+host+'.', 'alert-info');
+		}
+	});
+
+	mediaFiles.fail(function(jqXHR, textStatus, errorThrown){
+		displayProgresStatus('An error occurred while trying to copy media file from:'+host+' Got '+errorThrown+'.Contact Systems Engineer.', 'alert-danger');
+	});
+	return mediaFiles;
+}
+
+function transferFile(host, filename, url) {
+	$("#id-tx-spinner").addClass( 'fa-spin' );
+	var transfer = $.ajax({
+		async: false,
 		url: url,
 		type: 'GET',
 		dataType: 'json',
@@ -91,27 +119,31 @@ function processMediaFiles ( host, filename, url, sent_media, total_media) {
 			filename: filename,
 		}
 	}).promise();
-
-	pendingMediaFiles.done(function( data ) {
-		/* on success */ 
-		if( sent_media == 0 && total_media == 0) {
-			displayProgresStatus('No media found on host: '+data.host, 'alert-success');	
-		} else if (sent_media == total_media) {
-			displayProgresStatus('All media file(s) have been transferred to server. Copied from host:'+data.host+'. ', 'alert-success');
-		} else {
-			//displayProgresStatus('Transferring files from host:'+data.host, 'alert-info');
-		}
-	});
-
-	pendingMediaFiles.fail(function(jqXHR, textStatus, errorThrown) {
-		/* Display error */
-		displayProgresStatus('An error occurred trying to copy media file from:'+host+'. Got '+errorThrown, 'alert-danger');
-	});
-
-	pendingMediaFiles.always(function() {
-		/* stop the spinner */
+	
+	transfer.done(function( data ) {
 		$("#id-tx-spinner").removeClass( 'fa-spin' );
 	});
+
+	transfer.fail(function(jqXHR, textStatus, errorThrown){
+		$("#id-tx-spinner").removeClass( 'fa-spin' );
+		displayProgresStatus('An error occurred while trying to copy media file from:'+host+' Got '+errorThrown+'.Contact Systems Engineer.', 'alert-danger');
+	});
+	return transfer;
+}
+
+function displayProgresStatus(message, alert_class) {
+	if (alert_class == 'alert-danger' ) {
+		$("#id-media-message").text( message );
+		$("#alert-progress-status").removeClass( 'alert-info' ).addClass( 'alert-danger' );	
+	} else if ( alert_class == 'alert-success' ) {
+		$("#id-media-message").text( message );
+		$("#alert-progress-status").removeClass( 'alert-info' ).addClass( 'alert-success' );	
+	} else {
+		
+		$("#id-media-message").text( message );
+		$("#alert-progress-status").removeClass( 'alert-danger' ).addClass( 'alert-info' );	
+	}
+	$( "#alert-progress-status" ).show();
 }
 
 function makePageElementsMediaDiv ( divId, host ) {
@@ -126,16 +158,34 @@ function makePageElementsMediaDiv ( divId, host ) {
 	$( '#id-link-pull-' + host_string ).val(host);
 }
 
-function displayProgresStatus(message, alert_class) {
-	if (alert_class == 'alert-danger' ) {
-		$("#id-media-message").text( message );
-		$("#alert-progress-status").removeClass( 'alert-info' ).addClass( 'alert-danger' );	
-	} else if ( alert_class == 'alert-success' ) {
-		$("#id-media-message").text( message );
-		$("#alert-progress-status").removeClass( 'alert-info' ).addClass( 'alert-success' );	
-	} else {
-		$("#id-media-message").text( message );
-		$("#alert-progress-status").removeClass( 'alert-danger' ).addClass( 'alert-info' );	
-	}
-	$( "#alert-progress-status" ).show();
+
+function trackFileTransfer(url, mediaFiles) {
+	var transferStatus = $.ajax({
+		url: url,
+		type: 'GET',
+		dataType: 'json',
+		data: {
+			mediaFiles: mediaFiles,
+			action: 'track-transfer'
+		},
+	}).promise();
+
+	transferStatus.done(function( data ) {
+		/* On a success display the result */
+		updateFileTransfer(transferStatus);
+	} );
+	transferStatus.fail(function() {
+		alert("Error occurred tracking");
+		//displayProgresStatus('An error occurred trying to copy media file from:'+errorThrown, 'alert-danger');
+	}); 
 }
+
+function updateFileTransfer(transferStatus) {
+	transferStatus.then(function(data) {
+		$.each( data, function( fileStatus ) {
+			alert(fileStatus.filename);
+			//console.log(fileStatus.filename);
+		});
+	});
+}
+

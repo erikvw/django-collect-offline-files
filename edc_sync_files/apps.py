@@ -22,5 +22,4 @@ class AppConfig(ConfigIniMixin, DjangoAppConfig):
     def ready(self):
         sys.stdout.write('Loading {} ...\n'.format(self.verbose_name))
         self.overwrite_config_ini_attrs_on_class(self.name)
-        sys.stdout.write(' * role is {}.\n'.format(self.role.upper()))
         sys.stdout.write(' Done loading {}.\n'.format(self.verbose_name))
