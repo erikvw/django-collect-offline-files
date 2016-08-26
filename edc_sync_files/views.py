@@ -68,7 +68,6 @@ class PullMediaFileView(EdcBaseViewMixin, EdcSyncViewMixin, TemplateView):
             action = request.GET.get('action')
             if action == 'pull':
                 filename = request.GET.get('filename')
-                print("-------------------------", filename)
                 if self.copy_media_file('10.113.200.123', filename):
                     result = {'filename': filename, 'host': ip_address, 'status': True}
                 else:
@@ -77,7 +76,6 @@ class PullMediaFileView(EdcBaseViewMixin, EdcSyncViewMixin, TemplateView):
                 transfer = FileTransfer(
                     device_ip='10.113.200.123',
                 )
-                print("*********************", len(transfer.media_filenames_to_copy()))
                 result = {'mediafiles': transfer.media_filenames_to_copy(), 'host': host}
             elif action == 'media-files':
                 transfer = FileTransfer(

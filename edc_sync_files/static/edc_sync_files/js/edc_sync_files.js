@@ -32,9 +32,13 @@ function edcSyncMediaFilesReady(hosts, url) {
 		    ip_address = $( this ).val();
 		    $(this).find("td").eq(3).append("<span class='fa fa-spinner fa-spin'></span>");
 		    transferFile(ip_address, filename, url);
-		    $(this).find("td").eq(3).remove();
-		    $(this).find("td").eq(3).append("<span class='glyphicon glyphicon-saved'></span>"); 
+		    $(this).find("td").eq(3).html("<span class='glyphicon glyphicon-saved'></span>");
 		});
+		if ( mediaFiles.length == 0 ) {
+			displayProgresStatus('No files found in :'+host+'.', 'alert-success');
+		} else {
+			displayProgresStatus('All files transferred successfully to the server.', 'alert-success');
+		}
 	});
 }
 
