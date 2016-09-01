@@ -101,6 +101,8 @@ function getFiles(host, url) {
 			$("#btn-copy-files").show();
 			$("#btn-copy-div").show();
 			displayProgresStatus('Files to be transfer from from:'+host+'.', 'alert-info');
+		} else {
+			displayProgresStatus('Done. No files to transfer from host: '+host+'.', 'alert-success');
 		}
 	});
 
