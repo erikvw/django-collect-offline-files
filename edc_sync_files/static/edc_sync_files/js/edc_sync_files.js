@@ -104,8 +104,9 @@ function getFiles(host, url) {
 		}
 	});
 
-	mediaFiles.fail(function(jqXHR, textStatus, errorThrown){
+	mediaFiles.fail(function(jqXHR, textStatus, errorThrown) {
 		displayProgresStatus('An error occurred while trying to copy media file from:'+host+' Got '+errorThrown+'.Contact Systems Engineer.', 'alert-danger');
+		$( "#id-tx-spinner" ).addRemove('fa-spin');
 	});
 	return mediaFiles;
 }
