@@ -64,22 +64,22 @@ class PullMediaFileView(EdcBaseViewMixin, EdcSyncViewMixin, TemplateView):
         result = {}
         if request.is_ajax():
             host = request.GET.get('host')
-            ip_address = host[:-5] if '8000' in host else host
+            ip_address = host[:-5] if ':80' in host else host
             action = request.GET.get('action')
             if action == 'pull':
                 filename = request.GET.get('filename')
-                if self.copy_media_file('10.113.200.123', filename):
+                if self.copy_media_file(ip_address, filename):
                     result = {'filename': filename, 'host': ip_address, 'status': True}
                 else:
                     result = {'filename': filename, 'host': ip_address, 'status': False}
             elif action == 'media-count':
                 transfer = FileTransfer(
-                    device_ip='10.113.200.123',
+                    device_ip=ip_address,
                 )
                 result = {'mediafiles': transfer.media_filenames_to_copy(), 'host': host}
             elif action == 'media-files':
                 transfer = FileTransfer(
-                    device_ip='10.113.200.123',
+                    device_ip=ip_address,
                 )
                 result = {'mediafiles': transfer.media_file_attributes(), 'host': host}
             elif action == 'track-transfer':

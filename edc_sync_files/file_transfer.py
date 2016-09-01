@@ -34,14 +34,14 @@ class FileConnector(object):
                 remote_file_name = os.path.join(self.source_folder, self.filename)
                 sftp_attr = self.device_sftp.get(remote_file_name, local_filename)
                 self.create_history()
-                sftp_attr.close()
+                return sftp_attr
             except TypeError as e:
                 raise Exception('An error occured. {}'.format(e))
         else:
             local_filename = os.path.join(self.source_folder, self.filename)
             remote_file_name = os.path.join(self.destination_folder, self.filename)
             sftp_attr = self.device_sftp.put(remote_file_name, local_filename, confirm=True)
-            sftp_attr.close()
+            return sftp_attr
 
     def move(self):
         """ Copies the files to remote device and move them to archive dir. """
@@ -162,5 +162,7 @@ class FileTransfer(object):
             device.close()
             device_sftp.close()
         except paramiko.SSHException:
+            device.close()
+            device_sftp.close()
             return False
         return True

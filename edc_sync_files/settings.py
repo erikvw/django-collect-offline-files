@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
 import os
+import djcelery
+
 from unipath import Path
 from django.utils import timezone
 
@@ -26,7 +28,7 @@ SECRET_KEY = 'b78lzww*t&x&suam82%0#d3s339c5ufet$j^x#x+59fb)0p6fv'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = []
 
@@ -40,7 +42,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'edc_base.apps.AppConfig',
+    'edc_device',
     'edc_sync_files.apps.AppConfig',
+    # third party
+    'djcelery',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -156,6 +161,20 @@ LANGUAGES = (
     ('tn', 'Setswana'),
     ('en', 'English'),
 )
+
+#
+
+djcelery.setup_loader()
+
+BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Africa/Gaborone'
+
+CELERY_RESULT_BACKEND = 'djcelery.backends.database.DatabaseBackend'
+CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 
 DEVICE_ID = '15'
 SERVER_DEVICE_ID_LIST = ['99']
