@@ -27,6 +27,7 @@ setup(
         'django-cors-headers',
         'requests',
         'paramiko',
+        'hurry.filesize'
     ],
     classifiers=[
         'Environment :: Web Environment',
