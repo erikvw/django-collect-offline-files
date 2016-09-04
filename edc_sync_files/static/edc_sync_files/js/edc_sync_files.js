@@ -26,19 +26,19 @@ function edcSyncMediaFilesReady(hosts, url) {
 	$("#btn-copy-files").on('click', function () {
 		mediaFiles = []
 		$(this).text("Copying...");
+		displayProgresStatus('Transferring files. In Progress...wait.', 'alert-info');
+		ip_address = $( this ).val();
 		$('#id-table-body tr').each(function() {
 		    var filename = $(this).find("td").eq(1).html();
 		    mediaFiles.push(filename);
-		    ip_address = $( this ).val();
 		    $(this).find("td").eq(3).append("<span class='fa fa-spinner fa-spin'></span>");
-		    transferFile(ip_address, filename, url);
-		    $(this).find("td").eq(3).html("<span class='glyphicon glyphicon-saved'></span>");
+		    iconElement = $(this);
+		    transferFile(ip_address, filename, url, iconElement);
 		});
 		if ( mediaFiles.length == 0 ) {
 			displayProgresStatus('No files found in :'+host+'.', 'alert-success');
-		} else {
-			displayProgresStatus('All files transferred successfully to the server.', 'alert-success');
 		}
+		$(this).text("Copy All To Server");
 	});
 }
 
@@ -64,10 +64,10 @@ function mediaCount(host, url) {
 	mediaCountResponse.done(function( data ) {
 		/* On a success display the result */
 		var mediaCount = data.mediafiles.length;
-		$( "#id-link-pull-" + host ).text( mediaCount );
+		$( "#id-media-count-" + host.replace( ':', '-' ).split( '.' ).join( '-' )  ).text( mediaCount );
 	} );
 	mediaCountResponse.fail(function() {
-		console.log("Error occurred");
+		console.log('An error occurred trying to copy media file from:'+errorThrown);
 		//displayProgresStatus('An error occurred trying to copy media file from:'+errorThrown, 'alert-danger');
 	} ); 
 	return mediaCountResponse;
@@ -113,7 +113,7 @@ function getFiles(host, url) {
 	return mediaFiles;
 }
 
-function transferFile(host, filename, url) {
+function transferFile(host, filename, url, iconElement) {
 	$("#id-tx-spinner").addClass( 'fa-spin' );
 	var transfer = $.ajax({
 		async: false,
@@ -129,11 +129,13 @@ function transferFile(host, filename, url) {
 	
 	transfer.done(function( data ) {
 		$("#id-tx-spinner").removeClass( 'fa-spin' );
+		updateIcon(iconElement, 'success');
 	});
 
 	transfer.fail(function(jqXHR, textStatus, errorThrown){
 		$("#id-tx-spinner").removeClass( 'fa-spin' );
-		displayProgresStatus('An error occurred while trying to copy media file from:'+host+' Got '+errorThrown+'.Contact Systems Engineer.', 'alert-danger');
+		updateIcon(iconElement, 'error');
+		displayProgresStatus('An error occurred while trying to copy media file from:'+host+' Got '+errorThrown+'. Contact Systems Engineer.', 'alert-danger');
 	});
 	return transfer;
 }
@@ -194,5 +196,13 @@ function updateFileTransfer(transferStatus) {
 			//console.log(fileStatus.filename);
 		});
 	});
+}
+
+function updateIcon(iconElement, status) {
+	if (status=='success') {
+		iconElement.find("td").eq(3).html("<span class='glyphicon glyphicon-saved alert-success'></span>");
+	} else if(status=='error') {
+		iconElement.find("td").eq(3).html("<span class='glyphicon glyphicon-remove alert-danger'></span>");
+	}
 }
 

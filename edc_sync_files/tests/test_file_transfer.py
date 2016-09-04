@@ -12,9 +12,9 @@ from edc_sync_files.models import History
 class TestFileTransfer(TestCase):
 
     def setUp(self):
-        self.transfer = FileTransfer()
-        self.file_server_folder = os.path.join(settings.BASE_DIR, "tests", "media", "source_folder")
-        self.media_dir = os.path.join(settings.BASE_DIR, "tests", "media", "destination_folder")
+        self.transfer = FileTransfer(device_ip='127.0.0.1')
+        self.source_folder = os.path.join(settings.BASE_DIR, "tests", "media", "source_folder")
+        self.destination_folder = os.path.join(settings.BASE_DIR, "tests", "media", "destination_folder")
 
     def test_connect_to_localhost(self):
         """Assert  Connection to localhost """
@@ -24,17 +24,19 @@ class TestFileTransfer(TestCase):
         """ Assert Connection to remote machine """
         self.assertTrue(self.transfer.connect_to_device(REMOTE))
 
-    def test_count_media_to_send(self):
-        """ Assert how many media files to send base on history table."""
-        sent_media = ['media_a.png', 'media_b.png']
-        for filename in sent_media:
-            FileConnector(filename=filename).create_history()
-        self.assertEqual(History.objects.all().count(), 2)
-        media_dir = [self.media_dir]
-        transfer = FileTransfer(media_dir=media_dir)
-        json.dumps(transfer.pending_media_files())
-        required_files = transfer.pending_media_files()[0].get('required_files')
-        self.assertEqual(["media_c.png"], required_files)
+    def test_media_files(self):
+        """ Connect to remote device then return filenames within source dir """
+        transfer = FileTransfer(
+            user='tsetsiba', device_ip='127.0.0.1', source_folder=self.source_folder, destination_folder=self.destination_folder)
+        self.assertEqual(len(transfer.media_file_attributes()), 3)
+
+    def test_copy_media_file(self):
+        """ Connect to remote device then return filenames within source dir """
+        transfer = FileTransfer(
+            filename='media_a.png',
+            user='tsetsiba', device_ip='127.0.0.1', source_folder=self.source_folder, destination_folder=self.destination_folder)
+        transfer.copy_media_file()
+        self.assertEqual(History.objects.all().count(), 1)
 
     def test_count_on_media_transfer(self):
         """ Assert how many media files to send base on history table."""
@@ -56,7 +58,7 @@ class TestFileTransfer(TestCase):
             if filename in sent_media:
                 continue
             media_to_transfer.append(filename)
-        self.assertEqual(media_to_transfer, 1)
+        self.assertEqual(len(media_to_transfer), 1)
 
         for f in ['media_d']:
             self.assertIn(f, media_to_transfer)

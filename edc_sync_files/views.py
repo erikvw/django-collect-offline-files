@@ -29,7 +29,7 @@ class HistoryCreateView(CreateAPIView):
 #     A view that returns the count  of transactions.
 #     """
 #     renderer_classes = (JSONRenderer, )
-# 
+#
 #     def get(self, request, format=None):
 #         return Response(json.dumps(FileTransfer().pending_media_files()))
 
@@ -64,11 +64,11 @@ class PullMediaFileView(EdcBaseViewMixin, EdcSyncViewMixin, TemplateView):
         result = {}
         if request.is_ajax():
             host = request.GET.get('host')
-            ip_address = host[:-5] if ':80' in host else host
+            ip_address = host.split(':')[0] if ':80' in host else host
             action = request.GET.get('action')
             if action == 'pull':
                 filename = request.GET.get('filename')
-                if self.copy_media_file(ip_address, filename):
+                if self.copy_media_file(ip_address, filename.strip()):
                     result = {'filename': filename, 'host': ip_address, 'status': True}
                 else:
                     result = {'filename': filename, 'host': ip_address, 'status': False}

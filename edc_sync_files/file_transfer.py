@@ -84,7 +84,6 @@ class FileTransfer(object):
         self.source_folder = source_folder or self.edc_sync_app_config.source_folder
         self.destination_folder = destination_folder or self.edc_sync_app_config.destination_folder
         self.media_folders = media_folders or self.edc_sync_app_config.media_folders
-        print(self.device_ip, self.source_folder, self.destination_folder)
 
     @property
     def edc_sync_app_config(self):
@@ -92,12 +91,9 @@ class FileTransfer(object):
 
     def connect_to_device(self, device):
         device, username = (self.device_ip, self.user) if device == REMOTE else (LOCALHOST, getpass.getuser())
-        try:
-            client = paramiko.SSHClient()
-            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(device, username=username, look_for_keys=True, timeout=30)
-        except paramiko.SSHException:
-            return False
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(device, username=username, look_for_keys=True, timeout=30)
         return client
 
     @property
@@ -113,14 +109,16 @@ class FileTransfer(object):
     @property
     def device_media_filenames(self):
         device = self.connect_to_device(REMOTE)
-        device_sftp = device.open_sftp()
-        filenames = device_sftp.listdir(self.source_folder)
-        try:
-            filenames.remove('.DS_Store')
-        except ValueError:
-            pass
-        device.close()
-        device_sftp.close()
+        filenames = []
+        if device:
+            device_sftp = device.open_sftp()
+            filenames = device_sftp.listdir(self.source_folder)
+            try:
+                filenames.remove('.DS_Store')
+            except ValueError:
+                pass
+            device.close()
+            device_sftp.close()
         return filenames
 
     def media_filenames_to_copy(self):
@@ -136,15 +134,16 @@ class FileTransfer(object):
     def media_file_attributes(self):
         media_file_attributes = []
         device = self.connect_to_device(REMOTE)
-        device_sftp = device.open_sftp()
-        for filename in self.media_filenames_to_copy():
-            source_filename = os.path.join(self.source_folder, filename)
-            file_attr = device_sftp.lstat(source_filename)
-            data = dict({
-                'filename': filename,
-                'filesize': size(file_attr.st_size),
-            })
-            media_file_attributes.append(data)
+        if device:
+            device_sftp = device.open_sftp()
+            for filename in self.media_filenames_to_copy():
+                source_filename = os.path.join(self.source_folder, filename)
+                file_attr = device_sftp.lstat(source_filename)
+                data = dict({
+                    'filename': filename,
+                    'filesize': size(file_attr.st_size),
+                })
+                media_file_attributes.append(data)
         return media_file_attributes
 
     def copy_media_file(self):
