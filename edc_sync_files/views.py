@@ -4,7 +4,7 @@ import socket
 from django.http.response import HttpResponse
 from django.views.generic.base import TemplateView
 
-from edc_base.views.edc_base_view_mixin import EdcBaseViewMixin
+from edc_base.view_mixins import EdcBaseViewMixin
 from edc_sync.edc_sync_view_mixin import EdcSyncViewMixin
 
 from rest_framework.generics import CreateAPIView
