@@ -1,7 +1,6 @@
 from django.db import models
 from django.utils import timezone
 
-from edc_sync.models.sync_model_mixin import SyncModelMixin
 from edc_base.model.models import BaseUuidModel
 
 
@@ -10,7 +9,7 @@ class HistoryManager(models.Manager):
         return self.get(filename=filename, sent_datetime=sent_datetime)
 
 
-class History(BaseUuidModel, SyncModelMixin):
+class History(BaseUuidModel):
 
     filename = models.CharField(
         max_length=100,
