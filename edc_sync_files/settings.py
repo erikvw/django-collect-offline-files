@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
 import os
-import djcelery
 
 from unipath import Path
 from django.utils import timezone
@@ -44,10 +43,9 @@ INSTALLED_APPS = [
     'edc_base.apps.AppConfig',
     'edc_device',
     'edc_sync_files.apps.AppConfig',
-#     'edc_sync.apps.AppConfig',
-#     'django_crypto_fields.apps.AppConfig',
     # third party
-    'djcelery',
+    'django_celery_beat',
+    'django_celery_results',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -74,7 +72,6 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                #'django.template.context_processors.media',
             ],
         },
     },
@@ -145,15 +142,6 @@ STATIC_ROOT = BASE_DIR.child('static')
 MEDIA_ROOT = BASE_DIR.child('media')
 MEDIA_URL = '/media/'
 
-# List of finder classes that know how to find static files in
-# various locations.
-# STATICFILES_FINDERS = (
-#     'django.contrib.staticfiles.finders.FileSystemFinder',
-#     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-#     'django.contrib.staticfiles.finders.DefaultStorageFinder',
-# )
-
-
 GIT_DIR = BASE_DIR.ancestor(1)
 KEY_PATH = os.path.join(BASE_DIR.ancestor(1), 'crypto_fields')
 EDC_CRYPTO_FIELDS_CLIENT_USING = 'client'
@@ -164,19 +152,14 @@ LANGUAGES = (
     ('en', 'English'),
 )
 
-#
-
-djcelery.setup_loader()
-
-BROKER_URL = 'redis://localhost:6379'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TRACK_STARTED = True
+CELERY_ENABLE_UTC = True
 CELERY_TIMEZONE = 'Africa/Gaborone'
-
-CELERY_RESULT_BACKEND = 'djcelery.backends.database.DatabaseBackend'
-CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
 
 DEVICE_ID = '15'
 SERVER_DEVICE_ID_LIST = ['99']

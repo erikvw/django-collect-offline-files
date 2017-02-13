@@ -9,21 +9,20 @@ style = color_style()
 
 
 class AppConfig(ConfigIniMixin, DjangoAppConfig):
+
     name = 'edc_sync_files'
     verbose_name = 'File Synchronization'
-    user = None
-    device_ip = 'localhost'
+
+    destination_host = None
+    source_host = 'localhost'
+
     source_folder = '~/edc_sync_files'
     destination_folder = None
-    media_folders = []
     role = 'server'
-    #
-    crontab_hr = None
-    crontab_min = None
-    crontab_day_of_week = None  # e.g monday if want to execute monday only or if you want monday and tuesday then monday, tuesday
 
     config_filename = 'edc_sync_files.ini'
-    config_ini_attrs = {'edc_sync_files': ['user', 'source_folder', 'destination_folder', 'media_folders', 'device_ip']}
+    config_ini_attrs = {'edc_sync_files': [
+        'user', 'source_folder', 'destination_folder', 'destination_host']}
     cors_origin_whitelist = None  # a tuple of host:port, host:port, ...
     cors_origin_allow_all = True
 

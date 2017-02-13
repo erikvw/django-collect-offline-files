@@ -66,7 +66,7 @@ function mediaCount(host, url) {
 		var mediaCount = data.mediafiles.length;
 		$( "#id-media-count-" + host.replace( ':', '-' ).split( '.' ).join( '-' )  ).text( mediaCount );
 	} );
-	mediaCountResponse.fail(function() {
+	mediaCountResponse.fail(function(x, y, errorThrown) {
 		console.log('An error occurred trying to copy media file from:'+errorThrown);
 		//displayProgresStatus('An error occurred trying to copy media file from:'+errorThrown, 'alert-danger');
 	} ); 

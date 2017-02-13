@@ -24,16 +24,6 @@ class HistoryCreateView(CreateAPIView):
         serializer.save(user_created=self.request.user)
 
 
-# class MediaFilesAPIView(APIView):
-#     """
-#     A view that returns the count  of transactions.
-#     """
-#     renderer_classes = (JSONRenderer, )
-#
-#     def get(self, request, format=None):
-#         return Response(json.dumps(FileTransfer().pending_media_files()))
-
-
 class PullMediaFileView(EdcBaseViewMixin, EdcSyncViewMixin, TemplateView):
 
     template_name = 'edc_sync/home.html'
@@ -74,12 +64,12 @@ class PullMediaFileView(EdcBaseViewMixin, EdcSyncViewMixin, TemplateView):
                     result = {'filename': filename, 'host': ip_address, 'status': False}
             elif action == 'media-count':
                 transfer = FileTransfer(
-                    device_ip=ip_address,
+                    host=ip_address,
                 )
                 result = {'mediafiles': transfer.media_filenames_to_copy(), 'host': host}
             elif action == 'media-files':
                 transfer = FileTransfer(
-                    device_ip=ip_address,
+                    host=ip_address,
                 )
                 result = {'mediafiles': transfer.media_file_attributes(), 'host': host}
             elif action == 'track-transfer':
