@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.conf.urls import url
 from django.contrib import admin
-from edc_sync_files.admin import edc_sync_files_admin
+from .admin.admin import edc_sync_files_admin
 
 
 from .views import PullMediaFileView
