@@ -11,7 +11,6 @@ class UploadSkipDaysAdmin(admin.ModelAdmin):
     date_hierarchy = 'created'
 
     list_display = ('skip_date',
-                    'identifier_wrapper',
                     'created',
                     'user_created',
                     'hostname_created')

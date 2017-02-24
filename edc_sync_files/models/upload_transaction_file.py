@@ -1,7 +1,13 @@
+import json
+import base64
+
 from datetime import date, timedelta
 
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
+
+from edc_sync.models import IncomingTransaction
 
 from edc_base.model.models import BaseUuidModel
 
@@ -61,7 +67,7 @@ class UploadTransactionFile(BaseUuidModel):
             raise TypeError('File covering date of \'{0}\' for \'{1}\' is already'
                             ' uploaded.'.format(self.file_date, self.identifier))
 
-        if(self.today_within_skip_untill()):
+        if(self.today_within_skip_untill() or self.today_skip_day()):
             raise TypeError('Cannot upload file for today because it has '
                             'been declared a skip day for \'{0}\''.format(self.identifier))
 
@@ -71,6 +77,41 @@ class UploadTransactionFile(BaseUuidModel):
             raise TypeError('Missing Upload file from the previous day for'
                             ' \'{0}\'. Previous day is not set as a SKIP '
                             'date.'.format(self.identifier))
+        index = 0
+        self.transaction_file.open()
+        producer_list = []
+        for index, outgoing in enumerate(self.deserialize_json_file(self.transaction_file)):
+            if not IncomingTransaction.objects.filter(pk=outgoing.get('pk')).exists():
+                if outgoing.get('fields'):
+                    self.consumed += 1
+                    data = outgoing.get('fields')
+                    del data['using']
+                    del data['is_consumed_middleman']
+                    del data['is_consumed_server']
+                    data['tx'] = data['tx'].encode(encoding='UTF-8')
+                    IncomingTransaction.objects.create(**data)
+                    if outgoing.get('fields').get('producer') not in producer_list:
+                        producer_list.append(outgoing.get('fields').get('producer'))
+            else:
+                self.not_consumed += 1
+        self.total = index
+        producer_list.sort()
+        self.producer = ','.join(producer_list)
+
+    def deserialize_json_file(self, file_pointer):
+        try:
+            json_txt = file_pointer.read()
+            decoded = json.loads(json_txt)
+        except:
+            return None
+        return decoded
+
+    def check_for_transactions(self, transaction_file=None, exception_cls=None):
+        transaction_file = transaction_file or self.transaction_file
+        transaction_file.open()
+        exception_cls = exception_cls or ValidationError
+        if not self.deserialize_json_file(transaction_file):
+            raise exception_cls('File does not contain any transactions. Got {0}'.format(transaction_file.name))
 
     def file_already_uploaded(self):
         if self.__class__.objects.filter(
@@ -118,5 +159,14 @@ class UploadTransactionFile(BaseUuidModel):
             return True
         return False
 
+    def today_skip_day(self):
+        from .upload_skip_days import UploadSkipDays
+        if (UploadSkipDays.objects.filter(
+                skip_date=self.file_date,
+                identifier__iexact=self.identifier).exists()):
+            return True
+        return False
+
     class Meta:
         app_label = 'edc_sync_files'
+        ordering = ('-created',)

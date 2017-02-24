@@ -90,4 +90,5 @@ class UploadSkipDays(BaseUuidModel):
 
     class Meta:
         app_label = 'edc_sync_files'
+        ordering = ('-created', )
         unique_together = ('skip_date', 'identifier')

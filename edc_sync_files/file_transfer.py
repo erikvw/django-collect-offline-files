@@ -7,7 +7,7 @@ from hurry.filesize import size
 from datetime import datetime
 from django.apps import apps as django_apps
 
-from .models import History
+from edc_sync_files.models import history
 from .constants import REMOTE, LOCALHOST
 
 
@@ -61,7 +61,7 @@ class FileConnector(object):
         return (stdin, stdout, stderr)
 
     def create_history(self, filename):
-        history = History.objects.create(
+        history = history.objects.create(
             filename=filename,
             acknowledged=True,
             ack_datetime=datetime.today(),

@@ -9,12 +9,10 @@ from .models import UploadTransactionFile, UploadSkipDays
 
 
 path = (settings.MEDIA_ROOT + '/bcpp_otse_201702162025.json')
-f = open(path, 'r')
-djangoFile = File(f)
 
 transaction = Recipe(
     UploadTransactionFile,
-    transaction_file=djangoFile,
+    transaction_file=File(open(path)),
     consume=True,
 )
 
