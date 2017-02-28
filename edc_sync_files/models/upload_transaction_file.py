@@ -1,7 +1,5 @@
-import json
-import base64
-
 from datetime import date, timedelta
+from django.core import serializers
 
 from django.db import models
 from django.conf import settings
@@ -81,17 +79,18 @@ class UploadTransactionFile(BaseUuidModel):
         self.transaction_file.open()
         producer_list = []
         for index, outgoing in enumerate(self.deserialize_json_file(self.transaction_file)):
-            if not IncomingTransaction.objects.filter(pk=outgoing.get('pk')).exists():
-                if outgoing.get('fields'):
+            if not IncomingTransaction.objects.filter(pk=outgoing.object.pk).exists():
+                if outgoing.object._meta.get_fields():
                     self.consumed += 1
-                    data = outgoing.get('fields')
+                    data = outgoing.object.__dict__
                     del data['using']
                     del data['is_consumed_middleman']
                     del data['is_consumed_server']
-                    data['tx'] = data['tx'].encode(encoding='UTF-8')
+                    del data['_state']
+
                     IncomingTransaction.objects.create(**data)
-                    if outgoing.get('fields').get('producer') not in producer_list:
-                        producer_list.append(outgoing.get('fields').get('producer'))
+                    if outgoing.object.producer not in producer_list:
+                        producer_list.append(outgoing.object.producer)
             else:
                 self.not_consumed += 1
         self.total = index
@@ -101,7 +100,9 @@ class UploadTransactionFile(BaseUuidModel):
     def deserialize_json_file(self, file_pointer):
         try:
             json_txt = file_pointer.read()
-            decoded = json.loads(json_txt)
+            decoded = serializers.deserialize(
+                "json", json_txt, ensure_ascii=True, use_natural_foreign_keys=True,
+                use_natural_primary_keys=False)
         except:
             return None
         return decoded
