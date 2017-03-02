@@ -7,7 +7,9 @@ from hurry.filesize import size
 from datetime import datetime
 from django.apps import apps as django_apps
 
+from edc_base.utils import get_utcnow
 from edc_sync_files.models import History
+
 from .constants import REMOTE, LOCALHOST
 
 
@@ -133,13 +135,20 @@ class FileTransfer(object):
                 file_attrs.append(data)
         return file_attrs
 
-    def copy_files(self):
+    def copy_files(self, filename, approval_code):
         """ Copies the files from the remote machine into local machine. """
         try:
             for f in self.files_dict:
-                self.file_connector.copy(f.get('filename'))
-#                 if self.archive:
-#                     self.file_connector.archive(f.get('filename'))
+                if f.get('filename') == filename:
+                    self.file_connector.copy(f.get('filename'))
         except paramiko.SSHException:
             return False
         return True
+
+    def approve_sent_file(self, filename, approval_code):
+        try:
+            sent_file_history = History.objects.get(filename=filename)
+            sent_file_history.approval_code = approval_code
+            sent_file_history.save()
+        except History.DoesNotExist:
+            pass
