@@ -12,17 +12,17 @@ class AppConfig(ConfigIniMixin, DjangoAppConfig):
 
     name = 'edc_sync_files'
     verbose_name = 'File Synchronization'
-
-    destination_host = None
-    source_host = 'localhost'
-
-    source_folder = '~/edc_sync_files'
+    user = None
+    host = None
+    password = None
+    source_folder = None
     destination_folder = None
-    role = 'server'
+    archive_folder = None
+    role = None
 
     config_filename = 'edc_sync_files.ini'
-    config_ini_attrs = {'edc_sync_files': [
-        'user', 'source_folder', 'destination_folder', 'destination_host']}
+    config_ini_attrs = {'edc_sync_files': []}
+    #  'host', 'password', 'source_folder', 'destination_folder']}
     cors_origin_whitelist = None  # a tuple of host:port, host:port, ...
     cors_origin_allow_all = True
 
