@@ -59,7 +59,7 @@ class FileConnector(object):
             os.path.join(self.source_folder, filename),
             temp_des, callback=self.progress, confirm=True)
         #  create a record on successful transfer
-        # self.create_history(filename)
+        self.create_history(filename)
         self.host_sftp.close()
 
     def archive(self, filename):
@@ -82,7 +82,7 @@ class FileConnector(object):
 
     @property
     def hostname(self):
-        device = self.connect(LOCALHOST)
+        device = self.connect(REMOTE)
         _, stdout, _ = device.exec_command('hostname')
         hostname = stdout.read()
         if isinstance(hostname, bytes):
@@ -92,7 +92,7 @@ class FileConnector(object):
 
     @property
     def localhost_hostname(self):
-        device = self.connect(REMOTE)
+        device = self.connect(LOCALHOST)
         _, stdout, _ = device.exec_command('hostname')
         hostname = stdout.read()
         if isinstance(hostname, bytes):

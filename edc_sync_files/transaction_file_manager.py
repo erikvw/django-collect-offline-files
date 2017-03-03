@@ -19,7 +19,7 @@ class TransactionFileManager(object):
         self.file_transfer.file_connector.archive(self.filename)
 
     @property
-    def sending_progress(self):
+    def file_transfer_progress(self):
         return self.file_transfer.file_connector.progress_status
 
     @property

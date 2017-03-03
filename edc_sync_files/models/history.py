@@ -26,6 +26,11 @@ class History(BaseUuidModel):
         blank=True,
     )
 
+    approval_code = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True)
+
     ack_datetime = models.DateTimeField(
         default=timezone.now,
         null=True,
