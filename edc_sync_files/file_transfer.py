@@ -65,9 +65,8 @@ class FileConnector(object):
     def archive(self, filename):
         """ Move file from source_folder to archive folder """
         client = self.connect(LOCALHOST)
-        self.host_sftp = client.open_sftp()
         filename = os.path.join(self.source_folder, filename)
-        stdin, stdout, stderr = self.local_sftp.exec_command(
+        stdin, stdout, stderr = client.exec_command(
             "cd {} ; mv {} {}".format(
                 self.source_folder, filename, self.archive_folder))
         return (stdin, stdout, stderr)
@@ -83,6 +82,16 @@ class FileConnector(object):
 
     @property
     def hostname(self):
+        device = self.connect(LOCALHOST)
+        _, stdout, _ = device.exec_command('hostname')
+        hostname = stdout.read()
+        if isinstance(hostname, bytes):
+            hostname = hostname.decode('utf-8')
+        device.close()
+        return hostname
+
+    @property
+    def localhost_hostname(self):
         device = self.connect(REMOTE)
         _, stdout, _ = device.exec_command('hostname')
         hostname = stdout.read()
@@ -135,7 +144,7 @@ class FileTransfer(object):
                 file_attrs.append(data)
         return file_attrs
 
-    def copy_files(self, filename, approval_code):
+    def copy_files(self, filename):
         """ Copies the files from the remote machine into local machine. """
         try:
             for f in self.files_dict:

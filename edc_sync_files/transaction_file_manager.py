@@ -16,14 +16,15 @@ class TransactionFileManager(object):
 
     def send_files(self):
         self.file_transfer.copy_files(self.filename)
-        self.file_transfer.archive(self.filename)
+        self.file_transfer.file_connector.archive(self.filename)
 
     @property
     def sending_progress(self):
         return self.file_transfer.file_connector.progress_status
 
+    @property
     def host_identifier(self):
-        return self.file_transfer.file_connector.hostname[:4]
+        return self.file_transfer.file_connector.localhost_hostname[4:].strip()
 
     def approve_transfer_files(self, files):
         approval_code = '{}{}'.format(
