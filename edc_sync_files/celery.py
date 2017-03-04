@@ -1,6 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-import sys
 import os
 from celery import Celery
 
@@ -9,9 +8,9 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 
 # set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'edc_scheduler.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'edc_sync_files.settings')
 
-app = Celery('edc_scheduler')
+app = Celery('edc_sync_files')
 app.conf.broker_url = 'redis://localhost:6379/0'
 app.conf.timezone = 'Africa/Gaborone'
 app.conf.broker_transport_options = {'visibility_timeout': 30}
