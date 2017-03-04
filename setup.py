@@ -30,6 +30,7 @@ setup(
         'hurry.filesize',
         'django-celery-beat',
         'django-celery-results',
+        'celery',
     ],
     classifiers=[
         'Environment :: Web Environment',
