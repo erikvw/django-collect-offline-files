@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from django.utils import timezone
 
 from django.db import models
 
@@ -9,7 +9,7 @@ from .upload_transaction_file import UploadTransactionFile
 
 class UploadSkipDays(BaseUuidModel):
 
-    skip_date = models.DateField(default=date.today())
+    skip_date = models.DateField(default=timezone.now())
 
     skip_until_date = models.DateField(null=True,
                                        blank=True,
