@@ -1,52 +1,59 @@
 from datetime import date, timedelta
-from django.core import serializers
 
-from django.db import models
 from django.conf import settings
+from django.core import serializers
 from django.core.exceptions import ValidationError
+from django.db import models
 
+from edc_base.model_mixins import BaseUuidModel
 from edc_sync.models import IncomingTransaction
-
-from edc_base.model.models import BaseUuidModel
 
 
 class UploadTransactionFile(BaseUuidModel):
 
     transaction_file = models.FileField(upload_to=settings.MEDIA_ROOT)
 
-    file_name = models.CharField(max_length=50,
-                                 null=True,
-                                 editable=False,
-                                 unique=True)
+    file_name = models.CharField(
+        max_length=50,
+        null=True,
+        editable=False,
+        unique=True)
 
-    file_date = models.DateField(null=True,
-                                 editable=False)
+    file_date = models.DateField(
+        null=True,
+        editable=False)
 
-    identifier = models.CharField(max_length=50,
-                                  null=True)
+    identifier = models.CharField(
+        max_length=50,
+        null=True)
 
     consume = models.BooleanField(default=True)
 
-    total = models.IntegerField(editable=False,
-                                default=0)
+    total = models.IntegerField(
+        editable=False,
+        default=0)
 
-    consumed = models.IntegerField(editable=False,
-                                   default=0)
+    consumed = models.IntegerField(
+        editable=False,
+        default=0)
 
-    not_consumed = models.IntegerField(editable=False,
-                                       default=0,
-                                       help_text='duplicates')
+    not_consumed = models.IntegerField(
+        editable=False,
+        default=0,
+        help_text='duplicates')
 
-    producer = models.TextField(max_length=1000,
-                                null=True,
-                                editable=False,
-                                help_text='List of producers detected from the file.')
+    producer = models.TextField(
+        max_length=1000,
+        null=True,
+        editable=False,
+        help_text='List of producers detected from the file.')
 
     objects = models.Manager()
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.file_name = self.transaction_file.name.replace('\\', '/').split('/')[-1]
+            self.file_name = self.transaction_file.name.replace(
+                '\\', '/').split('/')[-1]
             date_string = self.file_name.split('_')[2].split('.')[0][:8]
             self.file_date = date(int(date_string[:4]),
                                   int(date_string[4:6]),
@@ -112,7 +119,8 @@ class UploadTransactionFile(BaseUuidModel):
         transaction_file.open()
         exception_cls = exception_cls or ValidationError
         if not self.deserialize_json_file(transaction_file):
-            raise exception_cls('File does not contain any transactions. Got {0}'.format(transaction_file.name))
+            raise exception_cls(
+                'File does not contain any transactions. Got {0}'.format(transaction_file.name))
 
     def file_already_uploaded(self):
         if self.__class__.objects.filter(
