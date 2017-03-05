@@ -10,7 +10,7 @@ from .upload_transaction_file import UploadTransactionFile
 
 class UploadSkipDays(BaseUuidModel):
 
-    skip_date = models.DateField(default=timezone.now())
+    skip_date = models.DateField(default=timezone.now)
 
     skip_until_date = models.DateField(
         null=True,
