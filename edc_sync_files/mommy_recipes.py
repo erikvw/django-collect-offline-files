@@ -1,3 +1,4 @@
+import os
 from datetime import date
 
 from django.conf import settings
@@ -8,7 +9,7 @@ from model_mommy.recipe import Recipe
 from .models import UploadTransactionFile, UploadSkipDays
 
 
-path = (settings.MEDIA_ROOT + '/bcpp_otse_201702162025.json')
+path = os.path.join(settings.MEDIA_ROOT, 'bcpp_otse_201702162025.json')
 
 transaction = Recipe(
     UploadTransactionFile,

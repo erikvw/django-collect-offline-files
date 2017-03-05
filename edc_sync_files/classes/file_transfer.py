@@ -8,12 +8,14 @@ from datetime import datetime
 from django.apps import apps as django_apps
 
 from edc_base.utils import get_utcnow
-from edc_sync_files.models import History
 
-from .constants import REMOTE, LOCALHOST
+from .transaction_messages import transaction_messages
+from ..models import History
+from ..constants import REMOTE, LOCALHOST
+from .mixins import SSHConnectMixin
 
 
-class FileConnector(object):
+class FileConnector(SSHConnectMixin):
     """Connects to the file system given (host & password) or (ssh key pair.).
        1. Copies files from source folder to destination folder in file system.
        2. Copies files from file system to remote file system.
@@ -21,28 +23,25 @@ class FileConnector(object):
 
     def __init__(self, host=None, password=None, source_folder=None,
                  destination_folder=None, archive_folder=None):
+        self.trusted_host = True
+        edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
         self.progress_status = None
-        self.host = host or self.edc_sync_file.host
-        self.password = password or self.edc_sync_file.password
-        self.user = self.edc_sync_file.user
-        self.source_folder = source_folder or self.edc_sync_file.source_folder
-        self.destination_folder = destination_folder or self.edc_sync_file.destination_folder
-        self.archive_folder = archive_folder or self.edc_sync_file.archive_folder
-        self.host_sftp = None  # 
-        self.local_sftp = None  # self.connect(LOCALHOST)
+        self.host = host or edc_sync_file_app.host
+        self.password = password or edc_sync_file_app.password
+        self.user = edc_sync_file_app.user
+        self.source_folder = source_folder or edc_sync_file_app.source_folder
+        self.destination_folder = destination_folder or edc_sync_file_app.destination_folder
+        self.archive_folder = archive_folder or edc_sync_file_app.archive_folder
 
-    @property
-    def edc_sync_file(self):
-        return django_apps.get_app_config('edc_sync_files')
-
-    def connect(self, host):
-        device, username = (
-            self.host, self.user) if host == REMOTE else (
-                LOCALHOST, getpass.getuser())
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        client.connect(device, username=username, look_for_keys=True, timeout=30)
-        return client
+    def connected(self):
+        ssh = None
+        client = self.connect(REMOTE)
+        if client:
+            ssh = client.open_sftp()
+        connected = True if ssh else False
+        if connected:
+            ssh.close()
+        return connected
 
     def progress(self, sent_bytes, total_bytes):
         self.progress_status = (sent_bytes / total_bytes) * 100
@@ -52,24 +51,38 @@ class FileConnector(object):
         """ Copy file from  source folder to destination folder in the
             current filesystem or to remote file system."""
         client = self.connect(REMOTE)
-        self.host_sftp = client.open_sftp()
-        temp_des = '/Users/django/source/bcpp/media/transactions/outgoing/' + filename
+        host_sftp = client.open_sftp()
         destination_file = os.path.join(self.destination_folder, filename)
-        sent_file = self.host_sftp.put(
-            os.path.join(self.source_folder, filename),
-            temp_des, callback=self.progress, confirm=True)
+        sent = True
+        try:
+            sent_file = host_sftp.put(
+                os.path.join(self.source_folder, filename),
+                destination_file, callback=self.progress, confirm=True)
+        except IOError as e:
+            sent = False
+            transaction_messages.add_message(
+                'error', 'IOError Got {} . Sending {}'.format(e, destination_file))
+            return False
+        received_file = host_sftp.lstat(destination_file)
+        print(received_file.st_size, "received file", sent_file.st_size, "sent file")
         #  create a record on successful transfer
-        self.create_history(filename)
-        self.host_sftp.close()
+        if sent:
+            self.create_history(filename)
+        return sent
 
     def archive(self, filename):
         """ Move file from source_folder to archive folder """
+        archived = True
         client = self.connect(LOCALHOST)
         filename = os.path.join(self.source_folder, filename)
-        stdin, stdout, stderr = client.exec_command(
-            "cd {} ; mv {} {}".format(
-                self.source_folder, filename, self.archive_folder))
-        return (stdin, stdout, stderr)
+        try:
+            stdin, stdout, stderr = client.exec_command(
+                "cd {} ; mv {} {}".format(
+                    self.source_folder, filename, self.archive_folder))
+        except Exception as e:
+            archived = False
+            transaction_messages.add_message('error', str(e), network=False)
+        return archived
 
     def create_history(self, filename):
         history = History.objects.create(
@@ -105,13 +118,8 @@ class FileTransfer(object):
     """Transfer a list of files to the remote host or within host.
     """
 
-    def __init__(self, file_connector=None, archive=None):
+    def __init__(self, file_connector=None):
         self.file_connector = file_connector or FileConnector()
-        self.archive = archive or False
-
-    @property
-    def edc_sync_app_config(self):
-        return django_apps.get_app_config('edc_sync_files')
 
     @property
     def files(self):
@@ -145,14 +153,15 @@ class FileTransfer(object):
         return file_attrs
 
     def copy_files(self, filename):
-        """ Copies the files from the remote machine into local machine. """
-        try:
-            for f in self.files_dict:
-                if f.get('filename') == filename:
-                    self.file_connector.copy(f.get('filename'))
-        except paramiko.SSHException:
-            return False
-        return True
+        """ Copies the files from source folder to destination folder. """
+        copied = False
+        for f in self.files_dict:
+            if f.get('filename') == filename:
+                copied = self.file_connector.copy(f.get('filename'))
+        return copied
+
+    def archive(self, filename):
+        return self.file_connector.archive(filename)
 
     def approve_sent_file(self, filename, approval_code):
         try:
