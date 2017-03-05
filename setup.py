@@ -31,6 +31,7 @@ setup(
         'django-celery-beat',
         'django-celery-results',
         'celery',
+        'watchdog',
     ],
     classifiers=[
         'Environment :: Web Environment',
