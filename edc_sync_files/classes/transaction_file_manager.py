@@ -14,7 +14,7 @@ class TransactionFileManager(object):
     def __init__(self, file_transfer=None, filename=None):
         self.file_transfer = file_transfer or FileTransfer()
         self.filename = filename
-        self.transactionfile_uploader = TransactionFileUploader(self.filename)
+        self.uploader = TransactionFileUploader()
         self.approval_code = None
 
     def send_files(self):
@@ -40,10 +40,9 @@ class TransactionFileManager(object):
             self.file_transfer.approve_sent_file(filename, approval_code)
         return True
 
+    def new_uploaded_file(self, tx_file):
+        self.uploader.add_new_uploaded_file(tx_file)
+
     def is_server_available(self):
         return self.file_transfer.file_connector.connected()
 
-    def upload_files(self):
-        if self.transactionfile_uploader.is_valid():
-            if self.transactionfile_uploader.upload():
-                self.file_transfer.archive(self.filename)

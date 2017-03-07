@@ -1,11 +1,16 @@
-import getpass
+import socket
 import os.path
 import paramiko
+import shutil
+from os.path import join
 
 from hurry.filesize import size
+from os import listdir
+
 
 from datetime import datetime
 from django.apps import apps as django_apps
+
 
 from edc_base.utils import get_utcnow
 
@@ -73,15 +78,14 @@ class FileConnector(SSHConnectMixin):
     def archive(self, filename):
         """ Move file from source_folder to archive folder """
         archived = True
-        client = self.connect(LOCALHOST)
-        filename = os.path.join(self.source_folder, filename)
         try:
-            stdin, stdout, stderr = client.exec_command(
-                "cd {} ; mv {} {}".format(
-                    self.source_folder, filename, self.archive_folder))
-        except Exception as e:
+            source_filename = join(self.source_folder, filename)
+            destination_filename = join(self.archive_folder, filename)
+            shutil.move(source_filename, destination_filename)
+        except FileNotFoundError as e:
             archived = False
-            transaction_messages.add_message('error', str(e), network=False)
+            transaction_messages.add_message(
+                'error', 'FileNotFoundError Got {}'.format(str(e)))
         return archived
 
     def create_history(self, filename):
@@ -105,13 +109,7 @@ class FileConnector(SSHConnectMixin):
 
     @property
     def localhost_hostname(self):
-        device = self.connect(LOCALHOST)
-        _, stdout, _ = device.exec_command('hostname')
-        hostname = stdout.read()
-        if isinstance(hostname, bytes):
-            hostname = hostname.decode('utf-8')
-        device.close()
-        return hostname
+        return socket.gethostname()
 
 
 class FileTransfer(object):
@@ -123,16 +121,11 @@ class FileTransfer(object):
 
     @property
     def files(self):
-        client = self.file_connector.connect(LOCALHOST)
-        host = client.open_sftp()
-        files = []
-        if host:
-            files = host.listdir(self.file_connector.source_folder)
-            try:
-                files.remove('.DS_Store')
-            except ValueError:
-                pass
-            host.close()
+        files = listdir(self.file_connector.source_folder)
+        try:
+            files.remove('.DS_Store')
+        except ValueError:
+            pass
         return files
 
     @property

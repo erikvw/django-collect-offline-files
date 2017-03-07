@@ -12,12 +12,16 @@ from edc_base.model.models import BaseUuidModel
 
 class UploadTransactionFile(BaseUuidModel):
 
-    transaction_file = models.FileField(upload_to=settings.MEDIA_ROOT)
+    transaction_file = models.FileField(
+        upload_to=settings.MEDIA_ROOT)
 
     file_name = models.CharField(max_length=50,
                                  null=True,
                                  editable=False,
                                  unique=True)
+
+    tx_pk = models.CharField(max_length=100,
+                             null=True)
 
     file_date = models.DateField(null=True,
                                  editable=False)
@@ -45,36 +49,36 @@ class UploadTransactionFile(BaseUuidModel):
     objects = models.Manager()
 
     def save(self, *args, **kwargs):
-        if not self.id:
-            self.file_name = self.transaction_file.name.replace('\\', '/').split('/')[-1]
-            date_string = self.file_name.split('_')[2].split('.')[0][:8]
-            self.file_date = date(int(date_string[:4]),
-                                  int(date_string[4:6]),
-                                  int(date_string[6:8]))
-            self.identifier = self.file_name.split('_')[1]
+#         if not self.id:
+#             self.file_name = self.transaction_file.name.replace('\\', '/').split('/')[-1]
+#             date_string = self.file_name.split('_')[2].split('.')[0][:8]
+#             self.file_date = date(int(date_string[:4]),
+#                                   int(date_string[4:6]),
+#                                   int(date_string[6:8]))
+#             self.identifier = self.file_name.split('_')[1]
 
-        if self.consume:
-            self.consume_transactions()
+#         if self.consume:
+#             self.consume_transactions()
         super(UploadTransactionFile, self).save(*args, **kwargs)
 
     def consume_transactions(self):
         """Can only upload if there exists an upload from the previous day,
         or a valid skip day exists in its presence.
         """
-        if self.file_already_uploaded():
-            raise TypeError('File covering date of \'{0}\' for \'{1}\' is already'
-                            ' uploaded.'.format(self.file_date, self.identifier))
-
-        if(self.today_within_skip_untill() or self.today_skip_day()):
-            raise TypeError('Cannot upload file for today because it has '
-                            'been declared a skip day for \'{0}\''.format(self.identifier))
-
-        if (not self.previous_day_file_uploaded()
-                and not self.skip_previous_day()
-                and not self.first_upload_or_skip_day()):
-            raise TypeError('Missing Upload file from the previous day for'
-                            ' \'{0}\'. Previous day is not set as a SKIP '
-                            'date.'.format(self.identifier))
+#         if self.file_already_uploaded():
+#             raise TypeError('File covering date of \'{0}\' for \'{1}\' is already'
+#                             ' uploaded.'.format(self.file_date, self.identifier))
+#
+#         if(self.today_within_skip_untill() or self.today_skip_day()):
+#             raise TypeError('Cannot upload file for today because it has '
+#                             'been declared a skip day for \'{0}\''.format(self.identifier))
+#
+#         if (not self.previous_day_file_uploaded()
+#                 and not self.skip_previous_day()
+#                 and not self.first_upload_or_skip_day()):
+#             raise TypeError('Missing Upload file from the previous day for'
+#                             ' \'{0}\'. Previous day is not set as a SKIP '
+#                             'date.'.format(self.identifier))
         index = 0
         self.transaction_file.open()
         producer_list = []

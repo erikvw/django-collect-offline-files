@@ -30,18 +30,22 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
     patterns = ["*.json"]  # TODO add regex for filename
 
     def __init__(self, verbose=None):
-        self.verbose = verbose
+        super(TransactionFileEventHandler, self).__init__(ignore_directories=True)
+        self.verbose = verbose or True
         edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
         self.destination_folder = edc_sync_file_app.destination_folder
         self.archive_folder = edc_sync_file_app.archive_folder
-        self.transaction_file_manager = TransactionFileManager()
+        self.file_manager = TransactionFileManager()
 
     def process(self, event):
         self.output_to_console(
             '{} {} {} Not handled.'.format(timezone.now(), event.event_type, event.src_path))
 
+    def on_modified(self, event):
+        self.process_on_added(event)
+
     def on_created(self, event):
-        self.process_on_added(self, event)
+        self.process_on_added(event)
 
     def output_to_console(self, msg):
         if self.verbose:
@@ -61,7 +65,8 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
     def process_on_added(self, event):
         """Moves file from source_dir to the destination_dir as
         determined by :func:`folder_handler.select`."""
-        self.transaction_file_manager.upload_files()
+        self.file_manager.new_uploaded_file(event.src_path)
+        self.file_manager.uploader.process_queued_files()
         self.output_to_console('{} {} {}'.format(timezone.now(), event.event_type, event.src_path))
 
     def statinfo(self, path, filename):
