@@ -131,18 +131,15 @@ class FileTransfer(object):
     @property
     def files_dict(self):
         file_attrs = []
-        client = self.file_connector.connect(LOCALHOST)
-        host = client.open_sftp()
-        if host:
-            for filename in self.files:
-                source_filename = os.path.join(
-                    self.file_connector.source_folder, filename)
-                file_attr = host.lstat(source_filename)
-                data = dict({
-                    'filename': filename,
-                    'filesize': size(file_attr.st_size),
-                })
-                file_attrs.append(data)
+        for filename in self.files:
+            source_filename = os.path.join(
+                self.file_connector.source_folder, filename)
+            file_attr = os.stat(source_filename)
+            data = dict({
+                'filename': filename,
+                'filesize': size(file_attr.st_size),
+            })
+            file_attrs.append(data)
         return file_attrs
 
     def copy_files(self, filename):

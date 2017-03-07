@@ -1,10 +1,11 @@
 from django.db import models
 from django.utils import timezone
 
-from edc_base.model.models import BaseUuidModel
+from edc_base.model_mixins import BaseUuidModel
 
 
 class HistoryManager(models.Manager):
+
     def get_by_natural_key(self, filename, sent_datetime):
         return self.get(filename=filename, sent_datetime=sent_datetime)
 

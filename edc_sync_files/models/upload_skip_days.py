@@ -1,21 +1,23 @@
-from django.utils import timezone
+from datetime import timedelta
 
 from django.db import models
+from django.utils import timezone
 
-from edc_base.model.models import BaseUuidModel
+from edc_base.model_mixins import BaseUuidModel
 
 from .upload_transaction_file import UploadTransactionFile
 
 
 class UploadSkipDays(BaseUuidModel):
 
-    skip_date = models.DateField(default=timezone.now())
+    skip_date = models.DateField(default=timezone.now)
 
-    skip_until_date = models.DateField(null=True,
-                                       blank=True,
-                                       help_text=(
-                                           'System will assume all days are '
-                                           'skip days until this date.'))
+    skip_until_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text=(
+            'System will assume all days are '
+            'skip days until this date.'))
 
     identifier = models.CharField(max_length=50)
 
