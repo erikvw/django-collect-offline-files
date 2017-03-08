@@ -6,6 +6,8 @@ from django.core.files import File
 from django.db import transaction
 
 from edc_base.utils import get_utcnow
+from edc_sync.models import IncomingTransaction
+from edc_sync.consumer import Consumer
 
 from ..models import UploadTransactionFile
 from .transaction_messages import transaction_messages
@@ -18,10 +20,12 @@ class TransactionFile:
         self.path = path
         self.archived = False
         self._valid = False
-        self.already_uploaded = False
         self.is_uploaded = False
         self.previous_file_available = False
         self.hostname = hostname
+        self.consumed = 0
+        self.not_consumed = 0
+        self.total = 0
 
     def deserialize_json_file(self, file_pointer):
         try:
@@ -32,6 +36,28 @@ class TransactionFile:
         except:
             return None
         return decoded
+
+    def load_to_server(self):
+        """ Converts outgoing transaction into incoming transactions """
+        for outgoing in self.file_transactions:
+            if not IncomingTransaction.objects.filter(pk=outgoing.pk).exists():
+                if outgoing._meta.get_fields():
+                    self.consumed += 1
+                    data = outgoing.__dict__
+                    del data['using']
+                    del data['is_consumed_middleman']
+                    del data['is_consumed_server']
+                    del data['_state']
+                    IncomingTransaction.objects.create(**data)
+            else:
+                self.not_consumed += 1
+        self.total = self.consumed + self.not_consumed
+
+    def apply_transactions(self):
+        """ Apply incoming transactions for the currently uploaded file """
+        file_transactions = [
+            file_transaction.tx_pk for file_transaction in self.file_transactions]
+        Consumer(transactions=file_transactions).consume()
 
     @property
     def file_transactions(self):
@@ -56,50 +82,67 @@ class TransactionFile:
     @property
     def first_time_upload(self):
         return (
-            self.transaction_obj.previous_tx_pk == self.transaction_obj.current_tx_pk)
+            self.transaction_obj.batch_seq == self.transaction_obj.batch_id)
 
     @property
-    def valid(self):
+    def already_uploaded(self):
+        already_uploaded = False
         try:
             UploadTransactionFile.objects.get(
                 file_name=self.filename)
-            self.already_uploaded = True
+            already_uploaded = True
         except UploadTransactionFile.DoesNotExist:
-            try:
-                self.already_uploaded = False
-                UploadTransactionFile.objects.get(
-                    tx_pk=self.transaction_obj.previous_tx_pk)
-                self.previous_file_available = True
-            except UploadTransactionFile.DoesNotExist:
-                self.previous_file_available = False
+            already_uploaded = False
+        return already_uploaded
+
+    @property
+    def valid(self):
+        """ check order of transaction file batch seq. """
+        try:
+            UploadTransactionFile.objects.get(
+                tx_pk=self.transaction_obj.batch_seq)
+            self.previous_file_available = True
+        except UploadTransactionFile.DoesNotExist:
+            self.previous_file_available = False
         self._valid = True if (
-            self.previous_file_available and not self.already_uploaded) or self.first_time_upload else False
+            self.previous_file_available and not self.already_uploaded) or (
+                self.first_time_upload and not self.already_uploaded) else False
         return self._valid
 
     def upload(self):
+        """ Create a upload transaction file in the server. """
         is_uploaded = False
         file_name = self.file.name.replace('\\', '/').split('/')[-1]
 #         date_string = self.filename.split('_')[2]  # .split('.')[0][:8]
 #         print(file_name, date_string)
         if self.valid:
+            # Attempt to create incoming transactions with transaction file transactions
+            self.load_to_server()
+            # Finally create an upload transaction file record.
             UploadTransactionFile.objects.create(
                 transaction_file=self.file,
                 consume=True,
-                tx_pk=self.transaction_obj.current_tx_pk,
-                file_name=file_name
+                tx_pk=self.transaction_obj.batch_id,
+                file_name=file_name,
+                consumed=self.consumed,
+                total=self.total,
+                not_consumed=self.not_consumed
             )
             is_uploaded = True
         return is_uploaded
 
     def export_to_json(
-            self, transactions=None, hostname=None, previous_tx_pk=None, current_tx_pk=None, using=None):
+            self, transactions=None, hostname=None, batch_seq=None, batch_id=None, using=None):
+        """ export outgoing transactions to a json file """
         filename = '{}_{}.json'.format(self.hostname, str(get_utcnow().strftime("%Y%m%d%H%M")))
+        self.filename = filename
         self.path = os.path.join(self.path, filename) or os.path.join('/tmp', filename)
         export_to_json = False
         exported = 0
         if transactions:
             transactions.update(
-                current_tx_pk=current_tx_pk, previous_tx_pk=previous_tx_pk)
+                batch_seq=batch_seq,
+                batch_id=batch_id)
             try:
                 with open(self.path, 'w') as f:
                     json_txt = serializers.serialize(
@@ -109,6 +152,7 @@ class TransactionFile:
                     f.write(json_txt)
                     exported = transactions.count()
                     with transaction.atomic():
+                        print("Updating")
                         transactions.update(
                             is_consumed_server=True,
                             consumer='/'.join(self.path.split('/')[:-1]),
