@@ -1,18 +1,18 @@
 from edc_sync.models import OutgoingTransaction
 
 
-def transaction_file_identifier(using='default'):
+def batch_identifier(using='default'):
 
     first_unconsumed_outgoing = OutgoingTransaction.objects.using(using).filter(
         is_consumed_server=False).first()
-    file_identifier = first_unconsumed_outgoing.tx_pk
+    batch_id = first_unconsumed_outgoing.tx_pk
     last_consumed_outgoing = OutgoingTransaction.objects.using(using).filter(
         is_consumed_server=True).last()
 
-    previous_file_identifier = None
+    batch_seq = None
     if not last_consumed_outgoing:
-        previous_file_identifier = file_identifier
+        batch_seq = batch_id
     else:
-        previous_file_identifier = last_consumed_outgoing.file_identifier
+        batch_seq = last_consumed_outgoing.batch_id
 
-    return (previous_file_identifier, file_identifier)
+    return batch_seq, batch_id
