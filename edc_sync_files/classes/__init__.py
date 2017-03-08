@@ -1,6 +1,5 @@
 from .transaction_file_event_handler import TransactionFileEventHandler
 from .transaction_file_uploader import TransactionFileUploader
-from .transaction_file import TransactionFile
 from .transaction_file_manager import TransactionFileManager
 from .file_transfer import FileTransfer
 from .transaction_dumps import TransactionDumps

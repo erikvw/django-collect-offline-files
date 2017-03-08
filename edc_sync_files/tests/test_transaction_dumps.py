@@ -8,14 +8,15 @@ from edc_example.models import TestModel
 from edc_sync.models import OutgoingTransaction
 
 from edc_sync_files.classes import TransactionDumps
+from edc_sync_files.models import History
 
 
+@tag('TestTransactionDumps')
 class TestTransactionDumps(TestCase):
 
     def setUp(self):
         self.fake = Faker()
 
-    @tag('test_export_to_json_file')
     def test_export_to_json_file(self):
         # Create transactions
         TestModel.objects.using('client').create(f1=self.fake.name())
@@ -26,12 +27,13 @@ class TestTransactionDumps(TestCase):
         tx_dumps = TransactionDumps(path, using='client', hostname="010")
 
         outgoing_transactions = OutgoingTransaction.objects.using('client').filter(
-            is_consumed_server=False)
+            is_consumed_server=True)
         self.assertGreater(outgoing_transactions.count(), 0)
 
-        is_exported, _ = tx_dumps.dump_to_json()
-        self.assertTrue(is_exported)
+        self.assertTrue(tx_dumps.is_exported_to_json)
 
         outgoing_transactions = OutgoingTransaction.objects.using('client').filter(
             is_consumed_server=True)
         self.assertGreater(outgoing_transactions.count(), 0)
+
+        self.assertEqual(History.objects.all().count(), 1)

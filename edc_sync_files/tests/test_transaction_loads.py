@@ -1,18 +1,16 @@
 import os
 
+from faker import Faker
+
 from django.test.testcases import TestCase
 from django.test.utils import tag
 from django.conf import settings
-from faker import Faker
+
 from edc_example.models import TestModel
 from edc_sync_files.classes import TransactionLoads, TransactionDumps
-from edc_sync.models import OutgoingTransaction, IncomingTransaction
-
-from ..classes.batch_identifier import batch_identifier
-from ..models import UploadTransactionFile
 
 
-@tag('TestUploadTransactions')
+@tag('TestTransactionLoads')
 class TestTransactionLoads(TestCase):
 
     def setUp(self):
@@ -27,8 +25,7 @@ class TestTransactionLoads(TestCase):
         # Dump transaction
         path = os.path.join(settings.MEDIA_ROOT, "transactions", "outgoing")
         tx_dumps = TransactionDumps(path, using='client', hostname="010")
-        is_exported, _ = tx_dumps.dump_to_json()
-        self.assertTrue(is_exported)
+        self.assertTrue(tx_dumps.is_exported_to_json)
 
         transaction_file_path = os.path.join(tx_dumps.path, tx_dumps.filename)
         new_file_to_upload = TransactionLoads(path=transaction_file_path)
@@ -42,8 +39,7 @@ class TestTransactionLoads(TestCase):
         # Dump transaction
         path = os.path.join(settings.MEDIA_ROOT, "transactions", "outgoing")
         tx_dumps = TransactionDumps(path, using='client', hostname="010")
-        is_exported, _ = tx_dumps.dump_to_json()
-        self.assertTrue(is_exported)
+        self.assertTrue(tx_dumps.is_exported_to_json)
 
         transaction_file_path = os.path.join(tx_dumps.path, tx_dumps.filename)
         new_file_to_upload = TransactionLoads(path=transaction_file_path)
@@ -63,8 +59,7 @@ class TestTransactionLoads(TestCase):
         # Dump transaction
         path = os.path.join(settings.MEDIA_ROOT, "transactions", "outgoing")
         tx_dumps = TransactionDumps(path, using='client', hostname="010")
-        is_exported, _ = tx_dumps.dump_to_json()
-        self.assertTrue(is_exported)
+        self.assertTrue(tx_dumps.is_exported_to_json)
 
         transaction_file_path = os.path.join(tx_dumps.path, tx_dumps.filename)
         new_file_to_upload = TransactionLoads(path=transaction_file_path)
@@ -78,8 +73,7 @@ class TestTransactionLoads(TestCase):
         # Dump transaction
         path = os.path.join(settings.MEDIA_ROOT, "transactions", "outgoing")
         tx_dumps = TransactionDumps(path, using='client', hostname="010")
-        is_exported, _ = tx_dumps.dump_to_json()
-        self.assertTrue(is_exported)
+        self.assertTrue(tx_dumps.is_exported_to_json)
 
         transaction_file_path = os.path.join(tx_dumps.path, tx_dumps.filename)
         new_file_to_upload = TransactionLoads(path=transaction_file_path)

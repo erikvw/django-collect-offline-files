@@ -1,4 +1,5 @@
 import os
+import socket
 
 from django.core import serializers
 from django.db import transaction
@@ -7,6 +8,7 @@ from edc_base.utils import get_utcnow
 from edc_sync.models import OutgoingTransaction
 
 from .transaction_messages import transaction_messages
+from ..models import History
 
 
 class TransactionDumps:
@@ -18,27 +20,45 @@ class TransactionDumps:
         self.filename = '{}_{}.json'.format(
             self.hostname, str(get_utcnow().strftime("%Y%m%d%H%M")))
 
-    def dump_to_json(self):
-        """ export outgoing transactions to a json file """
-        export_to_json = False
-        exported = 0
+        self.batch_id = None
+        self.batch_seq = None
 
+        self.is_exported_to_json = self.dump_to_json()
+
+    def update_batch_info(self):
         first_unconsumed_outgoing = OutgoingTransaction.objects.using(self.using).filter(
             is_consumed_server=False).first()
-        batch_id = first_unconsumed_outgoing.tx_pk
+        self.batch_id = first_unconsumed_outgoing.tx_pk
 
         last_consumed_outgoing = OutgoingTransaction.objects.using(self.using).filter(
             is_consumed_server=True).last()
-        batch_seq = None
+        self.batch_seq = None
         if not last_consumed_outgoing:
-            batch_seq = batch_id
+            self.batch_seq = self.batch_id
         else:
-            batch_seq = last_consumed_outgoing.batch_id
-
+            self.batch_seq = last_consumed_outgoing.batch_id
         OutgoingTransaction.objects.using(self.using).filter(
             is_consumed_server=False).update(
-                batch_seq=batch_seq,
-                batch_id=batch_id)
+                batch_seq=self.batch_seq,
+                batch_id=self.batch_id)
+
+    def update_history(self, filesize=None, remote_path=None):
+        history = History.objects.create(
+            filename=self.filename,
+            filesize=filesize,
+            hostname=socket.gethostname(),
+            remote_path=remote_path,
+            batch_id=self.batch_id,
+            filetimestamp=get_utcnow(),
+            sent=False)
+        history.save()
+
+    def dump_to_json(self):
+        """Export outgoing transactions to a json file.
+        """
+        export_to_json = False
+        exported = 0
+        self.update_batch_info()
 
         outgoing_transactions = OutgoingTransaction.objects.using(self.using).filter(
             is_consumed_server=False)
@@ -68,8 +88,10 @@ class TransactionDumps:
                 'error', message, network=False, permission=False)
             export_to_json = False
         except TypeError:
-            message = 'No transaction to dump.'
+            message = 'No pending transactions.'
             transaction_messages.add_message(
                 'error', message, network=False, permission=False)
             export_to_json = False
+        if export_to_json:
+            self.update_history()
         return export_to_json, exported
