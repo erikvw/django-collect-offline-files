@@ -1,3 +1,4 @@
+import re
 import time
 import os
 from os.path import join
@@ -65,9 +66,11 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
     def process_on_added(self, event):
         """Moves file from source_dir to the destination_dir as
         determined by :func:`folder_handler.select`."""
-        self.file_manager.new_uploaded_file(event.src_path)
-        self.file_manager.uploader.process_queued_files()
-        self.output_to_console('{} {} {}'.format(timezone.now(), event.event_type, event.src_path))
+        filename = event.src_path.split("/")[-1]
+        if len(re.findall(r'\_', filename)) == 1:
+            self.file_manager.new_uploaded_file(event.src_path)
+            self.file_manager.uploader.process_queued_files()
+            self.output_to_console('{} {} {}'.format(timezone.now(), event.event_type, event.src_path))
 
     def statinfo(self, path, filename):
         statinfo = os.stat(join(self.destination_folder, filename))

@@ -45,4 +45,3 @@ class TransactionFileManager(object):
 
     def is_server_available(self):
         return self.file_transfer.file_connector.connected()
-

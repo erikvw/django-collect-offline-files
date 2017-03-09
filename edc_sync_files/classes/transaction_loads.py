@@ -1,5 +1,3 @@
-import os
-
 from django.core import serializers
 from django.core.files import File
 
@@ -16,14 +14,16 @@ class TransactionLoads:
         self.path = path
         self.archived = False
         self._valid = False
-        self.is_uploaded = False
         self.previous_file_available = False
         self.consumed = 0
+        self.is_consumed = False
         self.not_consumed = 0
         self.total = 0
+        self.is_uploaded = False
 
-    def load_incoming_transactions(self):
+    def update_incoming_transactions(self):
         """ Converts outgoing transaction into incoming transactions """
+        has_created = False
         for outgoing in self.loaded_transactions:
             if not IncomingTransaction.objects.filter(pk=outgoing.pk).exists():
                 if outgoing._meta.get_fields():
@@ -36,7 +36,10 @@ class TransactionLoads:
                     IncomingTransaction.objects.create(**data)
             else:
                 self.not_consumed += 1
+        if self.consumed > 0:
+            has_created = True
         self.total = self.consumed + self.not_consumed
+        return has_created
 
     def deserialize_json_file(self, file_pointer):
         try:
@@ -102,13 +105,12 @@ class TransactionLoads:
 
     def upload_file(self):
         """ Create a upload transaction file in the server. """
-        is_uploaded = False
         file = File(open(self.path))
         file_name = file.name.replace('\\', '/').split('/')[-1]
 #         date_string = self.filename.split('_')[2]  # .split('.')[0][:8]
 #         print(file_name, date_string)
         if self.valid:
-            self.load_incoming_transactions()
+            self.update_incoming_transactions()
             UploadTransactionFile.objects.create(
                 transaction_file=file,
                 consume=True,
@@ -118,5 +120,5 @@ class TransactionLoads:
                 total=self.total,
                 not_consumed=self.not_consumed
             )
-            is_uploaded = True
-        return is_uploaded
+            self.is_uploaded = True
+        return self.is_uploaded

@@ -1,6 +1,8 @@
+import os
 import sys
 
 from django.apps import AppConfig as DjangoAppConfig
+from django.conf import settings
 from django.core.management.color import color_style
 
 
@@ -14,9 +16,12 @@ class AppConfig(DjangoAppConfig):
     user = None
     host = None
     password = None
-    source_folder = None
-    destination_folder = None
-    archive_folder = None
+    source_folder = os.path.join(
+        settings.MEDIA_ROOT, 'transactions', 'outgoing')
+    destination_folder = os.path.join(
+        settings.MEDIA_ROOT, 'transactions', 'incoming')
+    archive_folder = os.path.join(
+        settings.MEDIA_ROOT, 'transactions', 'archive')
     role = None
 
     def ready(self):

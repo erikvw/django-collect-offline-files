@@ -5,7 +5,7 @@ from os.path import join
 
 from django.apps import apps as django_apps
 
-from .transaction_file import TransactionFile
+from .transaction_loads import TransactionLoads
 
 
 class TransactionFileUploader(object):
@@ -17,7 +17,7 @@ class TransactionFileUploader(object):
         self.edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
 
     def add_new_uploaded_file(self, path):
-        self.queued_files.put(TransactionFile(path=path))
+        self.queued_files.put(TransactionLoads(path=path))
 
     @property
     def processed_files(self):
@@ -26,7 +26,9 @@ class TransactionFileUploader(object):
     def process_queued_files(self):
         while not self.queued_files.empty():
             transation_file = self.queued_files.get()
-            status = transation_file.upload()
+            status = transation_file.upload_file()
+            if status:
+                transation_file.apply_transactions()
             transation_file.archived = status
             self._processed_files.update({
                 transation_file.filename: transation_file
@@ -38,3 +40,4 @@ class TransactionFileUploader(object):
                 self.edc_sync_file_app.destination_folder, processed_file.filename)
             if processed_file.is_uploaded:
                 shutil.move(source_filename, destination_filename)  # archive the file
+        return not self.queued_files.empty()
