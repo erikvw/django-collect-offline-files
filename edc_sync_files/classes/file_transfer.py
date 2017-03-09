@@ -1,22 +1,18 @@
 import socket
 import os.path
-import paramiko
 import shutil
 from os.path import join
 
 from hurry.filesize import size
 from os import listdir
 
-
-from datetime import datetime
 from django.apps import apps as django_apps
-
 
 from edc_base.utils import get_utcnow
 
 from .transaction_messages import transaction_messages
 from ..models import History
-from ..constants import REMOTE, LOCALHOST
+from ..constants import REMOTE
 from .mixins import SSHConnectMixin
 
 
@@ -57,22 +53,41 @@ class FileConnector(SSHConnectMixin):
             current filesystem or to remote file system."""
         client = self.connect(REMOTE)
         host_sftp = client.open_sftp()
-        destination_file = os.path.join(self.destination_folder, filename)
+        destination_file_origin = os.path.join(self.destination_folder, filename)
+        destination_file_tmp = '{}.{}'.format(
+            os.path.join(self.destination_folder, filename), 'tmp')
         sent = True
+        source_filename = os.path.join(self.source_folder, filename)
         try:
             sent_file = host_sftp.put(
-                os.path.join(self.source_folder, filename),
-                destination_file, callback=self.progress, confirm=True)
+                source_filename,
+                destination_file_tmp,
+                callback=self.progress, confirm=True)
+            transaction_messages.add_message(
+                'success', 'File {} sent to the'
+                ' server successfully.'.format(source_filename))
+            host_sftp.rename(
+                destination_file_tmp,
+                destination_file_origin)
+            host_sftp.utime(destination_file_origin, None)  # Activate on modified for watchdog to detect a file.
+            transaction_messages.add_message(
+                'success', 'Renamed {} to {} successfully in the server.'.format
+                (destination_file_tmp, source_filename))
         except IOError as e:
             sent = False
             transaction_messages.add_message(
-                'error', 'IOError Got {} . Sending {}'.format(e, destination_file))
+                'error', 'IOError Got {} . Sending {}'.format(e, destination_file_origin))
             return False
-        received_file = host_sftp.lstat(destination_file)
+        received_file = host_sftp.lstat(destination_file_origin)
+        if received_file.st_size == sent_file.st_size:
+            pass
         print(received_file.st_size, "received file", sent_file.st_size, "sent file")
         #  create a record on successful transfer
         if sent:
-            self.create_history(filename)
+            print(History.objects.all(), 'History records', 'filename:', filename)
+            self.update_history(filename, sent=sent)
+            transaction_messages.add_message(
+                'success', 'History record created for {}.'.format(source_filename))
         return sent
 
     def archive(self, filename):
@@ -82,19 +97,19 @@ class FileConnector(SSHConnectMixin):
             source_filename = join(self.source_folder, filename)
             destination_filename = join(self.archive_folder, filename)
             shutil.move(source_filename, destination_filename)
+            transaction_messages.add_message(
+                'success', 'Archived successfully {}.'.format(source_filename))
         except FileNotFoundError as e:
             archived = False
             transaction_messages.add_message(
                 'error', 'FileNotFoundError Got {}'.format(str(e)))
         return archived
 
-    def create_history(self, filename):
-        history = History.objects.create(
-            filename=filename,
-            acknowledged=True,
-            ack_datetime=datetime.today(),
-            hostname=self.hostname
-        )
+    def update_history(self, filename, sent=False):
+        history = History.objects.get(filename=filename)
+        history.sent = sent
+        history.sent_datetime = get_utcnow()
+        history.save()
         return history
 
     @property
@@ -142,12 +157,21 @@ class FileTransfer(object):
             file_attrs.append(data)
         return file_attrs
 
-    def copy_files(self, filename):
+    def copy_files(self, filename=None):
         """ Copies the files from source folder to destination folder. """
         copied = False
-        for f in self.files_dict:
-            if f.get('filename') == filename:
-                copied = self.file_connector.copy(f.get('filename'))
+        if filename:  # Use by client by machine
+            for f in self.files_dict:
+                if f.get('filename') == filename:
+                    copied = self.file_connector.copy(f.get('filename'))
+        else:  # Use by community server to send files to community server
+            for f in self.files_dict:
+                filename = f.get('filename')
+                copied = self.file_connector.copy(filename)
+                if copied:
+                    self.archive(filename)
+                    # reset
+                    copied = False
         return copied
 
     def archive(self, filename):
