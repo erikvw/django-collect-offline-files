@@ -10,7 +10,7 @@ from django.apps import apps as django_apps
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 
-from .transaction_file_manager import TransactionFileManager
+from .transaction_file_queue import TransactionFileQueue
 
 
 class EventHandlerError(Exception):
@@ -36,7 +36,7 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
         self.destination_folder = edc_sync_file_app.destination_folder
         self.archive_folder = edc_sync_file_app.archive_folder
-        self.file_manager = TransactionFileManager()
+        self.file_queue = TransactionFileQueue()
 
     def process(self, event):
         self.output_to_console(
@@ -68,8 +68,8 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         determined by :func:`folder_handler.select`."""
         filename = event.src_path.split("/")[-1]
         if len(re.findall(r'\_', filename)) == 1:
-            self.file_manager.new_uploaded_file(event.src_path)
-            self.file_manager.uploader.process_queued_files()
+            self.file_queue.add_new_uploaded_file(event.src_path)
+            self.file_queue.process_queued_files()
             self.output_to_console('{} {} {}'.format(timezone.now(), event.event_type, event.src_path))
 
     def statinfo(self, path, filename):

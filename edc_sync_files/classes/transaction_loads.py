@@ -8,6 +8,9 @@ from ..models import UploadTransactionFile
 
 
 class TransactionLoads:
+    """Uploads transaction file in the server, creates incoming transaction and
+       play incoming transaction.
+    """
 
     def __init__(self, path):
         self.filename = str(path).split('/')[-1]
@@ -22,7 +25,8 @@ class TransactionLoads:
         self.is_uploaded = False
 
     def update_incoming_transactions(self):
-        """ Converts outgoing transaction into incoming transactions """
+        """ Converts outgoing transaction into incoming transactions.
+        """
         has_created = False
         for outgoing in self.loaded_transactions:
             if not IncomingTransaction.objects.filter(pk=outgoing.pk).exists():
@@ -54,6 +58,8 @@ class TransactionLoads:
 
     @property
     def loaded_transactions(self):
+        """Deserializes transactions file objects.
+        """
         transaction_objs = []
         for _, deserialized_object in enumerate(
                 self.deserialize_json_file(File(open(self.path)))):
@@ -61,7 +67,8 @@ class TransactionLoads:
         return transaction_objs
 
     def apply_transactions(self):
-        """ Apply incoming transactions for the currently uploaded file """
+        """ Apply incoming transactions for the currently uploaded file.
+        """
         file_transactions = [
             str(file_transaction.tx_pk) for file_transaction in self.loaded_transactions]
         consume = Consumer(transactions=file_transactions, check_hostname=False).consume()
@@ -69,6 +76,8 @@ class TransactionLoads:
 
     @property
     def transaction_obj(self):
+        """Get the first transaction in the loaded json file.
+        """
         transaction = None
         try:
             transaction = self.loaded_transactions[0]
@@ -78,6 +87,8 @@ class TransactionLoads:
 
     @property
     def already_uploaded(self):
+        """Check whether the file is already uploaded before uploading it.
+        """
         already_uploaded = False
         try:
             UploadTransactionFile.objects.get(
@@ -89,7 +100,8 @@ class TransactionLoads:
 
     @property
     def valid(self):
-        """ check order of transaction file batch seq. """
+        """ Check order of transaction file batch seq.
+        """
         try:
             UploadTransactionFile.objects.get(
                 tx_pk=self.transaction_obj.batch_seq)
@@ -104,7 +116,8 @@ class TransactionLoads:
         return self._valid
 
     def upload_file(self):
-        """ Create a upload transaction file in the server. """
+        """ Create a upload transaction file in the server.
+        """
         file = File(open(self.path))
         file_name = file.name.replace('\\', '/').split('/')[-1]
 #         date_string = self.filename.split('_')[2]  # .split('.')[0][:8]

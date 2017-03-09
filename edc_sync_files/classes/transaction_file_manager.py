@@ -2,19 +2,15 @@ from edc_base.utils import get_utcnow
 from django.apps import apps as django_apps
 
 from .file_transfer import FileTransfer
-from .transaction_file_uploader import TransactionFileUploader
 
 
 class TransactionFileManager(object):
-    """Send transaction files to the remote host.
-      1. Send transactions daily report.
-      2. Upload the transaction files in the central server.
-      3. Play transactions automatically in the server."""
+    """Send files to the community server or central server.
+    """
 
     def __init__(self, file_transfer=None, filename=None):
         self.file_transfer = file_transfer or FileTransfer()
         self.filename = filename
-        self.uploader = TransactionFileUploader()
         self.approval_code = None
 
     def send_files(self):
@@ -39,9 +35,6 @@ class TransactionFileManager(object):
         for filename in files:
             self.file_transfer.approve_sent_file(filename, approval_code)
         return True
-
-    def new_uploaded_file(self, tx_file):
-        self.uploader.add_new_uploaded_file(tx_file)
 
     def is_server_available(self):
         return self.file_transfer.file_connector.connected()

@@ -8,6 +8,10 @@ SUCCESS = 'success'
 
 class TransactionMessages:
 
+    """Keeps track of all messages(error, success).
+       messages are displayed in the view if any error occured.
+    """
+
     def __init__(self):
         self._messages = []
 

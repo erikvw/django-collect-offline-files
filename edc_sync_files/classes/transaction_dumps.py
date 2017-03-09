@@ -14,6 +14,12 @@ from ..models import History
 
 class TransactionDumps:
 
+    """Dumps OutgoingTransaction(is_consumed_server=False) to into
+       transaction json file.
+       1. TransactionDumps(path=path_to_dump_transactions_to)
+       1.1 Create history record in the server.
+    """
+
     def __init__(self, path, hostname=None, using=None):
         self.path = path
         self.hostname = hostname or django_apps.get_app_config('edc_device').device_id
@@ -27,6 +33,8 @@ class TransactionDumps:
         self.is_exported_to_json = self.dump_to_json()
 
     def update_batch_info(self):
+        """Update the transaction batch information.
+        """
         update_batch_info = False
         try:
             first_unconsumed_outgoing = OutgoingTransaction.objects.using(self.using).filter(
@@ -53,6 +61,8 @@ class TransactionDumps:
         return update_batch_info
 
     def update_history(self, filesize=None, remote_path=None):
+        """Creates history record when dumping.
+        """
         history = History.objects.create(
             filename=self.filename,
             filesize=filesize,

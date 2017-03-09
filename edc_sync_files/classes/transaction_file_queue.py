@@ -8,7 +8,13 @@ from django.apps import apps as django_apps
 from .transaction_loads import TransactionLoads
 
 
-class TransactionFileUploader(object):
+class TransactionFileQueue(object):
+
+    """ Queue uploaded transaction file.
+        1. queue = TransactionFileQueue()
+        2. queue.add_new_uploaded_file(...) added by event handler possibly.
+        3. queue.process_queued_files()
+    """
 
     def __init__(self, transation_file=None):
         self.transation_file = transation_file
