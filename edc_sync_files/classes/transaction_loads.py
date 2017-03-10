@@ -138,7 +138,7 @@ class TransactionLoads:
                 destination_filename = join(
                     edc_sync_file_app.archive_folder, self.filename)
                 source_filename = join(
-                    self.edc_sync_file_app.destination_folder, self.filename)
+                    edc_sync_file_app.destination_folder, self.filename)
                 shutil.move(source_filename, destination_filename)  # archive the file
             except FileNotFoundError as e:
                 transaction_messages.add_message(
