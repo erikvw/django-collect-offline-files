@@ -85,7 +85,6 @@ class FileConnector(SSHConnectMixin):
         print(received_file.st_size, "received file", sent_file.st_size, "sent file")
         #  create a record on successful transfer
         if sent:
-            #print(History.objects.all(), 'History records', 'filename:', filename)
             self.update_history(filename, sent=sent)
             transaction_messages.add_message(
                 'success', 'History record created for {}.'.format(source_filename))
