@@ -1,9 +1,4 @@
-NETWORK = 'network'
-PERMISSION = 'permission'
-OTHER = 'other'
-ERROR = 'error'
-ACTION = 'action'
-SUCCESS = 'success'
+from ..constants import ERROR, NETWORK, TRANSACTION, PERMISSION, ACTION, SUCCESS, OTHER
 
 
 class TransactionMessages:
@@ -15,11 +10,13 @@ class TransactionMessages:
     def __init__(self):
         self._messages = []
 
-    def add_message(self, message_type, message, network=False, permission=False):
+    def add_message(self, message_type, message, network=False, permission=False, transaction=None):
         print(message_type, " ", message)
         if message_type == ERROR:
             if network:
                 self._messages.append({ERROR: {NETWORK: message}})
+            elif transaction:
+                self._messages.append({TRANSACTION: {PERMISSION: message}})
             else:
                 self._messages.append({ERROR: {PERMISSION: message}})
         else:
@@ -35,5 +32,8 @@ class TransactionMessages:
 
     def clear(self):
         self._messages = []
+
+    def last_error_message(self):
+        return self.messages[-1].get(ERROR) if len(self._messages) else ''
 
 transaction_messages = TransactionMessages()

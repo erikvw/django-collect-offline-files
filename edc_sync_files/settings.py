@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/1.9/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
-
+import sys
 import os
 
 from unipath import Path
@@ -41,8 +41,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'edc_base.apps.AppConfig',
-    'edc_device',
+    'edc_device.apps.AppConfig',
     'edc_sync_files.apps.AppConfig',
+    'edc_sync.apps.AppConfig',
+    'edc_example.apps.AppConfig',
+    'edc_identifier.apps.AppConfig',
+    'edc_protocol.apps.AppConfig',
+    'django_crypto_fields.apps.AppConfig',
+    'edc_appointment.apps.AppConfig',
+    'rest_framework',
+    'rest_framework.authtoken',
     # third party
     'django_celery_beat',
     'django_celery_results',
@@ -123,6 +131,30 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+if 'test' in sys.argv:
+    # Ignore running migrations on unit tests -- speeds up tests.
+    MIGRATION_MODULES = {
+        "call_manager": None,
+        "edc_appointment": None,
+        "edc_code_lists": None,
+        "edc_configuration": None,
+        "edc_consent": None,
+        "edc_content_type_map": None,
+        "edc_data_manager": None,
+        "edc_death_report": None,
+        "edc_death_report": None,
+        "edc_identifier": None,
+        "edc_metadata": None,
+        "edc_registration": None,
+        "edc_sync": None,
+        "edc_sync_files": None,
+        "edc_visit_schedule": None,
+        "edc_visit_tracking": None,
+        "edc_lab": None,
+        "ba_namotswe": None,
+        'django_crypto_fields': None,
+    }
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.9/topics/i18n/
@@ -165,3 +197,4 @@ DEVICE_ID = '15'
 SERVER_DEVICE_ID_LIST = ['99']
 
 APP_LABEL = 'edc_sync_files'
+COMMUNITY = ''

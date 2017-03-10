@@ -15,8 +15,9 @@ class UploadTransactionFile(BaseUuidModel):
         editable=False,
         unique=True)
 
-    tx_pk = models.CharField(max_length=100,
-                             null=True)
+    batch_id = models.CharField(
+        max_length=100,
+        null=True)
 
     file_date = models.DateField(null=True,
                                  editable=False)
@@ -25,7 +26,7 @@ class UploadTransactionFile(BaseUuidModel):
         max_length=50,
         null=True)
 
-    consume = models.BooleanField(default=True)
+    consume = models.BooleanField(default=False)
 
     total = models.IntegerField(
         editable=False,
@@ -45,6 +46,13 @@ class UploadTransactionFile(BaseUuidModel):
         null=True,
         editable=False,
         help_text='List of producers detected from the file.')
+
+    is_played = models.BooleanField(default=False)
+
+    comment = models.CharField(
+        max_length=250,
+        null=True,
+        blank=True)
 
     objects = models.Manager()
 

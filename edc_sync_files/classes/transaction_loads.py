@@ -27,7 +27,10 @@ class TransactionLoads:
         self.is_consumed = False
         self.not_consumed = 0
         self.total = 0
+        self.ignored = 0
         self.is_uploaded = False
+        self.is_played = False
+        self.upload_transaction_file = None
 
     def update_incoming_transactions(self):
         """ Converts outgoing transaction into incoming transactions.
@@ -47,6 +50,7 @@ class TransactionLoads:
                 self.not_consumed += 1
         if self.consumed > 0:
             has_created = True
+            self.consumed = True
         self.total = self.consumed + self.not_consumed
         return has_created
 
@@ -79,8 +83,11 @@ class TransactionLoads:
         """
         file_transactions = [
             str(file_transaction.tx_pk) for file_transaction in self.loaded_transactions]
-        consume = Consumer(transactions=file_transactions, check_hostname=False).consume()
-        return consume
+        is_played = Consumer(transactions=file_transactions, check_hostname=False).consume()
+        self.upload_transaction_file.is_played = is_played
+        self.upload_transaction_file.comment = transaction_messages.last_error_message()
+        self.upload_transaction_file.save()
+        return is_played
 
     @property
     def transaction_obj(self):
@@ -113,7 +120,7 @@ class TransactionLoads:
         """
         try:
             UploadTransactionFile.objects.get(
-                tx_pk=self.transaction_obj.batch_seq)
+                batch_id=self.transaction_obj.batch_seq)
             self.previous_file_available = True
         except UploadTransactionFile.DoesNotExist:
             self.previous_file_available = False
@@ -146,10 +153,10 @@ class TransactionLoads:
 #         print(file_name, date_string)
         if self.valid:
             self.update_incoming_transactions()
-            UploadTransactionFile.objects.create(
+            self.upload_transaction_file = UploadTransactionFile.objects.create(
                 transaction_file=file,
                 consume=True,
-                tx_pk=self.transaction_obj.batch_id,
+                batch_id=self.transaction_obj.batch_id,
                 file_name=file_name,
                 consumed=self.consumed,
                 total=self.total,
