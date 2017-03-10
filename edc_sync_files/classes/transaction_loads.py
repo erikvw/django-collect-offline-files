@@ -125,7 +125,7 @@ class TransactionLoads:
         return self._valid
 
     def archive_file(self):
-        if self.self.is_uploaded:
+        if self.is_uploaded:
             edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
             try:
                 destination_filename = join(
