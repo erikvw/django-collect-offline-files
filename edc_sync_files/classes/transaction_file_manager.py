@@ -13,6 +13,9 @@ class TransactionFileManager(object):
         self.filename = filename
         self.approval_code = None
 
+    def pending_files(self):
+        return self.file_transfer.files_dict
+
     def send_files(self):
         sent = self.file_transfer.copy_files(self.filename)
         archived = False

@@ -23,6 +23,8 @@ class TransactionFileQueue(object):
         self.edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
 
     def add_new_uploaded_file(self, path):
+        """ Fetch the file from watchdog and add it into queue.
+        """
         self.queued_files.put(TransactionLoads(path=path))
 
     @property
@@ -30,6 +32,8 @@ class TransactionFileQueue(object):
         return self._processed_files
 
     def process_queued_files(self):
+        """ Create incoming transactions and apply transactions.
+        """
         while not self.queued_files.empty():
             transation_file = self.queued_files.get()
             status = transation_file.upload_file()
