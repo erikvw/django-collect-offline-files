@@ -2,6 +2,7 @@ import socket
 import os.path
 import shutil
 from os.path import join
+import collections
 
 from hurry.filesize import size
 from os import listdir
@@ -84,7 +85,7 @@ class FileConnector(SSHConnectMixin):
         print(received_file.st_size, "received file", sent_file.st_size, "sent file")
         #  create a record on successful transfer
         if sent:
-            print(History.objects.all(), 'History records', 'filename:', filename)
+            #print(History.objects.all(), 'History records', 'filename:', filename)
             self.update_history(filename, sent=sent)
             transaction_messages.add_message(
                 'success', 'History record created for {}.'.format(source_filename))
@@ -133,6 +134,7 @@ class FileTransfer(object):
 
     def __init__(self, file_connector=None):
         self.file_connector = file_connector or FileConnector()
+        self.ordered_files = collections.OrderedDict()
 
     @property
     def files(self):
@@ -146,12 +148,14 @@ class FileTransfer(object):
     @property
     def files_dict(self):
         file_attrs = []
-        for filename in self.files:
+        recorded_files = History.objects.filter(
+            filename__in=self.files, sent=False).order_by('created')
+        for history in recorded_files:
             source_filename = os.path.join(
-                self.file_connector.source_folder, filename)
+                self.file_connector.source_folder, history.filename)
             file_attr = os.stat(source_filename)
             data = dict({
-                'filename': filename,
+                'filename': history.filename,
                 'filesize': size(file_attr.st_size),
             })
             file_attrs.append(data)
