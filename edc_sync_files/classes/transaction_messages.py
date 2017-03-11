@@ -34,6 +34,10 @@ class TransactionMessages:
         self._messages = []
 
     def last_error_message(self):
-        return self.messages[-1].get(ERROR) if len(self._messages) else ''
+        try:
+            message = self.messages()[-1].get(ERROR) if len(self.messages()) else ''
+        except IndexError:
+            message = ''
+        return str(message)
 
 transaction_messages = TransactionMessages()

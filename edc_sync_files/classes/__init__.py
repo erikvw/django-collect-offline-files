@@ -5,3 +5,4 @@ from .file_transfer import FileTransfer
 from .transaction_dumps import TransactionDumps
 from .transaction_loads import TransactionLoads
 from .transaction_messages import transaction_messages
+from .dump_to_usb import DumpToUsb, TransactionLoadUsbFile

@@ -135,14 +135,14 @@ class TransactionLoads:
         if self.is_uploaded:
             edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
             try:
-                destination_filename = join(
-                    edc_sync_file_app.archive_folder, self.filename)
                 source_filename = join(
                     edc_sync_file_app.destination_folder, self.filename)
-                shutil.move(source_filename, destination_filename)  # archive the file
+                shutil.move(source_filename, edc_sync_file_app.archive_folder)  # archive the file
             except FileNotFoundError as e:
                 transaction_messages.add_message(
                     'error', 'Make sure archive dir exists in media/transactions/archive Got {}'.format(str(e)))
+            except Exception as e:
+                print(str(e))
 
     def upload_file(self):
         """ Create a upload transaction file in the server.

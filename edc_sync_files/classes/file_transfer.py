@@ -53,41 +53,45 @@ class FileConnector(SSHConnectMixin):
         """ Copy file from  source folder to destination folder in the
             current filesystem or to remote file system."""
         client = self.connect(REMOTE)
-        host_sftp = client.open_sftp()
-        destination_file_origin = os.path.join(self.destination_folder, filename)
-        destination_file_tmp = '{}.{}'.format(
-            os.path.join(self.destination_folder, filename), 'tmp')
-        sent = True
-        source_filename = os.path.join(self.source_folder, filename)
-        try:
-            sent_file = host_sftp.put(
-                source_filename,
-                destination_file_tmp,
-                callback=self.progress, confirm=True)
-            transaction_messages.add_message(
-                'success', 'File {} sent to the'
-                ' server successfully.'.format(source_filename))
-            host_sftp.rename(
-                destination_file_tmp,
-                destination_file_origin)
-            host_sftp.utime(destination_file_origin, None)  # Activate on modified for watchdog to detect a file.
-            transaction_messages.add_message(
-                'success', 'Renamed {} to {} successfully in the server.'.format
-                (destination_file_tmp, source_filename))
-        except IOError as e:
-            sent = False
-            transaction_messages.add_message(
-                'error', 'IOError Got {} . Sending {}'.format(e, destination_file_origin))
-            return False
-        received_file = host_sftp.lstat(destination_file_origin)
-        if received_file.st_size == sent_file.st_size:
-            pass
-        print(received_file.st_size, "received file", sent_file.st_size, "sent file")
-        #  create a record on successful transfer
-        if sent:
-            self.update_history(filename, sent=sent)
-            transaction_messages.add_message(
-                'success', 'History record created for {}.'.format(source_filename))
+        with client.open_sftp() as host_sftp:
+            try:
+                destination_file_origin = os.path.join(self.destination_folder, filename)
+                destination_file_tmp = '{}.{}'.format(
+                    os.path.join(self.destination_folder, filename), 'tmp')
+                sent = True
+                source_filename = os.path.join(self.source_folder, filename)
+                try:
+                    sent_file = host_sftp.put(
+                        source_filename,
+                        destination_file_tmp,
+                        callback=self.progress, confirm=True)
+                    transaction_messages.add_message(
+                        'success', 'File {} sent to the'
+                        ' server successfully.'.format(source_filename))
+                    host_sftp.rename(
+                        destination_file_tmp,
+                        destination_file_origin)
+                    host_sftp.utime(destination_file_origin, None)  # Activate on modified for watchdog to detect a file.
+                    transaction_messages.add_message(
+                        'success', 'Renamed {} to {} successfully in the server.'.format
+                        (destination_file_tmp, source_filename))
+                except IOError as e:
+                    sent = False
+                    transaction_messages.add_message(
+                        'error', 'IOError Got {} . Sending {}'.format(e, destination_file_origin))
+                    return False
+                received_file = host_sftp.lstat(destination_file_origin)
+                if received_file.st_size == sent_file.st_size:
+                    pass
+                print(received_file.st_size, "received file", sent_file.st_size, "sent file")
+                #  create a record on successful transfer
+                if sent:
+                    self.update_history(filename, sent=sent)
+                    transaction_messages.add_message(
+                        'success', 'History record created for {}.'.format(source_filename))
+            finally:
+                host_sftp.close()
+                client.close()
         return sent
 
     def archive(self, filename):
