@@ -42,9 +42,6 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         self.output_to_console(
             '{} {} {} Not handled.'.format(timezone.now(), event.event_type, event.src_path))
 
-    def on_modified(self, event):
-        self.process_on_added(event)
-
     def on_created(self, event):
         self.process_on_added(event)
 
@@ -71,6 +68,8 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
             self.file_queue.add_new_uploaded_file(event.src_path)
             self.file_queue.process_queued_files()
             self.output_to_console('{} {} {}'.format(timezone.now(), event.event_type, event.src_path))
+        else:
+            print(event.src_path)
 
     def statinfo(self, path, filename):
         statinfo = os.stat(join(self.destination_folder, filename))

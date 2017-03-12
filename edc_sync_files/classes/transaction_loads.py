@@ -1,3 +1,4 @@
+import os
 import shutil
 from os.path import join
 
@@ -81,12 +82,17 @@ class TransactionLoads:
     def apply_transactions(self):
         """ Apply incoming transactions for the currently uploaded file.
         """
-        file_transactions = [
-            str(file_transaction.tx_pk) for file_transaction in self.loaded_transactions]
-        is_played = Consumer(transactions=file_transactions, check_hostname=False).consume()
-        self.upload_transaction_file.is_played = is_played
-        self.upload_transaction_file.comment = transaction_messages.last_error_message()
-        self.upload_transaction_file.save()
+        is_played = False
+        if self.is_uploaded:
+            print("Applying transactions for {}".format(self.filename))
+            file_transactions = [
+                str(file_transaction.tx_pk) for file_transaction in self.loaded_transactions]
+            is_played = Consumer(transactions=file_transactions, check_hostname=False).consume()
+            self.upload_transaction_file.is_played = is_played
+            self.upload_transaction_file.comment = transaction_messages.last_error_message()
+            self.upload_transaction_file.save()
+        else:
+            print("File {} not uploaded, transactions not played.".format(self.filename))
         return is_played
 
     @property
@@ -110,6 +116,7 @@ class TransactionLoads:
             UploadTransactionFile.objects.get(
                 file_name=self.filename)
             already_uploaded = True
+            print("File already upload. Cannot be uploaded. {}".format(self.filename))
         except UploadTransactionFile.DoesNotExist:
             already_uploaded = False
         return already_uploaded
@@ -129,6 +136,7 @@ class TransactionLoads:
         self._valid = True if (
             self.previous_file_available and not self.already_uploaded) or (
                 first_time and not self.already_uploaded) else False
+        print("File  {} is validated {}.".format(self.filename, self._valid))
         return self._valid
 
     def archive_file(self):
@@ -137,7 +145,14 @@ class TransactionLoads:
             try:
                 source_filename = join(
                     edc_sync_file_app.destination_folder, self.filename)
-                shutil.move(source_filename, edc_sync_file_app.archive_folder)  # archive the file
+                if os.path.exists(source_filename):
+                    shutil.move(source_filename, edc_sync_file_app.archive_folder)  # archive the file
+                    print("File {} archived successfully into {}.".format(
+                        self.filename, edc_sync_file_app.archive_folder))
+                    self.is_uploaded = False
+                    self.archived = True
+                else:
+                    print("File {} does exists to be archived.".format(self.filename))
             except FileNotFoundError as e:
                 transaction_messages.add_message(
                     'error', 'Make sure archive dir exists in media/transactions/archive Got {}'.format(str(e)))
@@ -147,21 +162,29 @@ class TransactionLoads:
     def upload_file(self):
         """ Create a upload transaction file in the server.
         """
-        file = File(open(self.path))
-        file_name = file.name.replace('\\', '/').split('/')[-1]
-#         date_string = self.filename.split('_')[2]  # .split('.')[0][:8]
-#         print(file_name, date_string)
-        if self.valid:
-            self.update_incoming_transactions()
-            self.upload_transaction_file = UploadTransactionFile.objects.create(
-                transaction_file=file,
-                consume=True,
-                batch_id=self.transaction_obj.batch_id,
-                file_name=file_name,
-                consumed=self.consumed,
-                total=self.total,
-                not_consumed=self.not_consumed
-            )
-            self.is_uploaded = True
-        self.archive_file()
+        if os.path.exists(self.path):
+            with open(self.path) as transaction_file:
+                file = File(transaction_file)
+                file_name = file.name.replace('\\', '/').split('/')[-1]
+                if self.valid:
+                    self.update_incoming_transactions()
+                    self.upload_transaction_file = UploadTransactionFile.objects.create(
+                        transaction_file=file,
+                        consume=True,
+                        batch_id=self.transaction_obj.batch_id,
+                        file_name=file_name,
+                        consumed=self.consumed,
+                        total=self.total,
+                        not_consumed=self.not_consumed
+                    )
+                    self.is_uploaded = True
+                else:
+                    self.is_uploaded = False
+                self.apply_transactions()
+                self.archive_file()
+        else:
+            if self.archived and self.already_uploaded:
+                print("File {} already uploaded and archived in {}".format(self.filename, self.path))
+            else:
+                print("File {} does not exists in {}".format(self.filename, self.path))
         return self.is_uploaded

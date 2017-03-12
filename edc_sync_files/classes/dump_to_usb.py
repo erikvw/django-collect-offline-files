@@ -32,11 +32,9 @@ class DumpToUsb:
                 self.is_dumped_to_usb = True
             else:
                 transaction_messages.add_message(
-                    'error', 'Cannot find transactions folder in the USB.')
-        except FileNotFoundError as e:
+                    'error', 'Cannot find transactions folder in the USB. ( transactions/incoming )')
+        except FileNotFoundError:
             self.is_dumped_to_usb = False
-            transaction_messages.add_message(
-                'error', 'Cannot find transactions folder in the USB. Got '.format(str(e)))
 
 
 class TransactionLoadUsbFile:
@@ -46,8 +44,11 @@ class TransactionLoadUsbFile:
 
         self.is_usb_transaction_file_loaded = False
         self.already_upload = False
+        self.usb_files = []
         try:
             source_dir = join('/Volumes/BCPP', 'transactions', 'incoming')
+            uploaded = 0
+            not_upload = 0
             if os.path.exists(source_dir):
                 for file in os.listdir(source_dir):
                     if file.endswith(".json"):
@@ -55,10 +56,13 @@ class TransactionLoadUsbFile:
                         load = TransactionLoads(path=source_file)
                         self.already_upload = load.already_uploaded
                         if load.upload_file():
-                            load.apply_transactions()
-                            self.is_usb_transaction_file_loaded = True
+                            uploaded = uploaded + 1
                             transaction_messages.add_message(
                                 'success', 'Upload the file successfully.')
+                            self.usb_files.append(self.file_status(load, file))
+                        else:
+                            self.usb_files.append(self.file_status(load, file))
+                            not_upload = not_upload + 1
                         self.archive_file(source_file)
             else:
                 transaction_messages.add_message(
@@ -67,6 +71,17 @@ class TransactionLoadUsbFile:
             self.is_dumped_to_usb = False
             transaction_messages.add_message(
                 'error', 'Cannot find transactions folder in the USB. Got '.format(str(e)))
+
+    def file_status(self, loader, filename):
+        reason = 'Failed to upload: File already' if loader.already_uploaded else None
+        reason = 'Failed to upload: Incorrect transaction file sequence.' if not loader.valid else reason
+        reason = 'Uploaded successfully' if loader.valid else reason
+        if not reason:
+            reason = 'Failed to upload with unknown reason.'
+        usb_file = dict(
+            {'filename': filename,
+             'reason': reason})
+        return usb_file
 
     def archive_file(self, filename):
         if self.is_usb_transaction_file_loaded or self.already_upload:
