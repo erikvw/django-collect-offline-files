@@ -18,9 +18,8 @@ from .mixins import SSHConnectMixin
 
 
 class FileConnector(SSHConnectMixin):
-    """Connects to the file system given (host & password) or (ssh key pair.).
+    """Connects to the remote machine given (host & password) or (ssh key pair.).
        1. Copies files from source folder to destination folder in file system.
-       2. Copies files from file system to remote file system.
     """
 
     def __init__(self, host=None, password=None, source_folder=None,
@@ -32,17 +31,18 @@ class FileConnector(SSHConnectMixin):
         self.password = password or edc_sync_file_app.password
         self.user = edc_sync_file_app.user
         self.source_folder = source_folder or edc_sync_file_app.source_folder
+        self.destination_tmp_folder = edc_sync_file_app.destination_tmp_folder
         self.destination_folder = destination_folder or edc_sync_file_app.destination_folder
         self.archive_folder = archive_folder or edc_sync_file_app.archive_folder
 
     def connected(self):
-        ssh = None
         client = self.connect(REMOTE)
+        connected = False
         if client:
             ssh = client.open_sftp()
-        connected = True if ssh else False
+            connected = True if ssh else False
         if connected:
-            ssh.close()
+            client.close()
         return connected
 
     def progress(self, sent_bytes, total_bytes):
@@ -55,35 +55,31 @@ class FileConnector(SSHConnectMixin):
         client = self.connect(REMOTE)
         with client.open_sftp() as host_sftp:
             try:
-                destination_file_origin = os.path.join(self.destination_folder, filename)
-                destination_file_tmp = '{}.{}'.format(
-                    os.path.join(self.destination_folder, filename), 'tmp')
+                destination_tmp_file = os.path.join(self.destination_tmp_folder, filename)
+                destination_file = os.path.join(self.destination_folder, filename)
                 sent = True
                 source_filename = os.path.join(self.source_folder, filename)
                 try:
                     sent_file = host_sftp.put(
                         source_filename,
-                        destination_file_tmp,
+                        destination_tmp_file,
                         callback=self.progress, confirm=True)
                     transaction_messages.add_message(
                         'success', 'File {} sent to the'
                         ' server successfully.'.format(source_filename))
                     host_sftp.rename(
-                        destination_file_tmp,
-                        destination_file_origin)
-                    host_sftp.utime(destination_file_origin, None)  # Activate on modified for watchdog to detect a file.
-                    transaction_messages.add_message(
-                        'success', 'Renamed {} to {} successfully in the server.'.format
-                        (destination_file_tmp, source_filename))
+                        destination_tmp_file,
+                        destination_file)
                 except IOError as e:
                     sent = False
                     transaction_messages.add_message(
-                        'error', 'IOError Got {} . Sending {}'.format(e, destination_file_origin))
+                        'error', 'IOError Got {} . Sending {}'.format(e, destination_tmp_file))
                     return False
-                received_file = host_sftp.lstat(destination_file_origin)
+                received_file = host_sftp.lstat(destination_file)
                 if received_file.st_size == sent_file.st_size:
                     pass
-                print(received_file.st_size, "received file", sent_file.st_size, "sent file")
+                print(sent_file.st_atime)
+
                 #  create a record on successful transfer
                 if sent:
                     self.update_history(filename, sent=sent)
@@ -141,15 +137,18 @@ class FileTransfer(object):
 
     @property
     def files(self):
-        files = listdir(self.file_connector.source_folder)
-        try:
-            files.remove('.DS_Store')
-        except ValueError:
-            pass
+        """Builds a list of filenames in the source dir (Specified in apps.py).
+        """
+        files = []
+        for filename in listdir(self.file_connector.source_folder):
+            if filename.endswith('.json'):
+                files.append(filename)
         return files
 
     @property
     def files_dict(self):
+        """ Build a list of file attrs.
+        """
         file_attrs = []
         recorded_files = History.objects.filter(
             filename__in=self.files, sent=False).order_by('created')
@@ -165,7 +164,8 @@ class FileTransfer(object):
         return file_attrs
 
     def copy_files(self, filename=None):
-        """ Copies the files from source folder to destination folder. """
+        """ Copies the files from source folder to destination folder.
+        """
         copied = False
         if filename:  # Use by client by machine
             for f in self.files_dict:
@@ -182,9 +182,13 @@ class FileTransfer(object):
         return copied
 
     def archive(self, filename):
+        """ Move file from source dir to archive dir (Specified in apps.py).
+        """
         return self.file_connector.archive(filename)
 
     def approve_sent_file(self, filename, approval_code):
+        """ Update history record after all files sent to the server.
+        """
         try:
             sent_file_history = History.objects.get(filename=filename)
             sent_file_history.approval_code = approval_code

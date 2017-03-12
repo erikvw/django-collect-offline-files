@@ -20,6 +20,8 @@ class AppConfig(DjangoAppConfig):
         settings.MEDIA_ROOT, 'transactions', 'outgoing')
     destination_folder = os.path.join(
         settings.MEDIA_ROOT, 'transactions', 'incoming')
+    destination_tmp_folder = os.path.join(
+        settings.MEDIA_ROOT, 'transactions', 'tmp')
     archive_folder = os.path.join(
         settings.MEDIA_ROOT, 'transactions', 'archive')
     role = None
