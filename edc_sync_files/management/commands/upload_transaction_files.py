@@ -15,8 +15,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         edc_sync_files_app = django_apps.get_app_config('edc_sync_files')
+        pending_files = os.listdir(edc_sync_files_app.destination_folder) or []
+        pending_files.sort()
         try:
-            for filename in os.listdir(edc_sync_files_app.destination_folder).sort():
+            for filename in pending_files:
                 if filename.endswith('.json'):
                     if len(re.findall(r'\_', filename)) == 1:
                         try:

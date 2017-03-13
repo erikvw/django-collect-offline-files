@@ -18,9 +18,7 @@ from django.contrib import admin
 from .admin.admin import edc_sync_files_admin
 
 
-# from .views import PullMediaFileView
-
 urlpatterns = [
-#     url(r'^pull-media-file/$', PullMediaFileView.as_view(), name='pull-media-file'),
     url(r'^admin/', edc_sync_files_admin.urls),
+    url(r'^admin/', admin.site.urls),
 ]

@@ -49,24 +49,19 @@ class TransactionLoadUsbFile:
             source_dir = join('/Volumes/BCPP', 'transactions', 'incoming')
             uploaded = 0
             not_upload = 0
-            if os.path.exists(source_dir):
-                for file in os.listdir(source_dir):
-                    if file.endswith(".json"):
-                        source_file = join(source_dir, file)
-                        load = TransactionLoads(path=source_file)
-                        self.already_upload = load.already_uploaded
-                        if load.upload_file():
-                            uploaded = uploaded + 1
-                            transaction_messages.add_message(
-                                'success', 'Upload the file successfully.')
-                            self.usb_files.append(self.file_status(load, file))
-                        else:
-                            self.usb_files.append(self.file_status(load, file))
-                            not_upload = not_upload + 1
-                        self.archive_file(source_file)
-            else:
-                transaction_messages.add_message(
-                    'error', 'Cannot find transactions folder in the USB.')
+            for file in self.usb_files():
+                source_file = join(source_dir, file)
+                load = TransactionLoads(path=source_file)
+                self.already_upload = load.already_uploaded
+                if load.upload_file():
+                    uploaded = uploaded + 1
+                    transaction_messages.add_message(
+                        'success', 'Upload the file successfully.')
+                    self.usb_files.append(self.file_status(load, file))
+                else:
+                    self.usb_files.append(self.file_status(load, file))
+                    not_upload = not_upload + 1
+                self.archive_file(source_file)
         except FileNotFoundError as e:
             self.is_dumped_to_usb = False
             transaction_messages.add_message(
@@ -82,6 +77,22 @@ class TransactionLoadUsbFile:
             {'filename': filename,
              'reason': reason})
         return usb_file
+
+    def usb_files(self):
+        usb_files = []
+        source_dir = join('/Volumes/BCPP', 'transactions', 'incoming')
+        if os.path.exists(source_dir):
+            for file in os.listdir(source_dir):
+                if file.endswith(".json"):
+                    usb_files.append(file)
+        else:
+            transaction_messages.add_message(
+                'error', 'Cannot find transactions folder in the USB.')
+        try:
+            usb_files.sort()
+        except AttributeError:
+            usb_files = []
+        return usb_files
 
     def archive_file(self, filename):
         if self.is_usb_transaction_file_loaded or self.already_upload:
