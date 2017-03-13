@@ -31,6 +31,7 @@ class TransactionLoads:
         self.ignored = 0
         self.is_uploaded = False
         self.is_played = False
+        self.is_usb = False
         self.upload_transaction_file = None
 
     def update_incoming_transactions(self):
@@ -143,8 +144,13 @@ class TransactionLoads:
         if self.is_uploaded:
             edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
             try:
-                source_filename = join(
-                    edc_sync_file_app.destination_folder, self.filename)
+                if self.is_usb:
+                    source_filename = join(
+                        edc_sync_file_app.destination_folder, self.filename)
+                else:
+                    source_filename = join(
+                        edc_sync_file_app.usb_folder, self.filename)
+
                 if os.path.exists(source_filename):
                     shutil.move(source_filename, edc_sync_file_app.archive_folder)  # archive the file
                     print("File {} archived successfully into {}.".format(
