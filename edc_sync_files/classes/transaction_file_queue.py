@@ -1,4 +1,3 @@
-import collections
 import queue as q
 
 from django.apps import apps as django_apps
@@ -8,7 +7,7 @@ from .transaction_loads import TransactionLoads
 
 class TransactionFileQueue(object):
 
-    """ Queue uploaded transaction file.
+    """ Queue uploaded transaction file so that they can be played one after the other.
         1. queue = TransactionFileQueue()
         2. queue.add_new_uploaded_file(...) added by event handler possibly.
         3. queue.process_queued_files()
@@ -17,7 +16,6 @@ class TransactionFileQueue(object):
     def __init__(self, transation_file=None):
         self.transation_file = transation_file
         self.queued_files = q.Queue()
-        self._processed_files = collections.OrderedDict()
         self.edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
 
     def add_new_uploaded_file(self, path):
@@ -25,19 +23,9 @@ class TransactionFileQueue(object):
         """
         self.queued_files.put(TransactionLoads(path=path))
 
-    @property
-    def processed_files(self):
-        return self._processed_files
-
     def process_queued_files(self):
         """ Create incoming transactions and apply transactions.
         """
         while not self.queued_files.empty():
             transation_file = self.queued_files.get()
-            status = transation_file.upload_file()
-            if status:
-                transation_file.apply_transactions()
-            transation_file.archived = status
-            self._processed_files.update({
-                transation_file.filename: transation_file
-            })
+            transation_file.upload_file()

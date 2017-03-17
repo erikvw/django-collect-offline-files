@@ -1,14 +1,21 @@
+import re
 import os
+import shutil
 import socket
+
+from os.path import join
 
 from django.apps import apps as django_apps
 from django.core import serializers
 from django.db import transaction
+from django.utils import timezone
+from django.db.utils import IntegrityError
 
 from edc_base.utils import get_utcnow
 from edc_sync.models import OutgoingTransaction
 
 from .transaction_messages import transaction_messages
+from ..constants import ERROR
 from ..models import History
 
 
@@ -25,7 +32,7 @@ class TransactionDumps:
         self.hostname = hostname or django_apps.get_app_config('edc_device').device_id
         self.using = using or 'default'
         self.filename = '{}_{}.json'.format(
-            self.hostname, str(get_utcnow().strftime("%Y%m%d%H%M")))
+            self.hostname, str(timezone.now().strftime("%Y%m%d%H%M%S")))
 
         self.batch_id = None
         self.batch_seq = None
@@ -63,15 +70,33 @@ class TransactionDumps:
     def update_history(self, filesize=None, remote_path=None):
         """Creates history record when dumping.
         """
-        history = History.objects.create(
-            filename=self.filename,
-            filesize=filesize,
-            hostname=socket.gethostname(),
-            remote_path=remote_path,
-            batch_id=self.batch_id,
-            filetimestamp=get_utcnow(),
-            sent=False)
-        history.save()
+        try:
+            history = History.objects.create(
+                filename=self.filename,
+                filesize=filesize,
+                hostname=socket.gethostname(),
+                remote_path=remote_path,
+                batch_id=self.batch_id,
+                filetimestamp=get_utcnow(),
+                sent=False)
+            history.save()
+        except IntegrityError as e:
+            try:
+                new_filename = '{}_{}.json'.format(
+                    self.hostname, str(timezone.now().strftime("%Y%m%d%H%M")))
+                source_filename = join(self.path, self.filename)
+                destination_file = join(self.path, new_filename)
+
+                shutil.move(source_filename, new_filename)
+                self.update_history()  # Create with a new name
+                transaction_messages.add_message(
+                    'success', 'Renamed {} to {}.'.format(source_filename, destination_file))
+            except FileNotFoundError as e:
+                transaction_messages.add_message(
+                    'error', 'FileNotFoundError Got {}'.format(str(e)))
+                transaction_messages.add_message(
+                    ERROR, 'File got same name. Renamed from {} to {}'.format(
+                        source_filename, destination_file))
 
     def dump_to_json(self):
         """Export outgoing transactions to a json file.
