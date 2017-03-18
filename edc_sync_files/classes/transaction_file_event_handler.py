@@ -27,7 +27,7 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
        event.src_path
            path/to/observed/file
     """
-    filename_pattern = r'^\d{0,3}\_\d{14}\.json$'
+    filename_pattern = r'^\w+\_\d{14}\.json$'
 
     patterns = ["*.json"]  # TODO add regex for filename
 
@@ -69,7 +69,8 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         if pattern.match(filename):
             self.file_queue.add_new_uploaded_file(event.src_path)
             self.file_queue.process_queued_files()
-            self.output_to_console('{} {} {}'.format(timezone.now(), event.event_type, event.src_path))
+            self.output_to_console('{} {} {}'.format(timezone.now(),
+                                                     event.event_type, event.src_path))
         else:
             print(event.src_path)
 
