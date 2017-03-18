@@ -6,8 +6,8 @@ from django.apps import apps as django_apps
 from django.core import serializers
 from django.core.files import File
 
-from edc_sync.models import IncomingTransaction
 from edc_sync.consumer import Consumer
+from edc_sync.models import IncomingTransaction
 from edc_sync_files.classes.transaction_messages import transaction_messages
 
 from ..models import UploadTransactionFile
