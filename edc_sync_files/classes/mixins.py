@@ -17,7 +17,6 @@ class SSHConnectMixin(object):
         """Connects the ssh instance.
         If :param:`ssh` is not provided will connect `self.ssh`.
         """
-        self.host, self.user
         ssh = paramiko.SSHClient()
         if self.trusted_host:
             ssh.set_missing_host_key_policy(AutoAddPolicy())
