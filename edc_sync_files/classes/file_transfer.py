@@ -60,7 +60,7 @@ class FileConnector(SSHConnectMixin):
                 sent = True
                 source_filename = os.path.join(self.source_folder, filename)
                 try:
-                    sent_file = host_sftp.put(
+                    host_sftp.put(
                         source_filename,
                         destination_tmp_file,
                         callback=self.progress, confirm=True)
@@ -75,12 +75,7 @@ class FileConnector(SSHConnectMixin):
                     transaction_messages.add_message(
                         'error', 'IOError Got {} . Sending {}'.format(e, destination_tmp_file))
                     return False
-                received_file = host_sftp.lstat(destination_file)
-                if received_file.st_size == sent_file.st_size:
-                    pass
-                print(sent_file.st_atime)
 
-                #  create a record on successful transfer
                 if sent:
                     self.update_history(filename, sent=sent)
                     transaction_messages.add_message(
@@ -167,11 +162,11 @@ class FileTransfer(object):
         """ Copies the files from source folder to destination folder.
         """
         copied = False
-        if filename:  # Use by client by machine
+        if filename:  # Use by client
             for f in self.files_dict:
                 if f.get('filename') == filename:
                     copied = self.file_connector.copy(f.get('filename'))
-        else:  # Use by community server to send files to community server
+        else:  # Use by community server to send files to central server
             for f in self.files_dict:
                 filename = f.get('filename')
                 copied = self.file_connector.copy(filename)
