@@ -36,8 +36,9 @@ class TransactionDumps:
 
         self.batch_id = None
         self.batch_seq = None
+        self.export_no = None
 
-        self.is_exported_to_json, _ = self.dump_to_json()
+        self.is_exported_to_json, self.export_no = self.dump_to_json()
 
     def update_batch_info(self):
         """Update the transaction batch information.
