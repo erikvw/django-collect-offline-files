@@ -153,6 +153,7 @@ if 'test' in sys.argv:
         "edc_lab": None,
         "ba_namotswe": None,
         'django_crypto_fields': None,
+        'edc_example': None,
     }
 
 
@@ -175,7 +176,7 @@ MEDIA_ROOT = BASE_DIR.child('media')
 MEDIA_URL = '/media/'
 
 GIT_DIR = BASE_DIR.ancestor(1)
-KEY_PATH = os.path.join(BASE_DIR.ancestor(1), 'crypto_fields')
+KEY_PATH = '/Volumes/crypto_keys'
 EDC_CRYPTO_FIELDS_CLIENT_USING = 'client'
 SHOW_CRYPTO_FORM_DATA = True
 STUDY_OPEN_DATETIME = timezone.datetime(2016, 1, 18)
