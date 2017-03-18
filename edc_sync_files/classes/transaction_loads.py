@@ -5,7 +5,6 @@ from os.path import join
 from django.apps import apps as django_apps
 from django.core import serializers
 from django.core.files import File
-from django.core.mail import send_mail
 
 from edc_sync.consumer import Consumer
 from edc_sync.models import IncomingTransaction
