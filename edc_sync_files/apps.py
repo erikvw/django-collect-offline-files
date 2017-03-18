@@ -16,7 +16,7 @@ class AppConfig(DjangoAppConfig):
     user = None
     host = None
     password = None
-    usb_folder = os.path.join(
+    usb_incoming_folder = os.path.join(
         settings.MEDIA_ROOT, 'transactions', 'usb')
     source_folder = os.path.join(
         settings.MEDIA_ROOT, 'transactions', 'outgoing')
