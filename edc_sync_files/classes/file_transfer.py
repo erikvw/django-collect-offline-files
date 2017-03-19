@@ -25,14 +25,14 @@ class FileConnector(SSHConnectMixin):
     def __init__(self, host=None, source_folder=None,
                  destination_folder=None, archive_folder=None):
         self.trusted_host = True
-        edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
+        app_config = django_apps.get_app_config('edc_sync_files')
         self.progress_status = None
-        self.host = host or edc_sync_file_app.host
-        self.user = edc_sync_file_app.user
-        self.source_folder = source_folder or edc_sync_file_app.source_folder
-        self.destination_tmp_folder = edc_sync_file_app.destination_tmp_folder
-        self.destination_folder = destination_folder or edc_sync_file_app.destination_folder
-        self.archive_folder = archive_folder or edc_sync_file_app.archive_folder
+        self.host = host or app_config.remote_host
+        self.user = app_config.user
+        self.source_folder = source_folder or app_config.source_folder
+        self.destination_tmp_folder = app_config.destination_tmp_folder
+        self.destination_folder = destination_folder or app_config.destination_folder
+        self.archive_folder = archive_folder or app_config.archive_folder
 
     def connected(self):
         client = self.connect(REMOTE)
@@ -54,8 +54,10 @@ class FileConnector(SSHConnectMixin):
         client = self.connect(REMOTE)
         with client.open_sftp() as host_sftp:
             try:
-                destination_tmp_file = os.path.join(self.destination_tmp_folder, filename)
-                destination_file = os.path.join(self.destination_folder, filename)
+                destination_tmp_file = os.path.join(
+                    self.destination_tmp_folder, filename)
+                destination_file = os.path.join(
+                    self.destination_folder, filename)
                 sent = True
                 source_filename = os.path.join(self.source_folder, filename)
                 try:
