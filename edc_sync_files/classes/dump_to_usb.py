@@ -18,12 +18,14 @@ class DumpToUsb:
         self.is_dumped_to_usb = False
         self.filename = None
         self.using = using
+        # FIXME: too much code in the try/except!!
         try:
             usb_incoming_folder = os.path.join(
                 app_config.usb_volume, 'transactions', 'incoming')
             if os.path.exists(usb_incoming_folder):
                 source_folder = django_apps.get_app_config(
                     'edc_sync_files').source_folder
+                # FIXME: this class should inherit from TransactionDumps
                 dump = TransactionDumps(source_folder, using=self.using)
                 self.filename = dump.filename
                 shutil.copy2(os.path.join(source_folder,
@@ -49,12 +51,14 @@ class TransactionLoadUsbFile:
     def __init__(self):
         app_config = django_apps.get_app_config('edc_sync_files')
         self.match_filename = re.compile(self.pattern)
+        # FIXME: why so many booleans maintained???? bad design
         self.is_usb_transaction_file_loaded = False
         self.is_archived = False
         self.already_upload = False
         self.source_folder = os.path.join(
             app_config.usb_volume, 'transactions', 'incoming')
         self.processed_usb_files = []
+        # FIXME: too much code in the try/except!!
         try:
             uploaded = 0
             not_upload = 0
@@ -70,6 +74,7 @@ class TransactionLoadUsbFile:
                 source_file = os.path.join(
                     django_apps.get_app_config(
                         'edc_sync_files').usb_incoming_folder, filename)
+                # FIXME: this class should inherit from TransactionLoads
                 load = TransactionLoads(path=source_file)
                 load.is_usb = True
                 self.already_upload = load.already_uploaded
@@ -113,6 +118,7 @@ class TransactionLoadUsbFile:
             transaction_messages.add_message(
                 'error', 'Failed to load usb transaction file. Got '.format(str(e)))
 
+    # FIXME: this pattern is repeated over and over!
     def usb_files(self):
         usb_files = []
         if os.path.exists(self.source_folder):
