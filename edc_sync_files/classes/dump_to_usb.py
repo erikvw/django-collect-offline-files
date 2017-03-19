@@ -96,10 +96,10 @@ class TransactionLoadUsbFile:
         reason = 'Uploaded successfully' if loader.valid else reason
         if not reason:
             reason = 'Failed to upload with unknown reason.'
-        usb_file = dict(
+        usb_file_status = dict(
             {'filename': filename,
              'reason': reason})
-        return usb_file
+        return usb_file_status
 
     def copy_to_media(self):
         try:
