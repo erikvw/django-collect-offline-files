@@ -18,17 +18,16 @@ from .mixins import SSHConnectMixin
 
 
 class FileConnector(SSHConnectMixin):
-    """Connects to the remote machine given (host & password) or (ssh key pair.).
-       1. Copies files from source folder to destination folder in file system.
+    """Connects to the remote machine using (ssh key pair.).
+       1. Copies files from source folder to destination folder.
     """
 
-    def __init__(self, host=None, password=None, source_folder=None,
+    def __init__(self, host=None, source_folder=None,
                  destination_folder=None, archive_folder=None):
         self.trusted_host = True
         edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
         self.progress_status = None
         self.host = host or edc_sync_file_app.host
-        self.password = password or edc_sync_file_app.password
         self.user = edc_sync_file_app.user
         self.source_folder = source_folder or edc_sync_file_app.source_folder
         self.destination_tmp_folder = edc_sync_file_app.destination_tmp_folder
