@@ -14,13 +14,13 @@ class DumpToUsb:
     """
 
     def __init__(self, using=None):
-
+        app_config = django_apps.get_app_config('edc_sync_files')
         self.is_dumped_to_usb = False
         self.filename = None
         self.using = using
         try:
             usb_incoming_folder = os.path.join(
-                '/Volumes/BCPP', 'transactions', 'incoming')
+                app_config.usb_volume, 'transactions', 'incoming')
             if os.path.exists(usb_incoming_folder):
                 source_folder = django_apps.get_app_config(
                     'edc_sync_files').source_folder
@@ -47,13 +47,13 @@ class TransactionLoadUsbFile:
     pattern = r'^\d{0,3}\_\d{14}\.json$'
 
     def __init__(self):
-
+        app_config = django_apps.get_app_config('edc_sync_files')
         self.match_filename = re.compile(self.pattern)
         self.is_usb_transaction_file_loaded = False
         self.is_archived = False
         self.already_upload = False
         self.source_folder = os.path.join(
-            '/Volumes/BCPP', 'transactions', 'incoming')
+            app_config.usb_volume, 'transactions', 'incoming')
         self.processed_usb_files = []
         try:
             uploaded = 0
@@ -64,7 +64,7 @@ class TransactionLoadUsbFile:
                     'edc_sync_files').usb_incoming_folder) or []:
                 if self.match_filename.match(filename):
                     usb_incoming_folder_files.append(filename)
-                
+
             usb_incoming_folder_files.sort()
             for filename in usb_incoming_folder_files or []:
                 source_file = os.path.join(
