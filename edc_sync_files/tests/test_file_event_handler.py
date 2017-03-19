@@ -34,7 +34,7 @@ class testFileEventHandler(TestCase):
         self.assertEqual(TestModel.objects.using('default').filter(f1=tx.f1).count(), 1)
         self.assertEqual(TestModel.objects.using('default').filter(f1=tx1.f1).count(), 1)
         
-        self.assertEqual(UploadTransactionFile.objects.all().count(), 1)
+        self.assertEqual(UploadTransactionFile.objects.all().count(), 1) # Uploaded by watchdog
         
         
     def test_export_upload_multiple_files(self):

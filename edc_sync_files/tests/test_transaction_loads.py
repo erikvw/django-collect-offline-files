@@ -77,8 +77,7 @@ class TestTransactionLoads(TestCase):
 
         transaction_file_path = os.path.join(tx_dumps.path, tx_dumps.filename)
         new_file_to_upload = TransactionLoads(path=transaction_file_path)
-        self.assertTrue(new_file_to_upload.upload_file())
-
-        for tx_record in new_file_to_upload.loaded_transactions:
+        
+        for tx_record in new_file_to_upload.transaction_objs:
             tx_record.delete()
-        self.assertTrue(new_file_to_upload.apply_transactions())
+        self.assertTrue(new_file_to_upload.upload_file())

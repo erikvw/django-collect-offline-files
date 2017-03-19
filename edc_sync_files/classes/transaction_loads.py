@@ -33,12 +33,26 @@ class TransactionLoads:
         self.is_played = False
         self.is_usb = False
         self.upload_transaction_file = None
+        self.transaction_obj = None
+        self.transaction_objs = []
+        self.file_transactions_pks = []
+        
+        try:
+            for index, deserialized_object in enumerate(
+                    self.deserialize_json_file(File(open(self.path)))):
+                self.file_transactions_pks.append(
+                    deserialized_object.object.tx_pk)
+                if index == 0:
+                    self.transaction_obj = deserialized_object.object
+                self.transaction_objs.append(deserialized_object.object)
+        except Exception as e:
+            transaction_messages.add_message('error', str(e))
 
     def update_incoming_transactions(self):
         """ Converts outgoing transaction into incoming transactions.
         """
         has_created = False
-        for outgoing in self.loaded_transactions:
+        for outgoing in self.transaction_objs:
             if not IncomingTransaction.objects.filter(pk=outgoing.pk).exists():
                 if outgoing._meta.get_fields():
                     self.consumed += 1
@@ -67,46 +81,19 @@ class TransactionLoads:
             return None
         return decoded
 
-    @property
-    def loaded_transactions(self):
-        """Deserializes transactions file objects.
-        """
-        try:
-            transaction_objs = []
-            for _, deserialized_object in enumerate(
-                    self.deserialize_json_file(File(open(self.path)))):
-                transaction_objs.append(deserialized_object.object)
-        except Exception as e:
-            transaction_messages.add_message('error', str(e))
-        return transaction_objs
-
     def apply_transactions(self):
         """ Apply incoming transactions for the currently uploaded file.
         """
         is_played = False
         if self.is_uploaded:
             print("Applying transactions for {}".format(self.filename))
-            file_transactions = [
-                str(file_transaction.tx_pk) for file_transaction in self.loaded_transactions]
-            is_played = Consumer(transactions=file_transactions, check_hostname=False).consume()
+            is_played = Consumer(transactions=self.file_transactions_pks, check_hostname=False).consume()
             self.upload_transaction_file.is_played = is_played
             self.upload_transaction_file.comment = transaction_messages.last_error_message()
             self.upload_transaction_file.save()
         else:
             print("File {} not uploaded, transactions not played.".format(self.filename))
         return is_played
-
-    @property
-    def transaction_obj(self):
-        """Get the first transaction in the loaded json file.
-        """
-        transaction = None
-        try:
-            transaction = self.loaded_transactions[0]
-        except IndexError as e:
-            transaction_messages.add_message(
-                'error', 'No records in {} file Got {}'.format(self.filename, str(e)))
-        return transaction
 
     @property
     def already_uploaded(self):
@@ -146,10 +133,10 @@ class TransactionLoads:
             try:
                 if self.is_usb:
                     source_filename = join(
-                        edc_sync_file_app.destination_folder, self.filename)
+                        edc_sync_file_app.usb_incoming_folder, self.filename)
                 else:
                     source_filename = join(
-                        edc_sync_file_app.usb_folder, self.filename)
+                        edc_sync_file_app.destination_folder, self.filename)
 
                 if os.path.exists(source_filename):
                     shutil.move(source_filename, edc_sync_file_app.archive_folder)  # archive the file
@@ -184,10 +171,10 @@ class TransactionLoads:
                         not_consumed=self.not_consumed
                     )
                     self.is_uploaded = True
+                    self.apply_transactions()
+                    self.archive_file()
                 else:
                     self.is_uploaded = False
-                self.apply_transactions()
-                self.archive_file()
         else:
             if self.archived and self.already_uploaded:
                 print("File {} already uploaded and archived in {}".format(self.filename, self.path))
