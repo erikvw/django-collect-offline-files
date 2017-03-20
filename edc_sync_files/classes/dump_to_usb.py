@@ -54,42 +54,37 @@ class TransactionLoadUsbFile:
         self.source_folder = os.path.join(
             app_config.usb_volume, 'transactions', 'incoming')
         self.processed_usb_files = []
-        # FIXME: too much code in the try/except!!
-        try:
-            uploaded = 0
-            not_upload = 0
-            self.copy_to_media()
-            usb_incoming_folder_files = []
-            for filename in os.listdir(django_apps.get_app_config(
-                    'edc_sync_files').usb_incoming_folder) or []:
-                if self.match_filename.match(filename):
-                    usb_incoming_folder_files.append(filename)
+        uploaded = 0
+        not_upload = 0
+        self.copy_to_media()
 
-            usb_incoming_folder_files.sort()
-            for filename in usb_incoming_folder_files or []:
-                source_file = os.path.join(
-                    django_apps.get_app_config(
-                        'edc_sync_files').usb_incoming_folder, filename)
-                # FIXME: this class should inherit from TransactionLoads
-                load = TransactionLoads(path=source_file)
-                load.is_usb = True
-                self.already_upload = load.already_uploaded
-                if load.upload_file():
-                    uploaded = uploaded + 1
-                    transaction_messages.add_message(
-                        'success', 'Upload the file successfully.')
-                    self.processed_usb_files.append(
-                        self.file_status(load, filename))
-                    self.is_usb_transaction_file_loaded = True
-                    self.is_archived = True
-                else:
-                    self.processed_usb_files.append(
-                        self.file_status(load, filename))
-                    not_upload = not_upload + 1
-        except FileNotFoundError as e:
-            self.is_dumped_to_usb = False
-            transaction_messages.add_message(
-                'error', 'Cannot find transactions folder in the USB. Got '.format(str(e)))
+        usb_incoming_folder_files = []
+        for filename in os.listdir(django_apps.get_app_config(
+            'edc_sync_files').usb_incoming_folder) or []:
+            if self.match_filename.match(filename):
+                usb_incoming_folder_files.append(filename)
+        usb_incoming_folder_files.sort()
+
+        for filename in usb_incoming_folder_files or []:
+            source_file = os.path.join(
+                django_apps.get_app_config(
+                    'edc_sync_files').usb_incoming_folder, filename)
+            # FIXME: this class should inherit from TransactionLoads
+            load_file = TransactionLoads(path=source_file)
+            load_file.is_usb = True
+            self.already_upload = load_file.already_uploaded
+            if load_file.upload_file():
+                uploaded = uploaded + 1
+                transaction_messages.add_message(
+                    'success', 'Upload the file successfully.')
+                self.processed_usb_files.append(
+                    self.file_status(load_file, filename))
+                self.is_usb_transaction_file_loaded = True
+                self.is_archived = True
+            else:
+                self.processed_usb_files.append(
+                    self.file_status(load_file, filename))
+                not_upload = not_upload + 1
 
     def file_status(self, loader, filename):
         reason = 'Failed to upload: File already' if loader.already_uploaded else None
@@ -114,7 +109,6 @@ class TransactionLoadUsbFile:
             transaction_messages.add_message(
                 'error', 'Failed to load usb transaction file. Got '.format(str(e)))
 
-    # FIXME: this pattern is repeated over and over!
     def usb_files(self):
         usb_files = []
         if os.path.exists(self.source_folder):
