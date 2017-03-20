@@ -18,29 +18,26 @@ class DumpToUsb:
         self.is_dumped_to_usb = False
         self.filename = None
         self.using = using
-        # FIXME: too much code in the try/except!!
+        usb_incoming_folder = os.path.join(
+            app_config.usb_volume, 'transactions', 'incoming')
+        source_folder = django_apps.get_app_config(
+            'edc_sync_files').source_folder
+        # FIXME: this class should inherit from TransactionDumps
+        dump = TransactionDumps(source_folder, using=self.using)
+        self.filename = dump.filename
         try:
-            usb_incoming_folder = os.path.join(
-                app_config.usb_volume, 'transactions', 'incoming')
-            if os.path.exists(usb_incoming_folder):
-                source_folder = django_apps.get_app_config(
-                    'edc_sync_files').source_folder
-                # FIXME: this class should inherit from TransactionDumps
-                dump = TransactionDumps(source_folder, using=self.using)
-                self.filename = dump.filename
-                shutil.copy2(os.path.join(source_folder,
-                                          dump.filename), usb_incoming_folder)
-                transaction_messages.add_message(
-                    'success', 'Copied {} to {}.'.format(
-                        os.path.join(source_folder, dump.filename),
-                        os.path.join(usb_incoming_folder, dump.filename)))
-                self.is_dumped_to_usb = True
-            else:
-                transaction_messages.add_message(
-                    'error', 'Cannot find transactions folder in the USB.'
-                    ' ( transactions/incoming )')
+            shutil.copy2(os.path.join(
+                source_folder, dump.filename), usb_incoming_folder)
+            transaction_messages.add_message(
+                'success', 'Copied {} to {}.'.format(
+                    os.path.join(source_folder, dump.filename),
+                    os.path.join(usb_incoming_folder, dump.filename)))
+            self.is_dumped_to_usb = True
         except FileNotFoundError:
             self.is_dumped_to_usb = False
+            transaction_messages.add_message(
+                'error', 'Cannot find transactions folder in the USB.'
+                ' ( transactions/incoming )')
 
 
 class TransactionLoadUsbFile:
