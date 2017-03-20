@@ -48,7 +48,6 @@ class TransactionLoadUsbFile:
     def __init__(self):
         app_config = django_apps.get_app_config('edc_sync_files')
         self.match_filename = re.compile(self.pattern)
-        # FIXME: why so many booleans maintained???? bad design
         self.is_usb_transaction_file_loaded = False
         self.is_archived = False
         self.already_upload = False
