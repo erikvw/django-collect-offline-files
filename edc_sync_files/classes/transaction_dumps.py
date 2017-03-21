@@ -1,4 +1,3 @@
-import re
 import os
 import shutil
 import socket
@@ -29,7 +28,8 @@ class TransactionDumps:
 
     def __init__(self, path, hostname=None, using=None):
         self.path = path
-        self.hostname = hostname or django_apps.get_app_config('edc_device').device_id
+        self.hostname = hostname or django_apps.get_app_config(
+            'edc_device').device_id
         self.using = using or 'default'
         self.filename = '{}_{}.json'.format(
             self.hostname, str(timezone.now().strftime("%Y%m%d%H%M%S")))
@@ -45,12 +45,13 @@ class TransactionDumps:
         """
         update_batch_info = False
         try:
-            first_unconsumed_outgoing = OutgoingTransaction.objects.using(self.using).filter(
-                is_consumed_server=False).first()
+            first_unconsumed_outgoing = OutgoingTransaction.objects.using(
+                self.using or 'default').filter(is_consumed_server=False
+                                                ).first()
             self.batch_id = first_unconsumed_outgoing.tx_pk
 
-            last_consumed_outgoing = OutgoingTransaction.objects.using(self.using).filter(
-                is_consumed_server=True).last()
+            last_consumed_outgoing = OutgoingTransaction.objects.using(
+                self.using).filter(is_consumed_server=True).last()
             self.batch_seq = None
             if not last_consumed_outgoing:
                 self.batch_seq = self.batch_id
@@ -63,7 +64,8 @@ class TransactionDumps:
             update_batch_info = True
         except AttributeError:
             transaction_messages.add_message(
-                'error', 'Your machine have 0 transactions pending. No data to transfer.',
+                'error', 'Your machine have 0 transactions pending.'
+                ' No data to transfer.',
                 network=False, permission=False)
             update_batch_info = False
         return update_batch_info
@@ -91,7 +93,8 @@ class TransactionDumps:
                 shutil.move(source_filename, new_filename)
                 self.update_history()  # Create with a new name
                 transaction_messages.add_message(
-                    'success', 'Renamed {} to {}.'.format(source_filename, destination_file))
+                    'success', 'Renamed {} to {}.'.format(
+                        source_filename, destination_file))
             except FileNotFoundError as e:
                 transaction_messages.add_message(
                     'error', 'FileNotFoundError Got {}'.format(str(e)))
@@ -106,7 +109,8 @@ class TransactionDumps:
         exported = 0
         status = self.update_batch_info()
         if status:
-            outgoing_transactions = OutgoingTransaction.objects.using(self.using).filter(
+            outgoing_transactions = OutgoingTransaction.objects.using(
+                self.using).filter(
                 is_consumed_server=False)
             outgoing_path = os.path.join(self.path, self.filename)
             try:

@@ -168,7 +168,8 @@ class TransactionLoads:
                         file_name=file_name,
                         consumed=self.consumed,
                         total=self.total,
-                        not_consumed=self.not_consumed
+                        not_consumed=self.not_consumed,
+                        producer=self.transaction_obj.producer
                     )
                     self.is_uploaded = True
                     self.apply_transactions()
