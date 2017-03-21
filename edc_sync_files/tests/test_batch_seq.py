@@ -31,8 +31,9 @@ class TestBatchSeq(TestCase):
 
         self.assertTrue(tx_dumps.batch_id)
         self.assertTrue(tx_dumps.batch_seq)
-        self.assertEqual(tx_dumps.batch_seq, tx_dumps.batch_id) # first time should be equal
-        
+        # first time should be equal
+        self.assertEqual(tx_dumps.batch_seq, tx_dumps.batch_id)
+
     def test_file_identifier_second_time(self):
         #  Create transactions
         TestModel.objects.using('client').create(f1=self.faker.name())
@@ -44,7 +45,7 @@ class TestBatchSeq(TestCase):
         self.assertTrue(tx_dumps_1.is_exported_to_json)
         sleep(1)
         batch_id_1 = tx_dumps_1.batch_id
-        
+
         TestModel.objects.using('client').create(f1=self.faker.name())
         TestModel.objects.using('client').create(f1=self.faker.name())
         sleep(1)
@@ -55,15 +56,14 @@ class TestBatchSeq(TestCase):
 
         batch_id_2 = tx_dumps_2.batch_id
         batch_seq_2 = tx_dumps_2.batch_seq
-        
-        self.assertEqual(str(batch_id_1), batch_seq_2) # should be equal to previous batch_seq
-        self.assertNotEqual(batch_id_1, batch_id_2) # should not be equal, assigned a new tx_pk
-        
-
+        # should be equal to previous batch_seq
+        self.assertEqual(str(batch_id_1), batch_seq_2)
+        # should not be equal, assigned a new tx_pk
+        self.assertNotEqual(batch_id_1, batch_id_2)
 
     @tag('test_file_identifier_with_synced_tx')
     def test_file_identifier_second_time1(self):
-        
+
         #  Create transactions
         TestModel.objects.using('client').create(f1=self.faker.name())
         TestModel.objects.using('client').create(f1=self.faker.name())
@@ -74,7 +74,7 @@ class TestBatchSeq(TestCase):
         self.assertTrue(tx_dumps_1.is_exported_to_json)
         batch_id_1 = tx_dumps_1.batch_id
         batch_seq_1 = tx_dumps_1.batch_seq
-        
+
         TestModel.objects.using('client').create(f1=self.faker.name())
         TestModel.objects.using('client').create(f1=self.faker.name())
         sleep(1)
@@ -82,15 +82,16 @@ class TestBatchSeq(TestCase):
         path = os.path.join(settings.MEDIA_ROOT, "transactions", "outgoing")
         tx_dumps_2 = TransactionDumps(path, using='client', hostname="010")
         self.assertTrue(tx_dumps_2.is_exported_to_json)
-        
+
         sleep(1)
         batch_id_2 = tx_dumps_2.batch_id
         batch_seq_2 = tx_dumps_2.batch_seq
         batch_seq_1 = str(batch_seq_1)
+        # should be equal to previous batch_seq
+        self.assertEqual(batch_seq_2, str(batch_id_1))
+        # should not be equal, assigned a new tx_pk
+        self.assertNotEqual(batch_id_1, batch_id_2)
 
-        self.assertEqual(batch_seq_2, str(batch_id_1)) # should be equal to previous batch_seq
-        self.assertNotEqual(batch_id_1, batch_id_2) # should not be equal, assigned a new tx_pk
-        
         #  Create transactions
         TestModel.objects.using('client').create(f1=self.faker.name())
         TestModel.objects.using('client').create(f1=self.faker.name())
@@ -99,9 +100,11 @@ class TestBatchSeq(TestCase):
         path = os.path.join(settings.MEDIA_ROOT, "transactions", "outgoing")
         tx_dumps_3 = TransactionDumps(path, using='client', hostname="010")
         self.assertTrue(tx_dumps_3.is_exported_to_json)
-         
+
         batch_id_3 = tx_dumps_3.batch_id
         batch_seq_3 = tx_dumps_3.batch_seq
-         
-        self.assertEqual(str(batch_id_2), batch_seq_3) # should be equal to previous batch_seq
-        self.assertNotEqual(batch_id_3, batch_id_2) # should not be equal, assigned a new tx_pk
+
+        # should be equal to previous batch_seq
+        self.assertEqual(str(batch_id_2), batch_seq_3)
+        # should not be equal, assigned a new tx_pk
+        self.assertNotEqual(batch_id_3, batch_id_2)
