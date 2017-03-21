@@ -3,7 +3,7 @@ from ..models import UploadTransactionFile
 
 
 class SyncReportMixin:
-    """Generates statistics for transactions for a particular machine.
+    """Generates statistics for transactions.
     """
     def __init__(self, producer=None, filename=None,
                  report_date=None, all_machines=False):

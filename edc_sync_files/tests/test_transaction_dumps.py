@@ -26,13 +26,13 @@ class TestTransactionDumps(TestCase):
         path = os.path.join(settings.MEDIA_ROOT, "transactions", "outgoing")
         tx_dumps = TransactionDumps(path, using='client', hostname="010")
 
-        outgoing_transactions = OutgoingTransaction.objects.using('client').filter(
-            is_consumed_server=True)
+        outgoing_transactions = OutgoingTransaction.objects.using(
+            'client').filter(is_consumed_server=True)
 
         self.assertGreater(outgoing_transactions.count(), 0)
         self.assertEqual(History.objects.all().count(), 1)
         self.assertTrue(tx_dumps.is_exported_to_json)
-        
+
     def test_export_to_json_file1(self):
 
         # Attempt to dump on no data.
@@ -43,10 +43,9 @@ class TestTransactionDumps(TestCase):
         self.assertFalse(tx_dumps.is_exported_to_json)
         self.assertFalse(tx_dumps.batch_id)
         self.assertFalse(tx_dumps.batch_seq)
-        
-        
+
     def test_export_to_json_file2(self):
-        
+
         # Create transactions
         TestModel.objects.using('client').create(f1=self.fake.name())
         TestModel.objects.using('client').create(f1=self.fake.name())
@@ -54,14 +53,12 @@ class TestTransactionDumps(TestCase):
         # Dump transaction
         path = os.path.join(settings.MEDIA_ROOT, "transactions", "outgoing")
         tx_dumps = TransactionDumps(path, using='client', hostname="010")
-        
+
         self.assertEqual(History.objects.all().count(), 1)
         self.assertTrue(tx_dumps.is_exported_to_json)
-        
-        
+
         # Attempt to dump on no data.
         path = os.path.join(settings.MEDIA_ROOT, "transactions", "outgoing")
         tx_dumps1 = TransactionDumps(path, using='client', hostname="010")
-        
-        self.assertFalse(tx_dumps1.update_batch_info())
 
+        self.assertFalse(tx_dumps1.update_batch_info())
