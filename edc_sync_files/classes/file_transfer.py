@@ -22,16 +22,17 @@ class FileConnector(SSHConnectMixin):
        1. Copies files from source folder to destination folder.
     """
 
-    def __init__(self, host=None, source_folder=None,
+    def __init__(self, remote_host=None, source_folder=None,
                  destination_folder=None, archive_folder=None):
         self.trusted_host = True
         app_config = django_apps.get_app_config('edc_sync_files')
         self.progress_status = None
-        self.host = host or app_config.remote_host
+        self.remote_host = remote_host or app_config.remote_host
         self.user = app_config.user
         self.source_folder = source_folder or app_config.source_folder
         self.destination_tmp_folder = app_config.destination_tmp_folder
-        self.destination_folder = destination_folder or app_config.destination_folder
+        self.destination_folder = (
+            destination_folder or app_config.destination_folder)
         self.archive_folder = archive_folder or app_config.archive_folder
 
     def connected(self):
