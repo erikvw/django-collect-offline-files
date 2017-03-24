@@ -17,14 +17,14 @@ class Command(BaseCommand):
         try:
             source_folder = django_apps.get_app_config('edc_sync_files').source_folder
             dump = TransactionDumps(source_folder)
-            is_dumped, export = dump.dump_to_json()
-            if is_dumped:
+            if dump.is_exported_to_json:
                 sys.stdout.write(
-                    'Transaction files: {} dumped with {}'.format(dump.filename, export))
+                    'Transaction files: {} dumped with {} transactions'.format(
+                        dump.filename, dump.export_no))
+                TransactionFileManager().send_files()
             else:
                 sys.stdout.write(
-                    'Failed to dump transaction file')
-            TransactionFileManager().send_files()
+                    'Failed to dump transaction file. Got {}'.format())
         except AttributeError:
             sys.stdout.write('No pending transaction files')
         sys.stdout.write('\npress CTRL-C to stop.\n\n')

@@ -18,22 +18,22 @@ from .mixins import SSHConnectMixin
 
 
 class FileConnector(SSHConnectMixin):
-    """Connects to the remote machine given (host & password) or (ssh key pair.).
-       1. Copies files from source folder to destination folder in file system.
+    """Connects to the remote machine using (ssh key pair.).
+       1. Copies files from source folder to destination folder.
     """
 
-    def __init__(self, host=None, password=None, source_folder=None,
+    def __init__(self, remote_host=None, source_folder=None,
                  destination_folder=None, archive_folder=None):
         self.trusted_host = True
-        edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
+        app_config = django_apps.get_app_config('edc_sync_files')
         self.progress_status = None
-        self.host = host or edc_sync_file_app.host
-        self.password = password or edc_sync_file_app.password
-        self.user = edc_sync_file_app.user
-        self.source_folder = source_folder or edc_sync_file_app.source_folder
-        self.destination_tmp_folder = edc_sync_file_app.destination_tmp_folder
-        self.destination_folder = destination_folder or edc_sync_file_app.destination_folder
-        self.archive_folder = archive_folder or edc_sync_file_app.archive_folder
+        self.remote_host = remote_host or app_config.remote_host
+        self.user = app_config.user
+        self.source_folder = source_folder or app_config.source_folder
+        self.destination_tmp_folder = app_config.destination_tmp_folder
+        self.destination_folder = (
+            destination_folder or app_config.destination_folder)
+        self.archive_folder = archive_folder or app_config.archive_folder
 
     def connected(self):
         client = self.connect(REMOTE)
@@ -55,12 +55,14 @@ class FileConnector(SSHConnectMixin):
         client = self.connect(REMOTE)
         with client.open_sftp() as host_sftp:
             try:
-                destination_tmp_file = os.path.join(self.destination_tmp_folder, filename)
-                destination_file = os.path.join(self.destination_folder, filename)
+                destination_tmp_file = os.path.join(
+                    self.destination_tmp_folder, filename)
+                destination_file = os.path.join(
+                    self.destination_folder, filename)
                 sent = True
                 source_filename = os.path.join(self.source_folder, filename)
                 try:
-                    sent_file = host_sftp.put(
+                    host_sftp.put(
                         source_filename,
                         destination_tmp_file,
                         callback=self.progress, confirm=True)
@@ -75,12 +77,7 @@ class FileConnector(SSHConnectMixin):
                     transaction_messages.add_message(
                         'error', 'IOError Got {} . Sending {}'.format(e, destination_tmp_file))
                     return False
-                received_file = host_sftp.lstat(destination_file)
-                if received_file.st_size == sent_file.st_size:
-                    pass
-                print(sent_file.st_atime)
 
-                #  create a record on successful transfer
                 if sent:
                     self.update_history(filename, sent=sent)
                     transaction_messages.add_message(
@@ -167,11 +164,11 @@ class FileTransfer(object):
         """ Copies the files from source folder to destination folder.
         """
         copied = False
-        if filename:  # Use by client by machine
+        if filename:  # Use by client
             for f in self.files_dict:
                 if f.get('filename') == filename:
                     copied = self.file_connector.copy(f.get('filename'))
-        else:  # Use by community server to send files to community server
+        else:  # Use by community server to send files to central server
             for f in self.files_dict:
                 filename = f.get('filename')
                 copied = self.file_connector.copy(filename)
