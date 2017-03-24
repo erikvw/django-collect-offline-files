@@ -6,4 +6,4 @@ from .transaction_dumps import TransactionDumps
 from .transaction_loads import TransactionLoads
 from .transaction_messages import transaction_messages
 from .dump_to_usb import DumpToUsb, TransactionLoadUsbFile
-from edc_sync_files.classes.sync_report import SyncReport
+from edc_sync_files.classes.sync_report import SyncReport, SyncReportDetail
