@@ -7,28 +7,16 @@ class SyncReport:
     """
 
     def __init__(
-            self, all_machines=None, detailed=False, report_filters=None):
+            self, detailed=False, report_filters=None):
 
         self.total_consumed = 0
         self.total_not_consumed = 0
         self.upload_transaction_file = None
         self.report_filters = report_filters or {}
         self.report_data = []
-        self.all_machines = all_machines or False
-
         self.col_data = {}
 
-        if not self.all_machines:
-            if not detailed:
-                self.update_report_data()
-            else:
-                for transaction_file in self.upload_transaction_files():
-                    self.report_filters.update(
-                        batch_id=transaction_file.batch_id)
-                    self.update_report_data()
-                    self.report_data.append(self.col_data)
-        else:
-            self.create_report()
+        self.create_report()
 
     def create_report(self):
         """Create a report for each producer.
@@ -64,23 +52,17 @@ class SyncReport:
         self.total_consumed = IncomingTransaction.objects.filter(
             producer=producer, is_consumed=True).count()
 
-        self.report_filters.update()
         self.total_not_consumed = IncomingTransaction.objects.filter(
             producer=producer,
             is_consumed=False).count()
 
         self.upload_transaction_file = UploadTransactionFile.objects.filter(
-            producer=producer).last()
+            producer=producer).order_by('-created')[0]
 
         self.col_data.update({
             'total_consumed': self.total_consumed,
             'total_not_consumed': self.total_not_consumed,
             'upload_transaction_file': self.upload_transaction_file})
-
-    def upload_transaction_files(self):
-        """Returns upload transactions by producer.
-        """
-        return UploadTransactionFile.objects.all().order_by('-created')
 
 
 class SyncReportDetail(SyncReport):
@@ -96,7 +78,7 @@ class SyncReportDetail(SyncReport):
             data = self.update_report_data(
                 batch_id=tx_file.batch_id, producer=tx_file.producer,
                 file_name=tx_file.file_name)
-            self.report_data.append(data)
+            self.report_data.append([data, tx_file])
 
     def update_report_data(self, batch_id=None, producer=None, file_name=None):
         """Build a statistics based on a producer.

@@ -6,7 +6,6 @@ from django.apps import apps as django_apps
 from django.core import serializers
 from django.core.files import File
 
-from edc_sync.consumer import Consumer
 from edc_sync.models import IncomingTransaction
 from edc_sync_files.classes.transaction_messages import transaction_messages
 
@@ -31,12 +30,13 @@ class TransactionLoads:
         self.ignored = 0
         self.is_uploaded = False
         self.is_played = False
+        self.previous_played_all = False
         self.is_usb = False
         self.upload_transaction_file = None
         self.transaction_obj = None
         self.transaction_objs = []
         self.file_transactions_pks = []
-        
+
         try:
             for index, deserialized_object in enumerate(
                     self.deserialize_json_file(File(open(self.path)))):
@@ -84,8 +84,16 @@ class TransactionLoads:
     def apply_transactions(self):
         """ Apply incoming transactions for the currently uploaded file.
         """
+        from edc_sync.consumer import Consumer
         is_played = False
-        if self.is_uploaded:
+        prevous_incoming_not_consumed = IncomingTransaction.objects.filter(
+            is_consumed=False,
+            batch_id=self.transaction_obj.batch_seq).count()
+
+        if not prevous_incoming_not_consumed:
+            self.previous_played_all = False
+
+        if self.is_uploaded and self.previous_played_all:
             print("Applying transactions for {}".format(self.filename))
             is_played = Consumer(transactions=self.file_transactions_pks, check_hostname=False).consume()
             self.upload_transaction_file.is_played = is_played
@@ -101,8 +109,9 @@ class TransactionLoads:
         """
         already_uploaded = False
         try:
-            UploadTransactionFile.objects.get(
+            previous_file = UploadTransactionFile.objects.get(
                 file_name=self.filename)
+            print(previous_file.__dict__)
             already_uploaded = True
             print("File already upload. Cannot be uploaded. {}".format(self.filename))
         except UploadTransactionFile.DoesNotExist:
@@ -121,6 +130,8 @@ class TransactionLoads:
             self.previous_file_available = False
         first_time = (
             self.transaction_obj.batch_seq == self.transaction_obj.batch_id)
+        if first_time:
+            self.previous_played_all = True
         self._valid = True if (
             self.previous_file_available and not self.already_uploaded) or (
                 first_time and not self.already_uploaded) else False
