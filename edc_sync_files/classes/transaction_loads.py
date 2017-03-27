@@ -6,7 +6,6 @@ from django.apps import apps as django_apps
 from django.core import serializers
 from django.core.files import File
 
-from edc_sync.consumer import Consumer
 from edc_sync.models import IncomingTransaction
 from edc_sync_files.classes.transaction_messages import transaction_messages
 
@@ -85,6 +84,7 @@ class TransactionLoads:
     def apply_transactions(self):
         """ Apply incoming transactions for the currently uploaded file.
         """
+        from edc_sync.consumer import Consumer
         is_played = False
         prevous_incoming_not_consumed = IncomingTransaction.objects.filter(
             is_consumed=False,
