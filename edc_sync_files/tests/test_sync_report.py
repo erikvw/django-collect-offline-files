@@ -8,7 +8,7 @@ from edc_example.models import TestModel
 
 from edc_sync_files.classes import TransactionDumps, TransactionLoads
 
-from ..classes import SyncReportMixin
+from ..classes import SyncReport
 
 
 @tag('TestSyncReport')
@@ -17,6 +17,7 @@ class TestSyncReport(TestCase):
     def setUp(self):
         self.fake = Faker()
 
+    @tag('test_uploaded_files')
     def test_uploaded_files(self):
         # Create transactions
         name = self.fake.name()
@@ -33,11 +34,11 @@ class TestSyncReport(TestCase):
         model_count = TestModel.objects.filter(f1=name).count()
         self.assertEqual(model_count, 1)
 
-        sync_report = SyncReportMixin(
-            producer='tsetsiba-client', all_machines=False)
-        self.assertEqual(sync_report.not_consumed, 0)
-        self.assertEqual(sync_report.total_consumed, 4)
-        self.assertTrue(sync_report.upload_transaction_file)
+        sync_report = SyncReport()
+        data = sync_report.report_data[0][0]
+        self.assertEqual(data.get('total_not_consumed'), 0)
+        self.assertEqual(data.get('total_consumed'), 4)
+        self.assertTrue(data.get('upload_transaction_file'))
 
     @tag('test_uploaded_files1')
     def test_uploaded_files1(self):
@@ -58,11 +59,11 @@ class TestSyncReport(TestCase):
             f1=name).count()
         self.assertEqual(model_count, 1)
 
-        sync_report = SyncReportMixin(
-            producer='tsetsiba-client', all_machines=False)
-        self.assertEqual(sync_report.not_consumed, 0)
-        self.assertEqual(sync_report.total_consumed, 4)
-        self.assertTrue(sync_report.upload_transaction_file)
+        sync_report = SyncReport()
+        data = sync_report.report_data[0][0]
+        self.assertEqual(data.get('total_not_consumed'), 0)
+        self.assertEqual(data.get('total_consumed'), 4)
+        self.assertTrue(data.get('upload_transaction_file'))
 
         name = self.fake.name()
         TestModel.objects.using('client').create(f1=name)
@@ -76,12 +77,11 @@ class TestSyncReport(TestCase):
 
         transaction_file_path = os.path.join(
             tx_dumps_2.path, tx_dumps_2.filename)
-        print(tx_dumps_2.path)
         TransactionLoads(
             path=transaction_file_path).upload_file()
 
-        sync_report = SyncReportMixin(
-            producer='tsetsiba-client', all_machines=False)
-        self.assertEqual(sync_report.not_consumed, 0)
-        self.assertEqual(sync_report.total_consumed, 8)
-        self.assertTrue(sync_report.upload_transaction_file)
+        sync_report = SyncReport()
+        data = sync_report.report_data[0][0]
+        self.assertEqual(data.get('total_not_consumed'), 0)
+        self.assertEqual(data.get('total_consumed'), 8)
+        self.assertTrue(data.get('upload_transaction_file'))

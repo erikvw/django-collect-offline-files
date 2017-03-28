@@ -82,7 +82,19 @@ class TestTransactionLoads(TestCase):
 
         transaction_file_path = os.path.join(tx_dumps.path, tx_dumps.filename)
         new_file_to_upload = TransactionLoads(path=transaction_file_path)
-        self.assertFalse(new_file_to_upload.upload_file())
+        self.assertTrue(new_file_to_upload.upload_file())
+
+        TestModel.objects.using('client').create(f1=self.fake.name())
+        TestModel.objects.using('client').create(f1=self.fake.name())
+        sleep(1)
+        # Dump transaction
+        path = os.path.join(settings.MEDIA_ROOT, "transactions", "outgoing")
+        tx_dumps = TransactionDumps(path, using='client', hostname="010")
+        self.assertTrue(tx_dumps.is_exported_to_json)
+
+        transaction_file_path = os.path.join(tx_dumps.path, tx_dumps.filename)
+        new_file_to_upload = TransactionLoads(path=transaction_file_path)
+        self.assertTrue(new_file_to_upload.upload_file())
 
     @tag('test_file_upload_upload')
     def test_file_upload_and_play(self):

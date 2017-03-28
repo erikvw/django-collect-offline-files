@@ -36,7 +36,7 @@ class TestSyncReportDetailed(TestCase):
         report_filters = {
             'producer': 'tsetsiba-client'}
         sync_report = SyncReport(
-           report_filters=report_filters, all_machines=False)
+            report_filters=report_filters)
 
         self.assertEqual(sync_report.upload_transaction_files().count(), 1)
         self.assertEqual(sync_report.not_consumed, 0)
@@ -63,7 +63,7 @@ class TestSyncReportDetailed(TestCase):
         report_filters = {
             'producer': 'tsetsiba-client'}
         sync_report = SyncReport(
-           report_filters=report_filters, all_machines=False, detailed=True)
+            report_filters=report_filters)
 
         self.assertEqual(sync_report.upload_transaction_files().count(), 1)
         self.assertEqual(sync_report.not_consumed, 0)
@@ -107,7 +107,7 @@ class TestSyncReportDetailed(TestCase):
         report_filters = {
             'producer': 'tsetsiba-client'}
         sync_report = SyncReport(
-           report_filters=report_filters, all_machines=False, detailed=True)
+            report_filters=report_filters)
 
         self.assertEqual(sync_report.upload_transaction_files().count(), 2)
         self.assertEqual(sync_report.not_consumed, 0)
