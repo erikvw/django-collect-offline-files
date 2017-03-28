@@ -91,7 +91,7 @@ class TransactionLoads:
             batch_id=self.transaction_obj.batch_seq).count()
 
         if not prevous_incoming_not_consumed:
-            self.previous_played_all = False
+            self.previous_played_all = True
 
         if self.is_uploaded and self.previous_played_all:
             print("Applying transactions for {}".format(self.filename))
@@ -109,9 +109,8 @@ class TransactionLoads:
         """
         already_uploaded = False
         try:
-            previous_file = UploadTransactionFile.objects.get(
+            UploadTransactionFile.objects.get(
                 file_name=self.filename)
-            print(previous_file.__dict__)
             already_uploaded = True
             print("File already upload. Cannot be uploaded. {}".format(self.filename))
         except UploadTransactionFile.DoesNotExist:
