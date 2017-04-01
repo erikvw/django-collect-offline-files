@@ -10,6 +10,7 @@ from edc_sync.models import IncomingTransaction
 from edc_sync_files.classes.transaction_messages import transaction_messages
 
 from ..models import UploadTransactionFile
+from django.core.exceptions import MultipleObjectsReturned
 
 
 class TransactionLoads:
@@ -86,6 +87,12 @@ class TransactionLoads:
         """
         from edc_sync.consumer import Consumer
         is_played = False
+
+        IncomingTransaction.objects.filter(
+            tx_name__in=['bcpp_subject.subjectreferral',
+                         'bcpp_subject.historicalsubjectreferral'],
+            is_consumed=False).update(is_consumed=True)
+
         prevous_incoming_not_consumed = IncomingTransaction.objects.filter(
             is_consumed=False,
             batch_id=self.transaction_obj.batch_seq).count()
@@ -127,6 +134,8 @@ class TransactionLoads:
             self.previous_file_available = True
         except UploadTransactionFile.DoesNotExist:
             self.previous_file_available = False
+        except MultipleObjectsReturned:
+            self.previous_file_available = True
         first_time = (
             self.transaction_obj.batch_seq == self.transaction_obj.batch_id)
         if first_time:
