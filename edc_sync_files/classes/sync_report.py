@@ -13,28 +13,29 @@ class SyncReport:
         self.total_not_consumed = 0
         self.upload_transaction_file = None
         self.report_filters = report_filters or {}
-        self.report_data = []
-        self.col_data = {}
 
-        self.create_report()
+        self.report_data = self.create_report()
 
     def create_report(self):
         """Create a report for each producer.
         """
+        report_data = []
         row = []
         producers = self.producers()
         for index, producer in enumerate(producers):
             index = index + 1
-            self.report_filters.update(producer=producer)
-            self.update_report_data(producer)
+            row_item = self.update_report_data(producer)
             if len(row) == 4:
-                row.append(self.col_data)
-                self.report_data.append(row)
+                report_data.append(row)
                 row = []
-            elif len(producers) < 4:
-                row.append(self.col_data)
+            elif len(row) < 4:
                 if index == len(self.producers()):
-                    self.report_data.append(row)
+                    row.append(row_item)
+                    report_data.append(row)
+                else:
+                    row.append(row_item)
+                print(row)
+        return report_data
 
     def producers(self):
         """Returns a list of producers based on synced files.
@@ -48,7 +49,7 @@ class SyncReport:
     def update_report_data(self, producer=None):
         """Build a statistics based on a producer.
         """
-
+        row_data = {}
         self.total_consumed = IncomingTransaction.objects.filter(
             producer=producer, is_consumed=True).count()
 
@@ -59,10 +60,11 @@ class SyncReport:
         self.upload_transaction_file = UploadTransactionFile.objects.filter(
             producer=producer).order_by('-created')[0]
 
-        self.col_data.update({
+        row_data.update({
             'total_consumed': self.total_consumed,
             'total_not_consumed': self.total_not_consumed,
             'upload_transaction_file': self.upload_transaction_file})
+        return row_data
 
 
 class SyncReportDetail(SyncReport):
