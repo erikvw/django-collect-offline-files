@@ -98,6 +98,9 @@ class SyncReportDetail(SyncReport):
                 producer=producer, batch_id=batch_id)
         except UploadTransactionFile.DoesNotExist:
             pass
+        except UploadTransactionFile.MultipleObjectsReturned:
+            self.upload_transaction_file = UploadTransactionFile.objects.filter(
+                producer=producer, batch_id=batch_id).last()
         else:
             timestamp = self.upload_transaction_file.file_name.split('.')[0]
             timestamp = timestamp[-6:]
