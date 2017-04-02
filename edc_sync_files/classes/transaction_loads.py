@@ -10,6 +10,7 @@ from edc_sync.models import IncomingTransaction
 from edc_sync_files.classes.transaction_messages import transaction_messages
 
 from ..models import UploadTransactionFile
+from django.core.exceptions import MultipleObjectsReturned
 
 
 class TransactionLoads:
@@ -86,9 +87,11 @@ class TransactionLoads:
         """
         from edc_sync.consumer import Consumer
         is_played = False
-        prevous_incoming_not_consumed = IncomingTransaction.objects.filter(
-            is_consumed=False,
-            batch_id=self.transaction_obj.batch_seq).count()
+        prevous_incoming_not_consumed = 0
+        if self.transaction_obj:
+            prevous_incoming_not_consumed = IncomingTransaction.objects.filter(
+                is_consumed=False,
+                batch_id=self.transaction_obj.batch_seq).count()
 
         if not prevous_incoming_not_consumed:
             self.previous_played_all = True
@@ -121,20 +124,25 @@ class TransactionLoads:
     def valid(self):
         """ Check order of transaction file batch seq.
         """
-        try:
-            UploadTransactionFile.objects.get(
-                batch_id=self.transaction_obj.batch_seq)
-            self.previous_file_available = True
-        except UploadTransactionFile.DoesNotExist:
-            self.previous_file_available = False
-        first_time = (
-            self.transaction_obj.batch_seq == self.transaction_obj.batch_id)
-        if first_time:
-            self.previous_played_all = True
-        self._valid = True if (
-            self.previous_file_available and not self.already_uploaded) or (
-                first_time and not self.already_uploaded) else False
-        print("File  {} is validated {}.".format(self.filename, self._valid))
+        if self.transaction_obj:
+            try:
+                UploadTransactionFile.objects.get(
+                    batch_id=self.transaction_obj.batch_seq)
+                self.previous_file_available = True
+            except UploadTransactionFile.DoesNotExist:
+                self.previous_file_available = False
+            except MultipleObjectsReturned:
+                self.previous_file_available = True
+            first_time = (
+                self.transaction_obj.batch_seq == self.transaction_obj.batch_id)
+            if first_time:
+                self.previous_played_all = True
+            self._valid = True if (
+                self.previous_file_available and not self.already_uploaded) or (
+                    first_time and not self.already_uploaded) else False
+            print("File  {} is validated {}.".format(self.filename, self._valid))
+        else:
+            self._valid = False
         return self._valid
 
     def archive_file(self):
