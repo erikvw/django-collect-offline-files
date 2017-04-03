@@ -1,4 +1,5 @@
 import re
+import errno
 import time
 import os
 from os.path import join
@@ -59,6 +60,11 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
                 time.sleep(1)
         except KeyboardInterrupt:
             observer.stop()
+        except (OSError, IOError) as err:
+            print('Error occured restarting observer..Got {}'.format(str(err)))
+            time.sleep(1)
+            observer.stop()
+            self.start_observer()
         observer.join()
 
     def process_on_added(self, event):
