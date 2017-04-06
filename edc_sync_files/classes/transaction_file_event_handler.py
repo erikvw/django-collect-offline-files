@@ -59,7 +59,7 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         logger = logging.getLogger(__name__)
         try:
             records = {'time': timezone.now(), 'status': 'running'}
-            logger.error('{}'.format(records))
+            logger.info('{}'.format(records))
             while True:
                 time.sleep(1)
         except KeyboardInterrupt:
