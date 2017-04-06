@@ -17,6 +17,9 @@ class AppConfig(DjangoAppConfig):
     user = None
     remote_host = None
     usb_volume = '/Volumes/BCPP'
+
+    pending_folder = os.path.join(
+        settings.MEDIA_ROOT, 'transactions', 'pending')
     usb_incoming_folder = os.path.join(
         settings.MEDIA_ROOT, 'transactions', 'usb')
     source_folder = os.path.join(

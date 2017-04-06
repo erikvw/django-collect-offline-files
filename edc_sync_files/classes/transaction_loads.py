@@ -103,7 +103,7 @@ class TransactionLoads:
             self.upload_transaction_file.comment = transaction_messages.last_error_message()
             self.upload_transaction_file.save()
         else:
-            print("File {} not uploaded, transactions not played.".format(self.filename))
+            print("File {} uploaded, transactions not played.".format(self.filename))
         return is_played
 
     @property
