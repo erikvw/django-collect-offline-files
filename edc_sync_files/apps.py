@@ -33,6 +33,12 @@ class AppConfig(DjangoAppConfig):
 
     def ready(self):
         sys.stdout.write('Loading {} ...\n'.format(self.verbose_name))
+        for folder in [
+            self.pending_folder, self.usb_incoming_folder, self.source_folder,
+                self.destination_folder, self.destination_tmp_folder,
+                self.archive_folder]:
+            if not os.path.exists(folder):
+                os.makedirs(folder)
         if not self.role:
             sys.stdout.write(style.NOTICE(
                 ' Warning: Project uses \'edc_sync_files\' but has '
