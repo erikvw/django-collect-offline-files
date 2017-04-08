@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.db import models
 
 from edc_base.model_mixins import BaseUuidModel
@@ -6,8 +5,7 @@ from edc_base.model_mixins import BaseUuidModel
 
 class UploadTransactionFile(BaseUuidModel):
 
-    transaction_file = models.FileField(
-        upload_to=settings.MEDIA_ROOT)
+    transaction_file = models.FileField()
 
     file_name = models.CharField(
         max_length=50,

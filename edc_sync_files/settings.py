@@ -184,7 +184,7 @@ LANGUAGES = (
     ('tn', 'Setswana'),
     ('en', 'English'),
 )
-
+CURRENT_MAP_AREA = None
 BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ACCEPT_CONTENT = ['application/json']

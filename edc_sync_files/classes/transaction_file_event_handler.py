@@ -1,4 +1,5 @@
 import re
+import logging
 import time
 import os
 from os.path import join
@@ -54,11 +55,21 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         observer = Observer()
         observer.schedule(self, path=self.destination_folder)
         observer.start()
+        logging.basicConfig(filename='logs/observer-error.log', level=logging.INFO)
+        logger = logging.getLogger(__name__)
         try:
+            records = {'time': timezone.now(), 'status': 'running'}
+            logger.info('{}'.format(records))
             while True:
                 time.sleep(1)
         except KeyboardInterrupt:
             observer.stop()
+        except (OSError, IOError) as err:
+            records = {'time': timezone.now(), 'status': '{}'.format(str(err))}
+            logger.error('{}'.format(records))
+            time.sleep(1)
+            observer.stop()
+            self.start_observer()
         observer.join()
 
     def process_on_added(self, event):

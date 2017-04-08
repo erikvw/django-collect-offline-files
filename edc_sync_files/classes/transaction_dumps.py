@@ -9,6 +9,7 @@ from django.core import serializers
 from django.db import transaction
 from django.utils import timezone
 from django.db.utils import IntegrityError
+from django.conf import settings
 
 from edc_base.utils import get_utcnow
 from edc_sync.models import OutgoingTransaction
@@ -28,8 +29,15 @@ class TransactionDumps:
 
     def __init__(self, path, hostname=None, using=None):
         self.path = path
-        self.hostname = hostname or django_apps.get_app_config(
-            'edc_device').device_id
+        is_node_server = django_apps.get_app_config(
+            'edc_device').is_node_server
+
+        if is_node_server:
+            self.hostname = settings.CURRENT_MAP_AREA
+        else:
+            self.hostname = hostname or django_apps.get_app_config(
+                'edc_device').device_id
+
         self.using = using or 'default'
         self.filename = '{}_{}.json'.format(
             self.hostname, str(timezone.now().strftime("%Y%m%d%H%M%S")))
