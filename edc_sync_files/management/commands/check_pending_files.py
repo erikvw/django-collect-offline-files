@@ -19,7 +19,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
-        self.check_watchdog_process()
         for filename in self.incoming_files():
             try:
                 source_filename = os.path.join(
