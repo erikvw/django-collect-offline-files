@@ -1,3 +1,7 @@
+import pandas as pd
+
+from django.db import connection
+
 from edc_sync.models import IncomingTransaction
 from ..models import UploadTransactionFile
 
@@ -19,12 +23,15 @@ class SyncReport:
     def create_report(self):
         """Create a report for each producer.
         """
+        sql_query = 'SELECT * FROM edc_sync_incomingtransaction'
+        df = pd.read_sql(
+            sql_query, con=connection, columns=['is_consumed', 'producer'])
         report_data = []
         row = []
         producers = self.producers()
         for index, producer in enumerate(producers):
             index = index + 1
-            row_item = self.update_report_data(producer)
+            row_item = self.update_report_data(df, producer)
             if len(row) == 4:
                 report_data.append(row)
                 row = []
@@ -46,24 +53,22 @@ class SyncReport:
                 producers.append(upload_transaction_file.producer)
         return producers
 
-    def update_report_data(self, producer=None):
+    def update_report_data(self, df, producer=None):
         """Build a statistics based on a producer.
         """
         row_data = {}
-        self.total_consumed = IncomingTransaction.objects.filter(
-            producer=producer, is_consumed=True).count()
 
-        self.total_not_consumed = IncomingTransaction.objects.filter(
-            producer=producer,
-            is_consumed=False).count()
+        total = len(df[(df.is_consumed == 1) & (df.producer == producer)])
+        total_not_consumed = len(df[
+            (df.is_consumed == 0) & (df.producer == producer)])
 
-        self.upload_transaction_file = UploadTransactionFile.objects.filter(
-            producer=producer).order_by('-created')[0]
+        upload_transaction_file = UploadTransactionFile.objects.filter(
+            producer=producer).order_by('-created').last()
 
         row_data.update({
-            'total_consumed': self.total_consumed,
-            'total_not_consumed': self.total_not_consumed,
-            'upload_transaction_file': self.upload_transaction_file})
+            'total_consumed': total,
+            'total_not_consumed': total_not_consumed,
+            'upload_transaction_file': upload_transaction_file})
         return row_data
 
 
@@ -74,25 +79,30 @@ class SyncReportDetail(SyncReport):
         self.producer = producer
         self.report_data = []
         self.transactions_files = []
+        sql_query = 'SELECT * FROM edc_sync_incomingtransaction'
+        df = pd.read_sql(
+            sql_query, con=connection, columns=['is_consumed', 'producer'])
         for tx_file in UploadTransactionFile.objects.filter(
                 producer=producer):
             self.transactions_files.append(tx_file)
             data = self.update_report_data(
-                batch_id=tx_file.batch_id, producer=tx_file.producer,
+                df, batch_id=tx_file.batch_id, producer=tx_file.producer,
                 file_name=tx_file.file_name)
             self.report_data.append([data, tx_file])
 
-    def update_report_data(self, batch_id=None, producer=None, file_name=None):
+    def update_report_data(self, df, batch_id=None, producer=None, file_name=None):
         """Build a statistics based on a producer.
         """
         col_data = {}
-        self.total_consumed = IncomingTransaction.objects.filter(
-            producer=producer, batch_id=batch_id, is_consumed=True).count()
 
-        self.total_not_consumed = IncomingTransaction.objects.filter(
-            producer=producer,
-            batch_id=batch_id,
-            is_consumed=False).count()
+        total = len(
+            df[(df.is_consumed == 1) &
+               (df.producer == producer) & (df.batch_id == batch_id)])
+
+        total_not_consumed = len(df[
+            (df.is_consumed == 0) &
+            (df.producer == producer) & (df.batch_id == batch_id)])
+
         try:
             self.upload_transaction_file = UploadTransactionFile.objects.get(
                 producer=producer, batch_id=batch_id)
@@ -107,6 +117,6 @@ class SyncReportDetail(SyncReport):
             time = timestamp[:2] + ':' + timestamp[2:4]
             col_data.update({
                 'label': time,
-                'total_consumed': self.total_consumed,
-                'total_not_consumed': self.total_not_consumed})
+                'total_consumed': total,
+                'total_not_consumed': total_not_consumed})
         return col_data
