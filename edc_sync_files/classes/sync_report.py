@@ -31,7 +31,8 @@ class SyncReport:
         producers = self.producers()
         for index, producer in enumerate(producers):
             index = index + 1
-            row_item = self.update_report_data(df, producer)
+            producer_name, _ = producer
+            row_item = self.update_report_data(df, producer_name)
             if len(row) == 4:
                 report_data.append(row)
                 row = []
@@ -41,7 +42,6 @@ class SyncReport:
                     report_data.append(row)
                 else:
                     row.append(row_item)
-                print(row)
         return report_data
 
     def producers(self):
@@ -49,8 +49,11 @@ class SyncReport:
         """
         producers = []
         for upload_transaction_file in UploadTransactionFile.objects.all():
-            if upload_transaction_file.producer not in producers:
-                producers.append(upload_transaction_file.producer)
+            if upload_transaction_file.producer not in [
+                    p for p, _ in producers]:
+                producers.append([
+                    upload_transaction_file.producer,
+                    upload_transaction_file.batch_id])
         return producers
 
     def update_report_data(self, df, producer=None):
@@ -94,7 +97,6 @@ class SyncReportDetail(SyncReport):
         """Build a statistics based on a producer.
         """
         col_data = {}
-
         total = len(
             df[(df.is_consumed == 1) &
                (df.producer == producer) & (df.batch_id == batch_id)])
