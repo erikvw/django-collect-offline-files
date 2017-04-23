@@ -34,17 +34,14 @@ class TransactionLoads:
         self.transaction_objs = []
         self.file_transactions_pks = []
 
-        try:
-            with open(self.path) as f:
-                for index, deserialized_object in enumerate(
-                        self.deserialize_json_file(File(f))):
-                    self.file_transactions_pks.append(
-                        deserialized_object.object.tx_pk)
-                    if index == 0:
-                        self.transaction_obj = deserialized_object.object
-                    self.transaction_objs.append(deserialized_object.object)
-        except Exception as e:
-            transaction_messages.add_message('error', str(e))
+        with open(self.path) as f:
+            for index, deserialized_object in enumerate(
+                    self.deserialize_json_file(File(f))):
+                self.file_transactions_pks.append(
+                    deserialized_object.object.tx_pk)
+                if index == 0:
+                    self.transaction_obj = deserialized_object.object
+                self.transaction_objs.append(deserialized_object.object)
 
     def create_incoming_transactions(self):
         """ Converts outgoing transaction into incoming transactions.

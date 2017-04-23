@@ -5,13 +5,13 @@ from .transaction_loads import TransactionLoads
 
 class TransactionFileQueue(object):
 
-    """ Queue files and upload each file sequencly.
+    """ Queue files and upload each file sequencely.
         1. queue = TransactionFileQueue()
         2. queue.add_new_uploaded_file(...) added by event handler possibly.
         3. queue.process_queued_files()
     """
 
-    def __init__(self, transation_file=None):
+    def __init__(self):
         self.queued_files = q.Queue()
 
     def add_new_uploaded_file(self, path):
@@ -23,5 +23,5 @@ class TransactionFileQueue(object):
         """ Create incoming transactions and apply transactions.
         """
         while not self.queued_files.empty():
-            transation_file = self.queued_files.get()
-            transation_file.upload_file()
+            transation_loads = self.queued_files.get()
+            transation_loads.upload_file()
