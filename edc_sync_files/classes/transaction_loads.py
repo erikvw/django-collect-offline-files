@@ -7,6 +7,7 @@ from django.core import serializers
 from django.core.files import File
 
 from edc_sync.models import IncomingTransaction
+from edc_sync_files.classes import ConsumeTransactions
 from edc_sync_files.classes.transaction_messages import transaction_messages
 
 from ..models import UploadTransactionFile
@@ -24,14 +25,9 @@ class TransactionLoads:
         self.archived = False
         self._valid = False
         self.previous_file_available = False
-        self.consumed = 0
-        self.is_consumed = False
         self.not_consumed = 0
-        self.total = 0
         self.ignored = 0
         self.is_uploaded = False
-        self.is_played = False
-        self.previous_played_all = False
         self.is_usb = False
         self.upload_transaction_file = None
         self.transaction_obj = None
@@ -39,17 +35,18 @@ class TransactionLoads:
         self.file_transactions_pks = []
 
         try:
-            for index, deserialized_object in enumerate(
-                    self.deserialize_json_file(File(open(self.path)))):
-                self.file_transactions_pks.append(
-                    deserialized_object.object.tx_pk)
-                if index == 0:
-                    self.transaction_obj = deserialized_object.object
-                self.transaction_objs.append(deserialized_object.object)
+            with open(self.path) as f:
+                for index, deserialized_object in enumerate(
+                        self.deserialize_json_file(File(f))):
+                    self.file_transactions_pks.append(
+                        deserialized_object.object.tx_pk)
+                    if index == 0:
+                        self.transaction_obj = deserialized_object.object
+                    self.transaction_objs.append(deserialized_object.object)
         except Exception as e:
             transaction_messages.add_message('error', str(e))
 
-    def update_incoming_transactions(self):
+    def create_incoming_transactions(self):
         """ Converts outgoing transaction into incoming transactions.
         """
         has_created = False
@@ -72,39 +69,11 @@ class TransactionLoads:
         return has_created
 
     def deserialize_json_file(self, file_pointer):
-        try:
-            json_txt = file_pointer.read()
-            decoded = serializers.deserialize(
-                "json", json_txt, ensure_ascii=True,
-                use_natural_foreign_keys=True,
-                use_natural_primary_keys=False)
-        except:
-            return None
+        json_txt = file_pointer.read()
+        decoded = serializers.deserialize(
+            "json", json_txt, ensure_ascii=True, use_natural_foreign_keys=True,
+            use_natural_primary_keys=False)
         return decoded
-
-    def apply_transactions(self):
-        """ Apply incoming transactions for the currently uploaded file.
-        """
-        from edc_sync.consumer import Consumer
-        is_played = False
-        prevous_incoming_not_consumed = 0
-        if self.transaction_obj:
-            prevous_incoming_not_consumed = IncomingTransaction.objects.filter(
-                is_consumed=False,
-                batch_id=self.transaction_obj.batch_seq).count()
-
-        if not prevous_incoming_not_consumed:
-            self.previous_played_all = True
-
-        if self.is_uploaded and self.previous_played_all:
-            print("Applying transactions for {}".format(self.filename))
-            is_played = Consumer(transactions=self.file_transactions_pks, check_hostname=False).consume()
-            self.upload_transaction_file.is_played = is_played
-            self.upload_transaction_file.comment = transaction_messages.last_error_message()
-            self.upload_transaction_file.save()
-        else:
-            print("File {} uploaded, transactions not played.".format(self.filename))
-        return is_played
 
     @property
     def already_uploaded(self):
@@ -115,7 +84,8 @@ class TransactionLoads:
             UploadTransactionFile.objects.get(
                 file_name=self.filename)
             already_uploaded = True
-            print("File already upload. Cannot be uploaded. {}".format(self.filename))
+            print("File already upload. Cannot be uploaded. {}".format(
+                self.filename))
         except UploadTransactionFile.DoesNotExist:
             already_uploaded = False
         return already_uploaded
@@ -178,19 +148,16 @@ class TransactionLoads:
                 file = File(transaction_file)
                 file_name = file.name.replace('\\', '/').split('/')[-1]
                 if self.valid:
-                    self.update_incoming_transactions()
-                    self.upload_transaction_file = UploadTransactionFile.objects.create(
+                    self.create_incoming_transactions()
+                    UploadTransactionFile.objects.create(
                         transaction_file=file,
-                        consume=True,
                         batch_id=self.transaction_obj.batch_id,
                         file_name=file_name,
-                        consumed=self.consumed,
-                        total=self.total,
-                        not_consumed=self.not_consumed,
                         producer=self.transaction_obj.producer
                     )
                     self.is_uploaded = True
-                    self.apply_transactions()
+                    ConsumeTransactions(
+                        self.transaction_objs, self.transaction_obj)
                     self.archive_file()
                 else:
                     self.is_uploaded = False
