@@ -9,7 +9,6 @@ from django.core import serializers
 from django.db import transaction
 from django.utils import timezone
 from django.db.utils import IntegrityError
-from django.conf import settings
 
 from edc_base.utils import get_utcnow
 from edc_sync.models import OutgoingTransaction
@@ -27,20 +26,15 @@ class TransactionDumps:
        1.1 Create history record in the server.
     """
 
-    def __init__(self, path, hostname=None, using=None):
+    def __init__(self, path, device_id=None, using=None):
         self.path = path
-        is_node_server = django_apps.get_app_config(
-            'edc_device').is_node_server
 
-        if is_node_server:
-            self.hostname = settings.CURRENT_MAP_AREA
-        else:
-            self.hostname = hostname or django_apps.get_app_config(
-                'edc_device').device_id
+        self.device_id = device_id or django_apps.get_app_config(
+            'edc_device').device_id
 
         self.using = using or 'default'
         self.filename = '{}_{}.json'.format(
-            self.hostname, str(timezone.now().strftime("%Y%m%d%H%M%S")))
+            self.device_id, str(timezone.now().strftime("%Y%m%d%H%M%S")))
 
         self.batch_id = None
         self.batch_seq = None
@@ -94,7 +88,7 @@ class TransactionDumps:
         except IntegrityError as e:
             try:
                 new_filename = '{}_{}.json'.format(
-                    self.hostname, str(timezone.now().strftime("%Y%m%d%H%M")))
+                    self.device_id, str(timezone.now().strftime("%Y%m%d%H%M")))
                 source_filename = join(self.path, self.filename)
                 destination_file = join(self.path, new_filename)
 

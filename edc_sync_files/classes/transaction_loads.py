@@ -50,7 +50,6 @@ class TransactionLoads:
         for outgoing in self.transaction_objs:
             if not IncomingTransaction.objects.filter(pk=outgoing.pk).exists():
                 if outgoing._meta.get_fields():
-                    self.consumed += 1
                     data = outgoing.__dict__
                     del data['using']
                     del data['is_consumed_middleman']
