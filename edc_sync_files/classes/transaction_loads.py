@@ -36,14 +36,17 @@ class TransactionLoads:
         self.transaction_objs = []
         self.file_transactions_pks = []
 
-        with open(self.path) as f:
-            for index, deserialized_object in enumerate(
-                    self.deserialize_json_file(File(f))):
-                self.file_transactions_pks.append(
-                    deserialized_object.object.tx_pk)
-                if index == 0:
-                    self.transaction_obj = deserialized_object.object
-                self.transaction_objs.append(deserialized_object.object)
+    def load_file_transaction_objs(self):
+        if self.transaction_objs:
+            with open(self.path) as f:
+                for index, deserialized_object in enumerate(
+                        self.deserialize_json_file(File(f))):
+                    self.file_transactions_pks.append(
+                        deserialized_object.object.tx_pk)
+                    if index == 0:
+                        self.transaction_obj = deserialized_object.object
+                    self.transaction_objs.append(deserialized_object.object)
+        return self.transaction_objs
 
     def create_incoming_transactions(self):
         """ Converts outgoing transaction into incoming transactions.
@@ -91,6 +94,7 @@ class TransactionLoads:
     def valid(self):
         """ Check order of transaction file batch seq.
         """
+        self.load_file_transaction_objs()
         if self.transaction_obj:
             try:
                 UploadTransactionFile.objects.get(

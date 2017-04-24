@@ -54,7 +54,7 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         if pattern.match(filename):
             self.file_queue.add_new_uploaded_file(event.src_path)
             self.file_queue.process_queued_files()
-            self.output_to_console('{} {} {}'.format(timezone.now(),
-                                                     event.event_type, event.src_path))
+            self.output_to_console('{} {} {}'.format(
+                timezone.now(), event.event_type, event.src_path))
         else:
             print(event.src_path)
