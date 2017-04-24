@@ -24,8 +24,6 @@ class UploadTransactionFile(BaseUuidModel):
         max_length=50,
         null=True)
 
-    consume = models.BooleanField(default=False)
-
     total = models.IntegerField(
         editable=False,
         default=0)
@@ -44,8 +42,6 @@ class UploadTransactionFile(BaseUuidModel):
         null=True,
         editable=False,
         help_text='List of producers detected from the file.')
-
-    is_played = models.BooleanField(default=False)
 
     comment = models.CharField(
         max_length=250,
