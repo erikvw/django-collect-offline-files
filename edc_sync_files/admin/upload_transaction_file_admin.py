@@ -7,7 +7,7 @@ from ..models import UploadTransactionFile
 @admin.register(UploadTransactionFile, site=edc_sync_files_admin)
 class UploadTransactionFileAdmin(admin.ModelAdmin):
 
-    ordering = '-created'
+    ordering = ('-created',)
 
     date_hierarchy = 'created'
 
