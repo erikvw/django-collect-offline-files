@@ -12,6 +12,7 @@ from edc_sync_files.classes.transaction_messages import transaction_messages
 
 from ..models import UploadTransactionFile
 from django.core.exceptions import MultipleObjectsReturned
+from edc_sync.consumer import Consumer
 
 
 class TransactionLoads:
@@ -137,6 +138,16 @@ class TransactionLoads:
             except Exception as e:
                 print(str(e))
 
+    @property
+    def is_previous_consumed(self):
+        not_consumed = 0
+        if self.transaction_obj:
+            not_consumed = IncomingTransaction.objects.filter(
+                is_consumed=False,
+                is_ignored=False,
+                batch_id=self.transaction_obj.batch_seq).count()
+        return True if not not_consumed else False
+
     def upload_file(self):
         """ Create a upload transaction file in the server.
         """
@@ -153,8 +164,11 @@ class TransactionLoads:
                         producer=self.transaction_obj.producer
                     )
                     self.is_uploaded = True
-                    ConsumeTransactions(
-                        self.transaction_objs, self.transaction_obj)
+                    if self.is_previous_consumed and self.is_uploaded:
+                        print("Applying transactions for {}".format(self.filename))
+                        Consumer(transactions=self.file_transactions_pks).consume()
+                    else:
+                        print("File {} uploaded, transactions not played.".format(self.filename))
                     self.archive_file()
                 else:
                     self.is_uploaded = False

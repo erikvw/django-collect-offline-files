@@ -24,7 +24,7 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
     """
     filename_pattern = r'^\w+\_\d{14}\.json$'
 
-    patterns = ["*.json"]  # TODO add regex for filename
+    patterns = ["*.json"]
 
     def __init__(self, verbose=None):
         super(TransactionFileEventHandler, self).__init__(ignore_directories=True)
@@ -36,7 +36,8 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
 
     def process(self, event):
         self.output_to_console(
-            '{} {} {} Not handled.'.format(timezone.now(), event.event_type, event.src_path))
+            '{} {} {} Not handled.'.format(
+                timezone.now(), event.event_type, event.src_path))
 
     def on_created(self, event):
         self.process_on_added(event)
