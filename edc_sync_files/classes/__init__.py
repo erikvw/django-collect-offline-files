@@ -9,3 +9,4 @@ from .transaction_file_queue import TransactionFileQueue
 from .transaction_loads import TransactionLoads
 from .transaction_messages import transaction_messages
 from .consume_transactions import ConsumeTransactions
+from .server_observer import ServerObserver

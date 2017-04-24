@@ -1,13 +1,8 @@
 import re
-import logging
-import time
-import os
-from os.path import join
 
 from django.utils import timezone
 from django.apps import apps as django_apps
 
-from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 
 from .transaction_file_queue import TransactionFileQueue
@@ -50,27 +45,6 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         if self.verbose:
             print(msg)
 
-    def start_observer(self):
-        observer = Observer()
-        observer.schedule(self, path=self.destination_folder)
-        observer.start()
-        logging.basicConfig(filename='logs/observer-error.log', level=logging.INFO)
-        logger = logging.getLogger(__name__)
-        try:
-            records = {'time': timezone.now(), 'status': 'running'}
-            logger.info('{}'.format(records))
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            observer.stop()
-        except (OSError, IOError) as err:
-            records = {'time': timezone.now(), 'status': '{}'.format(str(err))}
-            logger.error('{}'.format(records))
-            time.sleep(1)
-            observer.stop()
-            self.start_observer()
-        observer.join()
-
     def process_on_added(self, event):
         """Moves file from source_dir to the destination_dir as
         determined by :func:`folder_handler.select`."""
@@ -83,12 +57,3 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
                                                      event.event_type, event.src_path))
         else:
             print(event.src_path)
-
-    def statinfo(self, path, filename):
-        statinfo = os.stat(
-            join(self.destination_folder, filename))
-        return {
-            'path': path,
-            'filename': filename,
-            'size': statinfo.st_size,
-        }
