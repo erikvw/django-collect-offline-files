@@ -1,3 +1,2 @@
 from .history_admin import HistoryAdmin
-from .upload_skip_days_admin import UploadSkipDaysAdmin
 from .upload_transaction_file_admin import UploadTransactionFileAdmin

@@ -20,10 +20,6 @@ class UploadTransactionFile(BaseUuidModel):
     file_date = models.DateField(null=True,
                                  editable=False)
 
-    identifier = models.CharField(
-        max_length=50,
-        null=True)
-
     total = models.IntegerField(
         editable=False,
         default=0)

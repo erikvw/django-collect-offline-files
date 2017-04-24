@@ -1,28 +1,23 @@
 from django.contrib import admin
 
+from ..admin_site import edc_sync_files_admin
 from ..models import UploadTransactionFile
-from ..forms import UploadTransactionFileForm
 
 
+@admin.register(UploadTransactionFile, site=edc_sync_files_admin)
 class UploadTransactionFileAdmin(admin.ModelAdmin):
 
-    form = UploadTransactionFileForm
+    ordering = '-created'
 
     date_hierarchy = 'created'
 
-    fields = ('transaction_file',
-              'consume')
-
     list_display = ('file_name',
                     'consumed',
-                    'not_consumed',
                     'created',
                     'producer',
                     'user_created',
                     'hostname_created')
 
-    list_filter = ('identifier',
-                   'created',
-                   'hostname_created')
+    list_filter = ('consumed', 'created', 'producer', 'hostname_created')
 
-admin.site.register(UploadTransactionFile, UploadTransactionFileAdmin)
+    search_fields = ('file_name', )
