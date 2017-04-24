@@ -4,7 +4,6 @@ import time
 import os
 from os.path import join
 
-
 from django.utils import timezone
 from django.apps import apps as django_apps
 
@@ -86,7 +85,8 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
             print(event.src_path)
 
     def statinfo(self, path, filename):
-        statinfo = os.stat(join(self.destination_folder, filename))
+        statinfo = os.stat(
+            join(self.destination_folder, filename))
         return {
             'path': path,
             'filename': filename,

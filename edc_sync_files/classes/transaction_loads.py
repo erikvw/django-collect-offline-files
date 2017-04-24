@@ -7,7 +7,7 @@ from django.core import serializers
 from django.core.files import File
 
 from edc_sync.models import IncomingTransaction
-from edc_sync_files.classes import ConsumeTransactions
+from .consume_transactions import ConsumeTransactions
 from edc_sync_files.classes.transaction_messages import transaction_messages
 
 from ..models import UploadTransactionFile
@@ -50,11 +50,13 @@ class TransactionLoads:
         for outgoing in self.transaction_objs:
             if not IncomingTransaction.objects.filter(pk=outgoing.pk).exists():
                 if outgoing._meta.get_fields():
+                    self.consumed += 1
                     data = outgoing.__dict__
                     del data['using']
                     del data['is_consumed_middleman']
                     del data['is_consumed_server']
                     del data['_state']
+                    # TODO create and consume immediately.
                     IncomingTransaction.objects.create(**data)
             else:
                 self.not_consumed += 1
@@ -123,7 +125,8 @@ class TransactionLoads:
                         edc_sync_file_app.destination_folder, self.filename)
 
                 if os.path.exists(source_filename):
-                    shutil.move(source_filename, edc_sync_file_app.archive_folder)  # archive the file
+                    shutil.move(
+                        source_filename, edc_sync_file_app.archive_folder)  # archive the file
                     print("File {} archived successfully into {}.".format(
                         self.filename, edc_sync_file_app.archive_folder))
                     self.is_uploaded = False

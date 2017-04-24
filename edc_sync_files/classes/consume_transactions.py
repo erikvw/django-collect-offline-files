@@ -9,9 +9,9 @@ class ConsumeTransactions:
     """Consumes transactions for a transaction file.
     """
 
-    def __init__(self, file_transactions_pks, transaction_ob, file_name):
+    def __init__(self, file_transactions_pks, transaction_obj, file_name):
         self.file_transactions_pks = file_transactions_pks
-        self.transaction_obj = transaction_ob
+        self.transaction_obj = transaction_obj
         self.file_name = file_name
 
     @property
