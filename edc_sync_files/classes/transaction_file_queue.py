@@ -17,11 +17,11 @@ class TransactionFileQueue(object):
     def add_new_uploaded_file(self, path):
         """ Fetch the file from watchdog and add it into queue.
         """
-        self.queued_files.put(TransactionLoads(path=path))
+        self.queued_files.put(path)
 
     def process_queued_files(self):
         """ Create incoming transactions and apply transactions.
         """
         while not self.queued_files.empty():
-            transation_loads = self.queued_files.get()
-            transation_loads.upload_file()
+            path = self.queued_files.get()
+            TransactionLoads(path=path)

@@ -37,7 +37,7 @@ class TransactionDumps:
             self.device_id, str(timezone.now().strftime("%Y%m%d%H%M%S")))
 
         self.batch_id = None
-        self.batch_seq = None
+        self.prev_batch_id = None
         self.export_no = None
 
         self.is_exported_to_json, self.export_no = self.dump_to_json()
@@ -54,14 +54,14 @@ class TransactionDumps:
 
             last_consumed_outgoing = OutgoingTransaction.objects.using(
                 self.using).filter(is_consumed_server=True).last()
-            self.batch_seq = None
+            self.prev_batch_id = None
             if not last_consumed_outgoing:
-                self.batch_seq = self.batch_id
+                self.prev_batch_id = self.batch_id
             else:
-                self.batch_seq = last_consumed_outgoing.batch_id
+                self.prev_batch_id = last_consumed_outgoing.batch_id
             OutgoingTransaction.objects.using(self.using).filter(
                 is_consumed_server=False).update(
-                    batch_seq=self.batch_seq,
+                    prev_batch_id=self.prev_batch_id,
                     batch_id=self.batch_id)
             update_batch_info = True
         except AttributeError:

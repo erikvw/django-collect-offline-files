@@ -2,6 +2,7 @@ import logging
 import time
 
 from django.utils import timezone
+from django.apps import apps as django_apps
 
 from watchdog.observers import Observer
 
@@ -14,6 +15,8 @@ class ServerObserver:
 
         event_handler = TransactionFileEventHandler()
         observer = Observer()
+        edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
+        self.destination_folder = edc_sync_file_app.destination_folder
         observer.schedule(event_handler, path=self.destination_folder)
         observer.start()
         logging.basicConfig(filename='logs/observer-error.log', level=logging.INFO)

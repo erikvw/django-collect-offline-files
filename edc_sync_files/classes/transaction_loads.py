@@ -4,14 +4,25 @@ from os.path import join
 
 from django.apps import apps as django_apps
 from django.core import serializers
-from django.core.files import File
+from django.db.models import Q
 
 from edc_sync.models import IncomingTransaction
 from edc_sync_files.classes.transaction_messages import transaction_messages
 
 from ..models import UploadTransactionFile
-from django.core.exceptions import MultipleObjectsReturned
 from edc_sync.consumer import Consumer
+
+
+class TransactionLoadsPathError(Exception):
+    pass
+
+
+class TransactionLoadsDuplicateError(Exception):
+    pass
+
+
+class TransactionLoadsSequenceError(Exception):
+    pass
 
 
 class TransactionLoads:
@@ -20,100 +31,80 @@ class TransactionLoads:
     """
 
     def __init__(self, path):
-        self.filename = str(path).split('/')[-1]
-        self.path = path
-        self.archived = False
+        self._outgoing_transactions = []
         self._valid = False
-        self.previous_file_available = False
-        self.not_consumed = 0
-        self.consumed = 0
-        self.ignored = 0
         self.is_uploaded = False
         self.is_usb = False
+        self.tx_pks = []
         self.upload_transaction_file = None
-        self.transaction_obj = None
-        self.transaction_objs = []
-        self.file_transactions_pks = []
-
-    def load_file_transaction_objs(self):
-        if self.transaction_objs:
-            with open(self.path) as f:
-                for index, deserialized_object in enumerate(
-                        self.deserialize_json_file(File(f))):
-                    self.file_transactions_pks.append(
-                        deserialized_object.object.tx_pk)
-                    if index == 0:
-                        self.transaction_obj = deserialized_object.object
-                    self.transaction_objs.append(deserialized_object.object)
-        return self.transaction_objs
-
-    def create_incoming_transactions(self):
-        """ Converts outgoing transaction into incoming transactions.
-        """
-        has_created = False
-        for outgoing in self.transaction_objs:
-            if not IncomingTransaction.objects.filter(pk=outgoing.pk).exists():
-                if outgoing._meta.get_fields():
-                    self.consumed += 1
-                    data = outgoing.__dict__
-                    del data['using']
-                    del data['is_consumed_middleman']
-                    del data['is_consumed_server']
-                    del data['_state']
-                    # TODO create and consume immediately.
-                    IncomingTransaction.objects.create(**data)
-                    has_created = True
-            else:
-                self.not_consumed += 1
-        return has_created
-
-    def deserialize_json_file(self, file_pointer):
-        json_txt = file_pointer.read()
-        decoded = serializers.deserialize(
-            "json", json_txt, ensure_ascii=True, use_natural_foreign_keys=True,
-            use_natural_primary_keys=False)
-        return decoded
-
-    @property
-    def already_uploaded(self):
-        """Check whether the file is already uploaded before uploading it.
-        """
-        already_uploaded = False
+        if not os.path.exists(path):
+            raise TransactionLoadsPathError(f'Invalid path. Got {path}')
+        self.filename = os.path.basename(path)
         try:
-            UploadTransactionFile.objects.get(
-                file_name=self.filename)
-            already_uploaded = True
-            print("File already upload. Cannot be uploaded. {}".format(
-                self.filename))
+            UploadTransactionFile.objects.get(file_name=self.filename)
         except UploadTransactionFile.DoesNotExist:
-            already_uploaded = False
-        return already_uploaded
+            with open(path) as self.file_object:
+                if self.upload_file():
+                    self.archive_file()
+        else:
+            raise TransactionLoadsDuplicateError(
+                f'File {self.filename} already uploaded.')
+
+    def upload_file(self):
+        UploadTransactionFile.objects.create(
+            transaction_file=self.file_object,
+            file_name=self.filename,
+            batch_id=self.incoming_transactions[0].batch_id,
+            producer=self.incoming_transactions[0].producer)
+        print("Applying transactions for {}".format(self.filename))
+        Consumer(transactions=self.pending_tx_pks).consume()
+        return True
 
     @property
-    def valid(self):
+    def outgoing_transactions(self):
+        """Returns a list of deserialized outgoing transactions.
+        """
+        if not self._outgoing_transactions:
+            json_txt = self.file_object.read()
+            deserialized_object = serializers.deserialize(
+                "json", json_txt, ensure_ascii=True, use_natural_foreign_keys=True,
+                use_natural_primary_keys=False)
+            for _, obj in enumerate(deserialized_object):
+                self.tx_pks.append(obj.object.tx_pk)
+                self._outgoing_transactions.append(obj.object)
+            self.verify_sequence()
+            self.already_uploaded()
+        return self._outgoing_transactions
+
+    @property
+    def incoming_transactions(self, file_object=None):
+        """ Creates incoming transactions from a list of deserialized
+        outgoing transactions.
+        """
+        incoming_transactions = []
+        for outgoing_transaction in self.outgoing_transactions(file_object=file_object):
+            try:
+                IncomingTransaction.objects.get(pk=outgoing_transaction.pk)
+            except IncomingTransaction.DoesNotExist:
+                data = outgoing_transaction.__dict__
+                del data['using']
+                del data['is_consumed_middleman']
+                del data['is_consumed_server']
+                del data['_state']
+                incoming_transactions.append(
+                    IncomingTransaction.objects.create(**data))
+        return incoming_transactions
+
+    def verify_sequence(self):
         """ Check order of transaction file batch seq.
         """
-        self.load_file_transaction_objs()
-        if self.transaction_obj:
-            try:
-                UploadTransactionFile.objects.get(
-                    batch_id=self.transaction_obj.batch_seq)
-                self.previous_file_available = True
-            except UploadTransactionFile.DoesNotExist:
-                self.previous_file_available = False
-            except MultipleObjectsReturned:
-                self.previous_file_available = True
-            first_time = (
-                self.transaction_obj.batch_seq == self.transaction_obj.batch_id)
-            if first_time:
-                self.previous_played_all = True
-            self._valid = True if (
-                self.previous_file_available and not self.already_uploaded) or (
-                    first_time and not self.already_uploaded) else False
-            print("File  {} is validated {}.".format(self.filename, self._valid))
+        new = self.outgoing_transactions[0].prev_batch_id == self.outgoing_transactions[0].batch_id
+        exists = UploadTransactionFile.objects.filter(
+            batch_id=self.outgoing_transactions[0].prev_batch_id).exists()
+        if new or exists:
+            return True
         else:
-            self._valid = False
-        return self._valid
+            raise TransactionLoadsSequenceError(f'Invalid sequence for {self.filename}')
 
     def archive_file(self):
         if self.is_uploaded:
@@ -142,42 +133,9 @@ class TransactionLoads:
                 print(str(e))
 
     @property
-    def is_previous_consumed(self):
-        not_consumed = 0
-        if self.transaction_obj:
-            not_consumed = IncomingTransaction.objects.filter(
-                is_consumed=False,
-                is_ignored=False,
-                batch_id=self.transaction_obj.batch_seq).count()
-        return True if not not_consumed else False
-
-    def upload_file(self):
-        """ Create a upload transaction file in the server.
-        """
-        if os.path.exists(self.path):
-            with open(self.path) as transaction_file:
-                file = File(transaction_file)
-                file_name = file.name.replace('\\', '/').split('/')[-1]
-                if self.valid:
-                    self.create_incoming_transactions()
-                    UploadTransactionFile.objects.create(
-                        transaction_file=file,
-                        batch_id=self.transaction_obj.batch_id,
-                        file_name=file_name,
-                        producer=self.transaction_obj.producer
-                    )
-                    self.is_uploaded = True
-                    if self.is_previous_consumed and self.is_uploaded:
-                        print("Applying transactions for {}".format(self.filename))
-                        Consumer(transactions=self.file_transactions_pks).consume()
-                    else:
-                        print("File {} uploaded, transactions not played.".format(self.filename))
-                    self.archive_file()
-                else:
-                    self.is_uploaded = False
-        else:
-            if self.archived and self.already_uploaded:
-                print("File {} already uploaded and archived in {}".format(self.filename, self.path))
-            else:
-                print("File {} does not exists in {}".format(self.filename, self.path))
-        return self.is_uploaded
+    def pending_tx_pks(self):
+        qs = IncomingTransaction.objects.values('tx_pk').filter(
+            Q(is_consumed=True) | Q(is_ignored=True),
+            batch_id=self.outgoing_transactions[0].prev_batch_id)
+        consumed_tx_pks = [obj.get('tx_pk') for obj in qs]
+        return [pk for pk in self.tx_pks if pk not in consumed_tx_pks]
