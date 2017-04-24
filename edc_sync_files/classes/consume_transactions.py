@@ -29,8 +29,6 @@ class ConsumeTransactions:
         try:
             upload_transaction_file = UploadTransactionFile.objects.get(
                 file_name=self.file_name)
-            upload_transaction_file.consumed = True
-            upload_transaction_file.not_consumed = not_consumed
             upload_transaction_file.total = total
             upload_transaction_file.comment = transaction_messages.last_error_message()
             upload_transaction_file.save()
@@ -42,12 +40,6 @@ class ConsumeTransactions:
         """
         if self.is_previous_consumed:
             print("Applying transactions for {}".format(self.filename))
-            is_played, total_consumed, total = Consumer(
-                transactions=self.file_transactions_pks).consume()
-            not_consumed = total - total_consumed
-            self.update_transaction_file(
-                not_consumed=not_consumed,
-                total=total,
-                is_played=is_played)
+            Consumer(transactions=self.file_transactions_pks).consume()
         else:
             print("File {} uploaded, transactions not played.".format(self.filename))

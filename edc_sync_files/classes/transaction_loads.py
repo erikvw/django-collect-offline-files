@@ -26,6 +26,7 @@ class TransactionLoads:
         self._valid = False
         self.previous_file_available = False
         self.not_consumed = 0
+        self.consumed = 0
         self.ignored = 0
         self.is_uploaded = False
         self.is_usb = False
@@ -58,12 +59,9 @@ class TransactionLoads:
                     del data['_state']
                     # TODO create and consume immediately.
                     IncomingTransaction.objects.create(**data)
+                    has_created = True
             else:
                 self.not_consumed += 1
-        if self.consumed > 0:
-            has_created = True
-            self.consumed = True
-        self.total = self.consumed + self.not_consumed
         return has_created
 
     def deserialize_json_file(self, file_pointer):

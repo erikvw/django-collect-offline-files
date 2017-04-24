@@ -32,11 +32,6 @@ class UploadTransactionFile(BaseUuidModel):
         editable=False,
         default=0)
 
-    not_consumed = models.IntegerField(
-        editable=False,
-        default=0,
-        help_text='duplicates')
-
     producer = models.TextField(
         max_length=1000,
         null=True,
