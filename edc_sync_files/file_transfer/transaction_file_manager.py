@@ -1,5 +1,6 @@
-from edc_base.utils import get_utcnow
 from django.apps import apps as django_apps
+
+from edc_base.utils import get_utcnow
 
 from ..file_transfer import FileTransfer
 

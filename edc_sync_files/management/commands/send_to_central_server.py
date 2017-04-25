@@ -3,7 +3,8 @@ import sys
 from django.apps import apps as django_apps
 from django.core.management.base import BaseCommand
 
-from ...transaction import TransactionFileManager, TransactionDumps
+from ...file_transfer import TransactionFileManager
+from ...transaction import TransactionDumps
 
 
 class Command(BaseCommand):
