@@ -4,10 +4,9 @@ from time import sleep
 from django.test.testcases import TestCase
 from django.test.utils import tag
 
-from edc_example.models import TestModel
-
 from ..models import UploadTransactionFile
 from ..transaction import TransactionDumps
+from .models import TestModel
 
 
 @tag('testFileEventHandler')

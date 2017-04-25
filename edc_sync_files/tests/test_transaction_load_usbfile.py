@@ -3,8 +3,8 @@ from time import sleep
 
 from django.test import TestCase, tag
 
-from edc_example.models import TestModel
 from ..transaction import DumpToUsb, TransactionLoadUsbFile
+from .models import TestModel
 
 
 class TestTransactionLoadUsbFile(TestCase):

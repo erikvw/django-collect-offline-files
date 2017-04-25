@@ -7,9 +7,8 @@ from django.conf import settings
 from django.test.testcases import TestCase
 from django.test.utils import tag
 
-from edc_example.models import TestModel
-
 from ..transaction import TransactionLoads, TransactionDumps
+from .models import TestModel
 
 
 @tag('TestTransactionLoads')

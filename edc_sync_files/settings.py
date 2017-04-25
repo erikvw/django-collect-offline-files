@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     'edc_device.apps.AppConfig',
     'edc_sync_files.apps.AppConfig',
     'edc_sync.apps.AppConfig',
-    'edc_example.apps.AppConfig',
     'edc_identifier.apps.AppConfig',
     'edc_protocol.apps.AppConfig',
     'django_crypto_fields.apps.AppConfig',
@@ -174,7 +173,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
 GIT_DIR = str(PurePath(BASE_DIR).parent)
-KEY_PATH = '/Volumes/crypto_keys'
+KEY_PATH = os.path.join(str(PurePath(BASE_DIR).parent), 'crypto_fields')
 EDC_CRYPTO_FIELDS_CLIENT_USING = 'client'
 SHOW_CRYPTO_FORM_DATA = True
 STUDY_OPEN_DATETIME = timezone.datetime(2016, 1, 18)

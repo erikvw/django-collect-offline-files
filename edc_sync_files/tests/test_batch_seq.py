@@ -7,9 +7,8 @@ from django.test.utils import tag
 
 from faker import Faker
 
-from edc_example.models import TestModel
-
 from ..transaction import TransactionDumps
+from .models import TestModel
 
 
 @tag('TestTransactionOrder')

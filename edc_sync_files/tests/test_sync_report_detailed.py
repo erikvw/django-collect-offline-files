@@ -4,9 +4,9 @@ from time import sleep
 from django.test import TestCase, tag
 from django.conf import settings
 from faker import Faker
-from edc_example.models import TestModel
 
 from ..transaction import TransactionDumps, TransactionLoads
+from .models import TestModel
 
 
 @tag('TestSyncReportDetailed')
