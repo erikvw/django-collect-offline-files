@@ -40,4 +40,5 @@ class TransactionMessages:
             message = ''
         return str(message)
 
+
 transaction_messages = TransactionMessages()

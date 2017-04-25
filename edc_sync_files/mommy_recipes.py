@@ -1,12 +1,11 @@
 import os
-from datetime import date
 
 from django.conf import settings
 from django.core.files import File
 
 from model_mommy.recipe import Recipe
 
-from .models import UploadTransactionFile, UploadSkipDays
+from .models import UploadTransactionFile
 
 
 path = os.path.join(settings.MEDIA_ROOT, 'bcpp_otse_201702162025.json')
@@ -15,11 +14,4 @@ transaction = Recipe(
     UploadTransactionFile,
     transaction_file=File(open(path)),
     consume=True,
-)
-
-skip_date = Recipe(
-    UploadSkipDays,
-    skip_date=date(2017, 2, 17),
-    skip_until_date=date(2017, 2, 17),
-    identifier='otse',
 )

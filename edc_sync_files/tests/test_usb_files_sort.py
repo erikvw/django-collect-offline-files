@@ -25,5 +25,6 @@ class TestUsbfilesSort(unittest.TestCase):
         self.assertEqual(usb_files[1], third_element)
         self.assertEqual(usb_files[2], second_element)
 
+
 if __name__ == '__main__':
     unittest.main()

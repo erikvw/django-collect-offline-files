@@ -12,11 +12,11 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 import sys
 import os
 
-from unipath import Path
 from django.utils import timezone
+from pathlib import PurePath
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 # BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Quick-start development settings - unsuitable for production
@@ -44,16 +44,12 @@ INSTALLED_APPS = [
     'edc_device.apps.AppConfig',
     'edc_sync_files.apps.AppConfig',
     'edc_sync.apps.AppConfig',
-    'edc_example.apps.AppConfig',
     'edc_identifier.apps.AppConfig',
     'edc_protocol.apps.AppConfig',
     'django_crypto_fields.apps.AppConfig',
     'edc_appointment.apps.AppConfig',
     'rest_framework',
     'rest_framework.authtoken',
-    # third party
-    'django_celery_beat',
-    'django_celery_results',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -96,7 +92,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     },
-    # required for tests when acting as a server but not attempting to deserialize
+    # required for tests when acting as a server but not attempting to
+    # deserialize
     'server': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
@@ -171,12 +168,12 @@ USE_L10N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR.child('static')
-MEDIA_ROOT = BASE_DIR.child('media')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
-GIT_DIR = BASE_DIR.ancestor(1)
-KEY_PATH = '/Volumes/crypto_keys'
+GIT_DIR = str(PurePath(BASE_DIR).parent)
+KEY_PATH = os.path.join(str(PurePath(BASE_DIR).parent), 'crypto_fields')
 EDC_CRYPTO_FIELDS_CLIENT_USING = 'client'
 SHOW_CRYPTO_FORM_DATA = True
 STUDY_OPEN_DATETIME = timezone.datetime(2016, 1, 18)
@@ -185,14 +182,6 @@ LANGUAGES = (
     ('en', 'English'),
 )
 CURRENT_MAP_AREA = None
-BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'django-db'
-CELERY_ACCEPT_CONTENT = ['application/json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TRACK_STARTED = True
-CELERY_ENABLE_UTC = True
-CELERY_TIMEZONE = 'Africa/Gaborone'
 
 DEVICE_ID = '15'
 SERVER_DEVICE_ID_LIST = ['99']

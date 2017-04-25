@@ -4,6 +4,9 @@ from edc_base.model_mixins import BaseUuidModel
 
 
 class UploadTransactionFile(BaseUuidModel):
+    """A model that keeps a history of transaction files uploaded
+    to this host from a client/producer.
+    """
 
     transaction_file = models.FileField()
 
@@ -17,14 +20,9 @@ class UploadTransactionFile(BaseUuidModel):
         max_length=100,
         null=True)
 
-    file_date = models.DateField(null=True,
-                                 editable=False)
-
-    identifier = models.CharField(
-        max_length=50,
-        null=True)
-
-    consume = models.BooleanField(default=False)
+    file_date = models.DateField(
+        null=True,
+        editable=False)
 
     total = models.IntegerField(
         editable=False,
@@ -34,18 +32,11 @@ class UploadTransactionFile(BaseUuidModel):
         editable=False,
         default=0)
 
-    not_consumed = models.IntegerField(
-        editable=False,
-        default=0,
-        help_text='duplicates')
-
     producer = models.TextField(
         max_length=1000,
         null=True,
         editable=False,
         help_text='List of producers detected from the file.')
-
-    is_played = models.BooleanField(default=False)
 
     comment = models.CharField(
         max_length=250,
@@ -54,9 +45,6 @@ class UploadTransactionFile(BaseUuidModel):
 
     objects = models.Manager()
 
-    def save(self, *args, **kwargs):
-        super(UploadTransactionFile, self).save(*args, **kwargs)
-
     class Meta:
         app_label = 'edc_sync_files'
-        ordering = ('-created',)
+        ordering = ('-created', )

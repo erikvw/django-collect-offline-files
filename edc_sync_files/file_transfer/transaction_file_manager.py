@@ -1,7 +1,8 @@
-from edc_base.utils import get_utcnow
 from django.apps import apps as django_apps
 
-from .file_transfer import FileTransfer
+from edc_base.utils import get_utcnow
+
+from ..file_transfer import FileTransfer
 
 
 class TransactionFileManager(object):

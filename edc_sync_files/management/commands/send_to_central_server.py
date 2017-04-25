@@ -1,9 +1,10 @@
 import sys
 
-from django.core.management.base import BaseCommand
 from django.apps import apps as django_apps
+from django.core.management.base import BaseCommand
 
-from edc_sync_files.classes import TransactionFileManager, TransactionDumps
+from ...file_transfer import TransactionFileManager
+from ...transaction import TransactionDumps
 
 
 class Command(BaseCommand):
@@ -15,7 +16,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         try:
-            source_folder = django_apps.get_app_config('edc_sync_files').source_folder
+            source_folder = django_apps.get_app_config(
+                'edc_sync_files').source_folder
             sys.stdout.write('Dumping Transactions')
             dump = TransactionDumps(source_folder)
             if dump.is_exported_to_json:

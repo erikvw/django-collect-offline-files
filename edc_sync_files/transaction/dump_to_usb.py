@@ -60,7 +60,7 @@ class TransactionLoadUsbFile:
 
         usb_incoming_folder_files = []
         for filename in os.listdir(django_apps.get_app_config(
-            'edc_sync_files').usb_incoming_folder) or []:
+                'edc_sync_files').usb_incoming_folder) or []:
             if self.match_filename.match(filename):
                 usb_incoming_folder_files.append(filename)
         usb_incoming_folder_files.sort()

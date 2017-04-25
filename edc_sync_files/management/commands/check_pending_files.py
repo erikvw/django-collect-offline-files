@@ -2,11 +2,10 @@ import os
 import re
 import shutil
 
-from django.core.management.base import BaseCommand
 from django.apps import apps as django_apps
+from django.core.management import BaseCommand, call_command
 
-from edc_sync_files.models import UploadTransactionFile
-from django.core.management import call_command
+from ...models import UploadTransactionFile
 
 
 class Command(BaseCommand):

@@ -5,7 +5,7 @@ import sys
 from django.apps import apps as django_apps
 from django.core.management.base import BaseCommand
 
-from edc_sync_files.classes import TransactionLoads
+from ...transaction import TransactionLoads
 
 
 class Command(BaseCommand):
@@ -22,11 +22,14 @@ class Command(BaseCommand):
                 if filename.endswith('.json'):
                     if len(re.findall(r'\_', filename)) == 1:
                         try:
-                            sys.stdout.write('Uploading: {}\n'.format(filename))
-                            file_path = os.path.join(edc_sync_files_app.destination_folder, filename)
+                            sys.stdout.write(
+                                'Uploading: {}\n'.format(filename))
+                            file_path = os.path.join(
+                                edc_sync_files_app.destination_folder, filename)
                             TransactionLoads(path=file_path).upload_file()
                         except FileNotFoundError:
-                            sys.stdout.write('Failed to upload: {}\n'.format(filename))
+                            sys.stdout.write(
+                                'Failed to upload: {}\n'.format(filename))
         except AttributeError:
             sys.stdout.write('No pending transaction files')
         sys.stdout.write('\npress CTRL-C to stop.\n\n')

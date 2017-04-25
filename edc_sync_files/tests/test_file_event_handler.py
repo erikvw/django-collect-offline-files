@@ -4,10 +4,9 @@ from time import sleep
 from django.test.testcases import TestCase
 from django.test.utils import tag
 
-from edc_example.models import TestModel
 from ..models import UploadTransactionFile
-
-from edc_sync_files.classes import TransactionDumps
+from ..transaction import TransactionDumps
+from .models import TestModel
 
 
 @tag('testFileEventHandler')
@@ -24,16 +23,21 @@ class testFileEventHandler(TestCase):
         tx.delete()
         tx1.delete()
 
-        self.assertEqual(TestModel.objects.using('client').filter(f1=tx.f1).count(), 0)
-        self.assertEqual(TestModel.objects.using('client').filter(f1=tx1.f1).count(), 0)
+        self.assertEqual(TestModel.objects.using(
+            'client').filter(f1=tx.f1).count(), 0)
+        self.assertEqual(TestModel.objects.using(
+            'client').filter(f1=tx1.f1).count(), 0)
 
         # Dump transaction
         path = '/Users/tsetsiba/source/edc-sync-files/edc_sync_files/media/transactions/incoming'
         TransactionDumps(path, using='client', hostname="010")
-        self.assertEqual(TestModel.objects.using('default').filter(f1=tx.f1).count(), 1)
-        self.assertEqual(TestModel.objects.using('default').filter(f1=tx1.f1).count(), 1)
+        self.assertEqual(TestModel.objects.using(
+            'default').filter(f1=tx.f1).count(), 1)
+        self.assertEqual(TestModel.objects.using(
+            'default').filter(f1=tx1.f1).count(), 1)
 
-        self.assertEqual(UploadTransactionFile.objects.all().count(), 1)  # Uploaded by watchdog
+        # Uploaded by watchdog
+        self.assertEqual(UploadTransactionFile.objects.all().count(), 1)
 
     def test_export_upload_multiple_files(self):
         # Create transactions
@@ -45,8 +49,10 @@ class testFileEventHandler(TestCase):
         # Dump transaction
         path = '/Users/tsetsiba/source/edc-sync-files/edc_sync_files/media/transactions/incoming'
         TransactionDumps(path, using='client', hostname="010")
-        self.assertEqual(TestModel.objects.using('default').filter(f1=tx.f1).count(), 1)
-        self.assertEqual(TestModel.objects.using('default').filter(f1=tx1.f1).count(), 1)
+        self.assertEqual(TestModel.objects.using(
+            'default').filter(f1=tx.f1).count(), 1)
+        self.assertEqual(TestModel.objects.using(
+            'default').filter(f1=tx1.f1).count(), 1)
 
         self.assertEqual(UploadTransactionFile.objects.all().count(), 1)
 
