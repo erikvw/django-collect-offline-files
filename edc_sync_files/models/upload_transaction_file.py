@@ -41,9 +41,6 @@ class UploadTransactionFile(BaseUuidModel):
 
     objects = models.Manager()
 
-    def save(self, *args, **kwargs):
-        super(UploadTransactionFile, self).save(*args, **kwargs)
-
     class Meta:
         app_label = 'edc_sync_files'
         ordering = ('-created',)
