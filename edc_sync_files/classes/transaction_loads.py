@@ -72,7 +72,7 @@ class TransactionLoads:
         else:
             print("Applying transactions for {}".format(self.filename))
             self.is_consumed = Consumer(
-                transactions=self.pending_tx_pks).consume()
+                transactions=self.tx_pks).consume()
             return True
 
     @property
@@ -148,11 +148,3 @@ class TransactionLoads:
                 'error', 'Make sure archive dir exists in media/transactions/archive Got {}'.format(str(e)))
         except Exception as e:
             print(str(e))
-
-    @property
-    def pending_tx_pks(self):
-        qs = IncomingTransaction.objects.values('tx_pk').filter(
-            Q(is_consumed=True) | Q(is_ignored=True),
-            batch_id=self.outgoing_transactions[0].prev_batch_id)
-        consumed_tx_pks = [obj.get('tx_pk') for obj in qs]
-        return [pk for pk in self.tx_pks if pk not in consumed_tx_pks]
