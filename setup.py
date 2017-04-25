@@ -28,9 +28,6 @@ setup(
         'requests',
         'paramiko',
         'hurry.filesize',
-        'django-celery-beat',
-        'django-celery-results',
-        'celery',
         'watchdog',
     ],
     classifiers=[
