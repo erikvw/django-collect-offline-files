@@ -13,9 +13,9 @@ from django.db.utils import IntegrityError
 from edc_base.utils import get_utcnow
 from edc_sync.models import OutgoingTransaction
 
-from .transaction_messages import transaction_messages
 from ..constants import ERROR
 from ..models import History
+from .transaction_messages import transaction_messages
 
 
 class TransactionDumps:

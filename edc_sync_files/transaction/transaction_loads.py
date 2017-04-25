@@ -1,5 +1,6 @@
 import os
 import shutil
+
 from os.path import join
 
 from django.apps import apps as django_apps
@@ -7,11 +8,11 @@ from django.core import serializers
 from django.core.files import File
 from django.db.models import Q
 
+from edc_sync.consumer import Consumer
 from edc_sync.models import IncomingTransaction
-from edc_sync_files.classes.transaction_messages import transaction_messages
 
 from ..models import UploadTransactionFile
-from edc_sync.consumer import Consumer
+from .transaction_messages import transaction_messages
 
 
 class TransactionLoadsPathError(Exception):
@@ -65,7 +66,7 @@ class TransactionLoads:
                 producer=self.outgoing_transactions[0].producer)
             self.incoming_transactions
         except IndexError as e:
-#             raise IndexError('Got {}'.format(str(e)))
+            #             raise IndexError('Got {}'.format(str(e)))
             print(f"An error occurred. Got {e}")
         except ValueError as e:
             print(f"An error occurred. Got {e}")
