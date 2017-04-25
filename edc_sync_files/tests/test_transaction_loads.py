@@ -1,14 +1,15 @@
 import os
-from time import sleep
 
 from faker import Faker
+from time import sleep
 
+from django.conf import settings
 from django.test.testcases import TestCase
 from django.test.utils import tag
-from django.conf import settings
 
 from edc_example.models import TestModel
-from edc_sync_files.classes import TransactionLoads, TransactionDumps
+
+from ..transaction import TransactionLoads, TransactionDumps
 
 
 @tag('TestTransactionLoads')

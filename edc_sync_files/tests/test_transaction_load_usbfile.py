@@ -4,7 +4,7 @@ from time import sleep
 from django.test import TestCase, tag
 
 from edc_example.models import TestModel
-from edc_sync_files.classes import DumpToUsb, TransactionLoadUsbFile
+from ..transaction import DumpToUsb, TransactionLoadUsbFile
 
 
 class TestTransactionLoadUsbFile(TestCase):

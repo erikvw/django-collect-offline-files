@@ -3,9 +3,9 @@ import os
 from django.conf import settings
 from django.test.testcases import TestCase
 
-from edc_sync_files.file_transfer import FileConnector, FileTransfer
-from edc_sync_files.constants import LOCALHOST, REMOTE
-from edc_sync_files.models import History
+from ..constants import LOCALHOST, REMOTE
+from ..file_transfer import FileConnector, FileTransfer
+from ..models import History
 
 
 class TestFileTransfer(TestCase):

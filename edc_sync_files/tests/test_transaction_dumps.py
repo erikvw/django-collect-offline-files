@@ -4,11 +4,12 @@ from django.test.testcases import TestCase
 from django.test.utils import tag
 from django.conf import settings
 from faker import Faker
+
 from edc_example.models import TestModel
 from edc_sync.models import OutgoingTransaction
 
-from edc_sync_files.classes import TransactionDumps
-from edc_sync_files.models import History
+from ..models import History
+from ..transaction import TransactionDumps
 
 
 @tag('TestTransactionDumps')

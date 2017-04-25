@@ -6,9 +6,7 @@ from django.conf import settings
 from faker import Faker
 from edc_example.models import TestModel
 
-from edc_sync_files.classes import TransactionDumps, TransactionLoads
-
-from ..classes import SyncReport
+from ..transaction import TransactionDumps, TransactionLoads
 
 
 @tag('TestSyncReportDetailed')

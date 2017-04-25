@@ -9,7 +9,7 @@ from faker import Faker
 
 from edc_example.models import TestModel
 
-from ..classes import TransactionDumps
+from ..transaction import TransactionDumps
 
 
 @tag('TestTransactionOrder')
