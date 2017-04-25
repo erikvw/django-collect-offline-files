@@ -8,10 +8,10 @@ from django.utils import timezone
 from paramiko import AutoAddPolicy
 from paramiko.ssh_exception import BadHostKeyException, AuthenticationException, SSHException
 
-from .transaction_messages import transaction_messages
+from ..transaction import transaction_messages
 
 
-class SSHConnectMixin(object):
+class SSHConnectMixin:
 
     def connect(self, host):
         """Connects the ssh instance.
@@ -36,7 +36,8 @@ class SSHConnectMixin(object):
             except (socket.timeout, ConnectionRefusedError) as e:
                 message = 'ConnectionRefusedError {}. {} for {}@{}...'.format(
                     timezone.now(), str(e), self.user, self.remote_host)
-                transaction_messages.add_message('error', message, network=True)
+                transaction_messages.add_message(
+                    'error', message, network=True)
                 return False
             except AuthenticationException as e:
                 message = ' AuthenticationException Got {} for user {}@{}'.format(
@@ -56,13 +57,15 @@ class SSHConnectMixin(object):
                 message = (
                     'Hostname {} not known or not available'.format(
                         self.remote_host))
-                transaction_messages.add_message('error', message, network=True)
+                transaction_messages.add_message(
+                    'error', message, network=True)
                 return False
             except ConnectionResetError as e:
                 message = (
                     ' ConnectionResetError {} for {}@{}'.format(
                         str(e), self.user, self.remote_host))
-                transaction_messages.add_message('error', message, network=True)
+                transaction_messages.add_message(
+                    'error', message, network=True)
                 return False
             except SSHException as e:
                 message = ' SSHException {} for {}@{}'.format(
