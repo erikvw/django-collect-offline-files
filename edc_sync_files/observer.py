@@ -3,15 +3,15 @@ import time
 
 from django.utils import timezone
 
-from watchdog.observers import Observer
+from watchdog.observers import Observer as WatchdogObserver
 
 
 class Observer:
 
-    def start(self, event_handler_class=None):
-        observer = Observer()
+    def start(self, event_handler_class=None, path=None):
+        observer = WatchdogObserver()
         event_handler = event_handler_class()
-        observer.schedule(event_handler, path=event_handler.destination_folder)
+        observer.schedule(event_handler, path=path)
         observer.start()
         logging.basicConfig(
             filename='logs/observer-error.log', level=logging.INFO)
