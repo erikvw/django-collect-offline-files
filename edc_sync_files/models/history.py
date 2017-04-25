@@ -11,6 +11,9 @@ class HistoryManager(models.Manager):
 
 
 class History(BaseUuidModel):
+    """A model that keeps a history of transaction files
+    sent by this host.
+    """
 
     filename = models.CharField(
         max_length=100,

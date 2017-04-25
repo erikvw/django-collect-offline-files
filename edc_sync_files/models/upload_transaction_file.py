@@ -4,6 +4,9 @@ from edc_base.model_mixins import BaseUuidModel
 
 
 class UploadTransactionFile(BaseUuidModel):
+    """A model that keeps a history of transaction files uploaded
+    to this host from a client/producer.
+    """
 
     transaction_file = models.FileField()
 
@@ -17,8 +20,9 @@ class UploadTransactionFile(BaseUuidModel):
         max_length=100,
         null=True)
 
-    file_date = models.DateField(null=True,
-                                 editable=False)
+    file_date = models.DateField(
+        null=True,
+        editable=False)
 
     total = models.IntegerField(
         editable=False,
@@ -43,4 +47,4 @@ class UploadTransactionFile(BaseUuidModel):
 
     class Meta:
         app_label = 'edc_sync_files'
-        ordering = ('-created',)
+        ordering = ('-created', )
