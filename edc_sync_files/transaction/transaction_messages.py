@@ -11,7 +11,6 @@ class TransactionMessages:
         self._messages = []
 
     def add_message(self, message_type, message, network=False, permission=False, transaction=None):
-        print(message_type, " ", message)
         if message_type == ERROR:
             if network:
                 self._messages.append({ERROR: {NETWORK: message}})
@@ -35,10 +34,11 @@ class TransactionMessages:
 
     def last_error_message(self):
         try:
-            message = self.messages()[-1].get(ERROR) if len(self.messages()) else ''
+            message = self.messages(
+            )[-1].get(ERROR) if len(self.messages()) else ''
         except IndexError:
-            message = ''
-        return str(message)
+            message = None
+        return str(message) if message else None
 
 
 transaction_messages = TransactionMessages()

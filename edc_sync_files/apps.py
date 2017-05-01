@@ -30,13 +30,23 @@ class AppConfig(DjangoAppConfig):
         settings.MEDIA_ROOT, 'transactions', 'tmp')
     archive_folder = os.path.join(
         settings.MEDIA_ROOT, 'transactions', 'archive')
+    log_folder = os.path.join(
+        settings.MEDIA_ROOT, 'transactions', 'log')
+
+    @property
+    def outgoing_folder(self):
+        return self.source_folder
+
+    @property
+    def incoming_folder(self):
+        return self.destination_folder
 
     def ready(self):
         sys.stdout.write('Loading {} ...\n'.format(self.verbose_name))
         for folder in [
             self.pending_folder, self.usb_incoming_folder, self.source_folder,
                 self.destination_folder, self.destination_tmp_folder,
-                self.archive_folder]:
+                self.archive_folder, self.log_folder]:
             if not os.path.exists(folder):
                 os.makedirs(folder)
         if not self.role:

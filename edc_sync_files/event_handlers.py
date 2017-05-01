@@ -1,11 +1,13 @@
-import re
+import os
 
 from django.utils import timezone
-from django.apps import apps as django_apps
-
+from queue import Queue
 from watchdog.events import PatternMatchingEventHandler
 
-from .transaction import TransactionFileQueue
+from edc_sync.consumer import Consumer
+
+from .transaction import TransactionImporter
+from .patterns import transaction_filename_pattern
 
 
 class EventHandlerError(Exception):
@@ -14,47 +16,25 @@ class EventHandlerError(Exception):
 
 class TransactionFileEventHandler(PatternMatchingEventHandler):
 
-    """
-       event.event_type
-           'created' only for this class.
-       event.is_directory
-           True | False
-       event.src_path
-           path/to/observed/file
-    """
-    filename_pattern = r'^\w+\_\d{14}\.json$'
-
-    patterns = ["*.json"]
-
-    def __init__(self, verbose=None):
-        super().__init__(ignore_directories=True)
-        self.verbose = verbose or True
-        edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
-        self.destination_folder = edc_sync_file_app.destination_folder
-        self.archive_folder = edc_sync_file_app.archive_folder
-        self.file_queue = TransactionFileQueue()
-
-    def process(self, event):
-        self.output_to_console(
-            '{} {} {} Not handled.'.format(
-                timezone.now(), event.event_type, event.src_path))
+    def __init__(self, patterns=None, verbose=None):
+        patterns = patterns or transaction_filename_pattern
+        super().__init__(patterns=patterns, ignore_directories=True)
+        self.verbose = verbose
+        self.file_queue = Queue()
 
     def on_created(self, event):
-        self.process_on_added(event)
+        self.process(event)
 
-    def output_to_console(self, msg):
+    def on_moved(self, event):
+        self.process(event)
+
+    def process(self, event, **kwargs):
         if self.verbose:
-            print(msg)
-
-    def process_on_added(self, event):
-        """Moves file from source_dir to the destination_dir as
-        determined by :func:`folder_handler.select`."""
-        filename = event.src_path.split("/")[-1]
-        pattern = re.compile(self.filename_pattern)
-        if pattern.match(filename):
-            self.file_queue.add_new_uploaded_file(event.src_path)
-            self.file_queue.process_queued_files()
-            self.output_to_console('{} {} {}'.format(
+            print('{} {} {}'.format(
                 timezone.now(), event.event_type, event.src_path))
-        else:
-            print(event.src_path)
+        self.file_queue.put(event.src_path)
+        while not self.file_queue.empty():
+            path = self.file_queue.get()
+            tx_importer = TransactionImporter(filename=os.path.basename(path))
+        self.consumed = Consumer(
+            transactions=tx_importer.tx_pks, **kwargs).consume()

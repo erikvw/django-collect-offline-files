@@ -5,8 +5,8 @@ from edc_base.utils import get_utcnow
 from ..file_transfer import FileTransfer
 
 
-class TransactionFileManager(object):
-    """Send files to the community server or central server.
+class SendTransactionFile:
+    """Send transaction files.
     """
 
     def __init__(self, file_transfer=None, filename=None):

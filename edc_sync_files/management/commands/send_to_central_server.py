@@ -1,10 +1,9 @@
 import sys
 
-from django.apps import apps as django_apps
 from django.core.management.base import BaseCommand
 
-from ...file_transfer import TransactionFileManager
-from ...transaction import TransactionDumps
+from ...file_transfer import SendTransactionFile
+from ...transaction import TransactionExporter
 
 
 class Command(BaseCommand):
@@ -15,20 +14,14 @@ class Command(BaseCommand):
     help = ''
 
     def handle(self, *args, **options):
-        try:
-            source_folder = django_apps.get_app_config(
-                'edc_sync_files').source_folder
-            sys.stdout.write('Dumping Transactions')
-            dump = TransactionDumps(source_folder)
-            if dump.is_exported_to_json:
-                sys.stdout.write(
-                    'Transaction files: {} dumped with {} transactions'.format(
-                        dump.filename, dump.export_no))
-                sys.stdout.write('Done')
-            else:
-                sys.stdout.write(
-                    'Failed to dump transaction file.')
-            TransactionFileManager().send_files()
-        except AttributeError:
-            sys.stdout.write('No pending transaction files')
-        sys.stdout.write('\npress CTRL-C to stop.\n\n')
+        sys.stdout.write('Exporting transactions\n')
+        tx_exporter = TransactionExporter()
+        if tx_exporter.exported:
+            sys.stdout.write(
+                f'{tx_exporter.filename} exported '
+                f'with {tx_exporter.exported} transactions\n')
+        else:
+            sys.stdout.write('Failed to export transaction file.\n')
+        if tx_exporter.exported:
+            sys.stdout.write('Sending transaction files\n')
+            SendTransactionFile().send_files()

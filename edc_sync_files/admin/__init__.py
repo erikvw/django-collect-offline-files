@@ -1,2 +1,2 @@
 from .history_admin import HistoryAdmin
-from .upload_transaction_file_admin import UploadTransactionFileAdmin
+from .imported_transaction_file_history_admin import ImportedTransactionFileHistoryAdmin

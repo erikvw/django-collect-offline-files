@@ -11,4 +11,5 @@ class EdcSyncAdminSite(AdminSite):
     index_title = app_config.verbose_name + ' ' + 'Admin'
     site_url = '/edc_sync/'
 
+
 edc_sync_files_admin = EdcSyncAdminSite(name='edc_sync_files_admin')

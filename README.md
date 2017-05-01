@@ -2,7 +2,7 @@
 
 ### EDC Sync File Transfer
 
-Transfer user generated media files as part of the synchronization process managed by `edc_sync`.
+Transfer `edc_sync` transactions as files.
 
 
 ### Data Flow

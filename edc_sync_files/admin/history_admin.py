@@ -7,6 +7,9 @@ from ..admin_site import edc_sync_files_admin
 @admin.register(History, site=edc_sync_files_admin)
 class HistoryAdmin (admin.ModelAdmin):
 
+    """A history model of created transaction files.
+    """
+
     ordering = ('-created', )
 
     list_display = (

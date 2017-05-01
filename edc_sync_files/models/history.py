@@ -1,3 +1,5 @@
+import socket
+
 from django.db import models
 from django.utils import timezone
 
@@ -20,7 +22,8 @@ class History(BaseUuidModel):
         unique=True)
 
     hostname = models.CharField(
-        max_length=100
+        max_length=100,
+        default=socket.gethostname,
     )
 
     batch_id = models.CharField(
@@ -41,9 +44,10 @@ class History(BaseUuidModel):
     filesize = models.FloatField(
         null=True)
 
-    filetimestamp = models.DateTimeField()
+    filetimestamp = models.DateTimeField(
+        default=timezone.now)
 
-    sent_datetime = models.DateTimeField(default=timezone.now)
+    sent_datetime = models.DateTimeField(null=True)
 
     acknowledged = models.BooleanField(
         default=False,
@@ -56,7 +60,6 @@ class History(BaseUuidModel):
         blank=True)
 
     ack_datetime = models.DateTimeField(
-        default=timezone.now,
         null=True,
         blank=True)
 
@@ -74,7 +77,7 @@ class History(BaseUuidModel):
     )
 
     def __str__(self):
-        return '</{}.{}>'.format(self.filename, self.hostname)
+        return f'host:{self.hostname} file:{self.filename} batch:{self.batch_id} '
 
     def natural_key(self):
         return (self.filename, self.hostname)

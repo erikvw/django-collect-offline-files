@@ -1,17 +1,17 @@
 from django.contrib import admin
 
 from ..admin_site import edc_sync_files_admin
-from ..models import UploadTransactionFile
+from ..models import ImportedTransactionFileHistory
 
 
-@admin.register(UploadTransactionFile, site=edc_sync_files_admin)
-class UploadTransactionFileAdmin(admin.ModelAdmin):
+@admin.register(ImportedTransactionFileHistory, site=edc_sync_files_admin)
+class ImportedTransactionFileHistoryAdmin(admin.ModelAdmin):
 
     ordering = ('-created',)
 
     date_hierarchy = 'created'
 
-    list_display = ('file_name',
+    list_display = ('filename',
                     'consumed',
                     'created',
                     'producer',

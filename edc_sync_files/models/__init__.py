@@ -1,2 +1,2 @@
 from .history import History, HistoryManager
-from .upload_transaction_file import UploadTransactionFile
+from .imported_transaction_file_history import ImportedTransactionFileHistory

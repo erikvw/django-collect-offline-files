@@ -44,10 +44,10 @@ INSTALLED_APPS = [
     'edc_device.apps.AppConfig',
     'edc_sync_files.apps.AppConfig',
     'edc_sync.apps.AppConfig',
-    'edc_identifier.apps.AppConfig',
-    'edc_protocol.apps.AppConfig',
+    # 'edc_identifier.apps.AppConfig',
+    # 'edc_protocol.apps.AppConfig',
     'django_crypto_fields.apps.AppConfig',
-    'edc_appointment.apps.AppConfig',
+    # 'edc_appointment.apps.AppConfig',
     'rest_framework',
     'rest_framework.authtoken',
 ]

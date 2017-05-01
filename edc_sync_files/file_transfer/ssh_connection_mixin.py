@@ -2,7 +2,6 @@ import socket
 import paramiko
 
 
-from builtins import ConnectionRefusedError, ConnectionResetError
 from django.utils import timezone
 
 from paramiko import AutoAddPolicy
@@ -12,6 +11,9 @@ from ..transaction import transaction_messages
 
 
 class SSHConnectMixin:
+
+    def __init__(self, **kwargs):
+        self.messages = {}
 
     def connect(self, host):
         """Connects the ssh instance.

@@ -3,14 +3,14 @@ from django.db import models
 from edc_base.model_mixins import BaseUuidModel
 
 
-class UploadTransactionFile(BaseUuidModel):
-    """A model that keeps a history of transaction files uploaded
-    to this host from a client/producer.
+class ImportedTransactionFileHistory(BaseUuidModel):
+    """A model that tracks the history of transaction
+    files imported to this host.
     """
 
     transaction_file = models.FileField()
 
-    file_name = models.CharField(
+    filename = models.CharField(
         max_length=50,
         null=True,
         editable=False,
@@ -20,7 +20,7 @@ class UploadTransactionFile(BaseUuidModel):
         max_length=100,
         null=True)
 
-    file_date = models.DateField(
+    filedate = models.DateField(
         null=True,
         editable=False)
 
