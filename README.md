@@ -4,22 +4,10 @@
 
 Transfer `edc_sync` transactions as files.
 
+Data flows from client to server where a server is either a node server or the central server.
 
-### Data Flow
+new transaction files are placed in the `source` folder. 
 
-client -> node -> server
-client -> server
-
-### Setup SSH Keys
-
-1. Generate public key for the server or client.
-    * ssh-keygen -t rsa
-2. Copy public key to machine you want to connect to with ssh-copy-id.
-    * ssh-copy-id  user@device_ip
-
-- user
-- device_ip
-- source_folder where/to/copy/files/from
 - destination_folder where/to/copy/files/to
 - archive_folder where/to/copy/files/to/archive
 
@@ -59,3 +47,12 @@ Archive folder: remote_user@edc.sample.com:/Users/edc_user/source/bcpp/transacti
 	2. cd source/bcpp/
 	3. python manage.py start_observer
 ```
+
+### Setup SSH Keys
+
+Generate public key for the server or client.
+
+    ssh-keygen -t rsa
+Copy public key to machine you want to connect to with ssh-copy-id.
+    
+    ssh-copy-id  user@device_ip
