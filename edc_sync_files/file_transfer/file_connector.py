@@ -11,7 +11,6 @@ from edc_base.utils import get_utcnow
 
 from ..constants import REMOTE
 from ..models import History
-from ..transaction import transaction_messages
 from .ssh_connection_mixin import SSHConnectMixin
 
 
@@ -64,22 +63,15 @@ class FileConnector(SSHConnectMixin):
                         source_filename,
                         destination_tmp_file,
                         callback=self.progress, confirm=True)
-                    transaction_messages.add_message(
-                        'success', 'File {} sent to the'
-                        ' server successfully.'.format(source_filename))
                     host_sftp.rename(
                         destination_tmp_file,
                         destination_file)
                 except IOError as e:
-                    sent = False
-                    transaction_messages.add_message(
-                        'error', 'IOError Got {} . Sending {}'.format(e, destination_tmp_file))
+                    raise IOError(
+                        'IOError Got {} . Sending {}'.format(e, destination_tmp_file))
                     return False
-
                 if sent:
                     self.update_history(filename, sent=sent)
-                    transaction_messages.add_message(
-                        'success', 'History record created for {}.'.format(source_filename))
             finally:
                 host_sftp.close()
                 client.close()
@@ -92,12 +84,8 @@ class FileConnector(SSHConnectMixin):
             source_filename = join(self.source_folder, filename)
             destination_filename = join(self.archive_folder, filename)
             shutil.move(source_filename, destination_filename)
-            transaction_messages.add_message(
-                'success', 'Archived successfully {}.'.format(source_filename))
         except FileNotFoundError as e:
-            archived = False
-            transaction_messages.add_message(
-                'error', 'FileNotFoundError Got {}'.format(str(e)))
+            raise FileNotFoundError('FileNotFoundError Got {}'.format(str(e)))
         return archived
 
     def update_history(self, filename, sent=False):

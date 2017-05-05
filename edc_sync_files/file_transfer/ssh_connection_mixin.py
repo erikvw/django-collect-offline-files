@@ -5,9 +5,8 @@ import paramiko
 from django.utils import timezone
 
 from paramiko import AutoAddPolicy
-from paramiko.ssh_exception import BadHostKeyException, AuthenticationException, SSHException
-
-from ..transaction import transaction_messages
+from paramiko.ssh_exception import (
+    BadHostKeyException, AuthenticationException, SSHException)
 
 
 class SSHConnectMixin:
@@ -31,52 +30,31 @@ class SSHConnectMixin:
                     banner_timeout=5,
                     compress=True,
                 )
-                message = 'Connected to host {}. '.format(self.remote_host)
-                transaction_messages.add_message(
-                    'success', message, network=True)
                 break
             except (socket.timeout, ConnectionRefusedError) as e:
-                message = 'ConnectionRefusedError {}. {} for {}@{}...'.format(
-                    timezone.now(), str(e), self.user, self.remote_host)
-                transaction_messages.add_message(
-                    'error', message, network=True)
-                return False
+                raise ConnectionRefusedError('ConnectionRefusedError {}. {} for {}@{}...'.format(
+                    timezone.now(), str(e), self.user, self.remote_host))
             except AuthenticationException as e:
-                message = ' AuthenticationException Got {} for user {}@{}'.format(
-                    str(e)[0:-1], self.user, self.remote_host)
-                transaction_messages.add_message(
-                    'error', message, permission=True)
-                return False
+                raise AuthenticationException(
+                    ' AuthenticationException Got {} for user {}@{}'.format(
+                        str(e)[0:-1], self.user, self.remote_host))
             except BadHostKeyException as e:
-                message = (
+                raise BadHostKeyException(
                     ' BadHostKeyException. Add server to known_hosts on host {}.'
-                    ' Got {}.'.format(e, self.remote_host)
-                )
-                transaction_messages.add_message(
-                    'error', message, permission=True)
-                return False
+                    ' Got {}.'.format(e, self.remote_host))
             except socket.gaierror:
-                message = (
+                raise Exception(
                     'Hostname {} not known or not available'.format(
                         self.remote_host))
-                transaction_messages.add_message(
-                    'error', message, network=True)
-                return False
             except ConnectionResetError as e:
-                message = (
+                raise ConnectionResetError(
                     ' ConnectionResetError {} for {}@{}'.format(
                         str(e), self.user, self.remote_host))
-                transaction_messages.add_message(
-                    'error', message, network=True)
-                return False
             except SSHException as e:
-                message = ' SSHException {} for {}@{}'.format(
-                    str(e), self.user, self.remote_host)
-                transaction_messages.add_message('error', message)
-                return False
+                raise SSHException(' SSHException {} for {}@{}'.format(
+                    str(e), self.user, self.remote_host))
             except OSError as e:
-                transaction_messages.add_message('error', str(e), network=True)
-                return False
+                raise OSError('{} .'.format(str(e)))
         return ssh
 
     def reconnect(self, host):
