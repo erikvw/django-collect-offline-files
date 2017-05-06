@@ -6,8 +6,8 @@ from watchdog.events import PatternMatchingEventHandler
 
 from edc_sync.consumer import Consumer
 
-from .transaction import TransactionImporter
 from .patterns import transaction_filename_pattern
+from .transaction import TransactionImporter
 
 
 class EventHandlerError(Exception):
@@ -20,7 +20,7 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         patterns = patterns or transaction_filename_pattern
         super().__init__(patterns=patterns, ignore_directories=True)
         self.verbose = verbose
-        self.file_queue = Queue()
+        self.q = Queue()
 
     def on_created(self, event):
         self.process(event)
@@ -32,9 +32,10 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         if self.verbose:
             print('{} {} {}'.format(
                 timezone.now(), event.event_type, event.src_path))
-        self.file_queue.put(event.src_path)
-        while not self.file_queue.empty():
-            path = self.file_queue.get()
+        self.q.put(event.src_path)
+        while not self.q.empty():
+            path = self.q.get()
             tx_importer = TransactionImporter(filename=os.path.basename(path))
+            self.q.task_done()
         self.consumed = Consumer(
             transactions=tx_importer.tx_pks, **kwargs).consume()
