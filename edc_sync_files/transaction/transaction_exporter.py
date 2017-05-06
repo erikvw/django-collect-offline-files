@@ -38,14 +38,11 @@ class TransactionExporter:
                 device_id, str(timezone.now().strftime("%Y%m%d%H%M%S%f")[:-3]))
             self.batch_id = str(self.outgoing_transactions.first().tx_pk)
             self.prev_batch_id = self.get_prev_batch_id()
-            history = History.objects.using(self.using).create(
+            History.objects.using(self.using).create(
                 filename=self.filename, batch_id=self.batch_id)
             self.exported = self.export_file()
         if self.exported:
             self.message = f'Success. Exported transactions to {self.filename}.'
-            history.sent = True
-            history.sent_datetime = get_utcnow()
-            history.save()
         else:
             self.message = 'Nothing to export.'
 
