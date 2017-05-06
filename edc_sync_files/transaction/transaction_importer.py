@@ -9,16 +9,161 @@ from edc_sync.models import IncomingTransaction
 from ..models import ImportedTransactionFileHistory
 
 
-class TransactionImporterPathError(Exception):
+class TransactionImporterError(Exception):
     pass
 
 
-class TransactionImporterDuplicateError(Exception):
+class BatchNotReady(Exception):
     pass
 
 
-class TransactionImporterSequenceError(Exception):
+class BatchAlreadyProcessed(Exception):
     pass
+
+
+class InvalidBatchSequence(Exception):
+    pass
+
+
+class JSONFile:
+
+    def __init__(self, name=None, path=None, archive_folder=None):
+        self.archive_folder = archive_folder
+        self.name = name
+        self.path = path
+        deserializer = Deserializer()
+        with open(os.path.join(self.path, self.name)) as f:
+            json_text = f.read()
+        self.deserialized_objects = deserializer.deserialize(
+            json_text=json_text)
+
+    def archive(self):
+        shutil.move(
+            os.path.join(self.path, self.name),
+            self.archive_folder)
+
+
+class Deserializer:
+
+    def deserialize(self, json_text=None):
+        """Returns a generator of deserialized objects.
+        """
+        deserialized_tx = serializers.deserialize(
+            "json", json_text, ensure_ascii=True, use_natural_foreign_keys=True,
+            use_natural_primary_keys=False)
+        return deserialized_tx
+
+
+class BatchHistory:
+
+    def __init__(self, model=None):
+        self.model = model or ImportedTransactionFileHistory
+
+    def exists(self, batch_id=None):
+        """Returns True if batch_id exists in the history.
+        """
+        try:
+            self.model.objects.get(batch_id=batch_id)
+        except self.model.DoesNotExist:
+            return False
+        return True
+
+    def update(self, filename=None, batch_id=None, producer=None, count=None):
+        """Creates an history model instance.
+        """
+        obj = self.model(
+            filename=filename,
+            batch_id=batch_id,
+            producer=producer,
+            total=count)
+        obj.transaction_file.name = filename
+        obj.save()
+
+
+class Batch:
+
+    def __init__(self):
+        self._verified = None
+        self.objects = []
+        self.batch_history = BatchHistory()
+
+    def populate(self, deserialized_objects=None):
+        """Populates the batch with unsaved model instances
+        from a generator of deserialized objects.
+        """
+        for deserialized_object in deserialized_objects:
+            self.objects.append(deserialized_object.object)
+            if self.batch_history.exists(batch_id=self.batch_id):
+                raise BatchAlreadyProcessed(
+                    f'Batch {self.batch_id} has already been processed')
+            if not self.verified:
+                raise InvalidBatchSequence(
+                    f'Invalid batch sequence for {self.filename}')
+            break
+        for deserialized_object in deserialized_objects:
+            self.objects.append(deserialized_object.object)
+
+    def save(self):
+        """Saves all objects in the batch as IncomingTransactions.
+        """
+        saved = 0
+        for deserialized_object in self.objects:
+            try:
+                IncomingTransaction.objects.get(pk=deserialized_object.pk)
+            except IncomingTransaction.DoesNotExist:
+                data = {}
+                for field in IncomingTransaction._meta.get_fields():
+                    try:
+                        data.update({field.name: getattr(
+                            deserialized_object, field.name)})
+                    except AttributeError:
+                        pass
+                IncomingTransaction.objects.create(**data)
+                saved += 1
+        return saved
+
+    @property
+    def count(self):
+        """Returns the number of objects in the batch.
+        """
+        return len(self.objects)
+
+    @property
+    def batch_id(self):
+        """Returns the batch_id.
+        """
+        try:
+            return self.objects[0].batch_id
+        except IndexError:
+            raise BatchNotReady('Batch not ready')
+
+    @property
+    def prev_batch_id(self):
+        """Returns the previous batch_id.
+        """
+        try:
+            return self.objects[0].prev_batch_id
+        except IndexError:
+            raise BatchNotReady('Batch not ready')
+
+    @property
+    def producer(self):
+        try:
+            return self.objects[0].producer
+        except IndexError:
+            raise BatchNotReady('Batch not ready')
+
+    @property
+    def verified(self):
+        """Returns True if previous and current batch id imply the
+        current batch is the "next" or "first" batch of the sequence.
+        """
+        if not self._verified:
+            if self.prev_batch_id == self.batch_id:
+                self._verified = True
+            elif self.batch_history.exists(batch_id=self.prev_batch_id):
+                self._verified = True
+        return self._verified
 
 
 class TransactionImporter:
@@ -26,72 +171,30 @@ class TransactionImporter:
        archives the file.
     """
 
-    def __init__(self, filename=None, path=None):
-        self.message = None
-        self.tx_pks = []
+    def __init__(self, filename=None, path=None, archive_folder=None):
         app_config = django_apps.get_app_config('edc_sync_files')
-        self.filename = filename
-        self.imported = 0
         self.path = path or app_config.outgoing_folder
+        self.archive_folder = archive_folder or app_config.archive_folder
+        self.json_file = JSONFile(
+            name=filename, path=self.path, archive_folder=self.archive_folder)
+        self.batch_cls = Batch
+
+    def import_batch(self):
+        """Imports the batch of outgoing transactions into
+        model IncomingTransaction.
+        """
+        batch = self.batch_cls()
         try:
-            ImportedTransactionFileHistory.objects.get(filename=self.filename)
-        except ImportedTransactionFileHistory.DoesNotExist:
-            self.imported, self.tx_pks = self.import_file()
+            batch.populate(
+                deserialized_objects=self.json_file.deserialized_objects)
+        except InvalidBatchSequence as e:
+            raise TransactionImporterError(str(e))
+        except BatchAlreadyProcessed as e:
+            raise TransactionImporterError(str(e))
         else:
-            raise TransactionImporterDuplicateError(
-                f'File {self.filename} has already been imported.')
-        shutil.move(
-            os.path.join(self.path, self.filename),
-            app_config.archive_folder)
-
-    def import_file(self):
-        """Imports a file of transactions into model IncomingTransaction.
-        """
-        imported = 0
-        with open(os.path.join(self.path, self.filename)) as f:
-            json_txt = f.read()
-        outgoing_transactions = self.get_outgoing_transactions(json_txt)
-        tx_pks = [obj.tx_pk for obj in outgoing_transactions]
-        self.verify_sequence(outgoing_transactions=outgoing_transactions)
-        for outgoing_transaction in outgoing_transactions:
-            try:
-                IncomingTransaction.objects.get(pk=outgoing_transaction.pk)
-            except IncomingTransaction.DoesNotExist:
-                data = outgoing_transaction.__dict__
-                data.pop('using')
-                data.pop('is_consumed_middleman')
-                data.pop('is_consumed_server')
-                data.pop('_state')
-                IncomingTransaction.objects.create(**data)
-                imported += 1
-        history = ImportedTransactionFileHistory(
-            filename=self.filename,
-            batch_id=outgoing_transactions[0].batch_id,
-            producer=outgoing_transactions[0].producer,
-            total=len(outgoing_transactions))
-        history.transaction_file.name = self.filename
-        history.save()
-        return imported, tx_pks
-
-    def get_outgoing_transactions(self, json_txt=None):
-        """Returns a list of deserialized outgoing transactions.
-        """
-        outgoing_transactions = []
-        deserialized_object = serializers.deserialize(
-            "json", json_txt, ensure_ascii=True, use_natural_foreign_keys=True,
-            use_natural_primary_keys=False)
-        for _, obj in enumerate(deserialized_object):
-            outgoing_transactions.append(obj.object)
-        return outgoing_transactions
-
-    def verify_sequence(self, outgoing_transactions=None):
-        """ Check import sequence of transaction file using prev_batch_id.
-        """
-        if outgoing_transactions[0].prev_batch_id == outgoing_transactions[0].batch_id:
-            return True
-        elif ImportedTransactionFileHistory.objects.filter(
-                batch_id=outgoing_transactions[0].prev_batch_id).exists():
-            return True
-        else:
-            raise TransactionImporterSequenceError(
-                f'Invalid sequence for {self.filename}')
+            batch.save()
+            batch.batch_history.update(
+                filename=self.json_file.name,
+                count=batch.count)
+        self.json_file.archive()
+        return batch

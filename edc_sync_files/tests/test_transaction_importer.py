@@ -1,22 +1,19 @@
-import os
-
 from faker import Faker
-from time import sleep
 
-from django.conf import settings
 from django.test.testcases import TestCase
 from django.test.utils import tag
 
+from edc_sync.consumer import Consumer
 from edc_sync.models import OutgoingTransaction
 
 from ..models import History
 from ..transaction import TransactionImporter, TransactionExporter
 from .models import TestModel
-from edc_sync.consumer import Consumer
 
 fake = Faker()
 
 
+@tag('erik1')
 class TestTransactionImporter(TestCase):
 
     def setUp(self):
@@ -30,15 +27,17 @@ class TestTransactionImporter(TestCase):
         TestModel.objects.using('client').create(f1=fake.name())
         tx_exporter = TransactionExporter(using='client', device_id="010")
         tx_importer = TransactionImporter(filename=tx_exporter.filename)
-        self.assertGreater(tx_importer.imported, 0)
+        batch = tx_importer.import_batch()
+        self.assertGreater(batch.count, 0)
 
     def test_export_and_import_and_consume(self):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
         tx_exporter = TransactionExporter(using='client', device_id="010")
         tx_importer = TransactionImporter(filename=tx_exporter.filename)
+        batch = tx_importer.import_batch()
         consumed = Consumer(
-            transactions=tx_importer.tx_pks, check_device=False,
+            tx_pks=[obj.tx_pk for obj in batch.objects], check_device=False,
             check_hostname=False,
             verbose=False).consume()
         self.assertGreater(consumed, 0)
@@ -49,8 +48,9 @@ class TestTransactionImporter(TestCase):
             TestModel.objects.using('client').create(f1=fake.name())
             tx_exporter = TransactionExporter(using='client', device_id="010")
             tx_importer = TransactionImporter(filename=tx_exporter.filename)
+            batch = tx_importer.import_batch()
             consumed = Consumer(
-                transactions=tx_importer.tx_pks, check_device=False,
+                tx_pks=[obj.tx_pk for obj in batch.objects], check_device=False,
                 check_hostname=False,
                 verbose=False).consume()
             self.assertGreater(consumed, 0)
