@@ -36,7 +36,7 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         while not self.q.empty():
             path = self.q.get()
             tx_importer = TransactionImporter(filename=os.path.basename(path))
-            tx_importer.import_batch()
+            batch = tx_importer.import_batch()
             self.q.task_done()
         self.consumed = Consumer(
-            transactions=tx_importer.tx_pks, **kwargs).consume()
+            tx_pks=[obj.tx_pk for obj in batch.objects], **kwargs).consume()
