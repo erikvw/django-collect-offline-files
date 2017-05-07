@@ -12,7 +12,7 @@ class HistoryManager(models.Manager):
         return self.get(filename=filename, sent_datetime=sent_datetime)
 
 
-class History(BaseUuidModel):
+class ExportedTransactionFileHistory(BaseUuidModel):
     """A model that keeps a history of transaction files
     sent by this host.
     """
@@ -27,6 +27,10 @@ class History(BaseUuidModel):
     )
 
     batch_id = models.CharField(
+        max_length=100
+    )
+
+    prev_batch_id = models.CharField(
         max_length=100
     )
 
@@ -84,7 +88,7 @@ class History(BaseUuidModel):
 
     class Meta:
         app_label = 'edc_sync_files'
-        ordering = ('-sent_datetime', )
+        ordering = ('-created', )
         verbose_name = 'Sent History'
         verbose_name_plural = 'Sent History'
         unique_together = (('filename', 'hostname'),)

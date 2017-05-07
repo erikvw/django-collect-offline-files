@@ -3,6 +3,7 @@ import shutil
 
 from django.apps import apps as django_apps
 from django.core import serializers
+from django.db.utils import IntegrityError
 
 from edc_sync.models import IncomingTransaction
 
@@ -13,7 +14,7 @@ class TransactionImporterError(Exception):
     pass
 
 
-class BatchNotReady(Exception):
+class BatchIsEmpty(Exception):
     pass
 
 
@@ -21,37 +22,55 @@ class BatchAlreadyProcessed(Exception):
     pass
 
 
+class BatchHistoryError(Exception):
+    pass
+
+
+class BatchError(Exception):
+    pass
+
+
+class BatchUnsaved(Exception):
+    pass
+
+
 class InvalidBatchSequence(Exception):
     pass
 
 
+def deserialize(json_text=None):
+    """Wraps django deserialize with defaults for JSON
+    and natural keys.
+    """
+    return serializers.deserialize(
+        "json", json_text,
+        ensure_ascii=True,
+        use_natural_foreign_keys=True,
+        use_natural_primary_keys=False)
+
+
 class JSONFile:
 
-    def __init__(self, name=None, path=None, archive_folder=None):
+    def __init__(self, name=None, path=None, archive_folder=None, **kwargs):
         self.archive_folder = archive_folder
         self.name = name
         self.path = path
-        deserializer = Deserializer()
+        self._deserialized_objects = None
+        self.deserialize = deserialize
         with open(os.path.join(self.path, self.name)) as f:
-            json_text = f.read()
-        self.deserialized_objects = deserializer.deserialize(
-            json_text=json_text)
-
-    def archive(self):
+            self.json_text = f.read()
         shutil.move(
             os.path.join(self.path, self.name),
             self.archive_folder)
 
-
-class Deserializer:
-
-    def deserialize(self, json_text=None):
+    @property
+    def deserialized_objects(self):
         """Returns a generator of deserialized objects.
         """
-        deserialized_tx = serializers.deserialize(
-            "json", json_text, ensure_ascii=True, use_natural_foreign_keys=True,
-            use_natural_primary_keys=False)
-        return deserialized_tx
+        if not self._deserialized_objects:
+            self._deserialized_objects = self.deserialize(
+                json_text=self.json_text)
+        return self._deserialized_objects
 
 
 class BatchHistory:
@@ -68,59 +87,115 @@ class BatchHistory:
             return False
         return True
 
-    def update(self, filename=None, batch_id=None, producer=None, count=None):
+    def update(self, filename=None, batch_id=None, prev_batch_id=None,
+               producer=None, count=None):
         """Creates an history model instance.
         """
+        # TODO: refactor model enforce unique batch_id
+        # TODO: refactor model to not allow NULLs
+        if not filename:
+            raise BatchHistoryError('Invalid filename. Got None')
+        if not batch_id:
+            raise BatchHistoryError('Invalid batch_id. Got None')
+        if not prev_batch_id:
+            raise BatchHistoryError('Invalid prev_batch_id. Got None')
+        if not producer:
+            raise BatchHistoryError('Invalid producer. Got None')
+        if self.exists(batch_id=batch_id):
+            raise IntegrityError('Duplicate batch_id')
         obj = self.model(
             filename=filename,
             batch_id=batch_id,
+            prev_batch_id=prev_batch_id,
             producer=producer,
             total=count)
         obj.transaction_file.name = filename
         obj.save()
+        return obj
 
 
 class Batch:
 
-    def __init__(self):
-        self._verified = None
+    def __init__(self, **kwargs):
+        self._valid_sequence = None
+        self.filename = None
+        self.batch_id = None
+        self.prev_batch_id = None
+        self.producer = None
         self.objects = []
         self.batch_history = BatchHistory()
+        self.model = IncomingTransaction
 
-    def populate(self, deserialized_objects=None):
+    def populate(self, deserialized_txs=None, filename=None, retry=None):
         """Populates the batch with unsaved model instances
         from a generator of deserialized objects.
         """
-        for deserialized_object in deserialized_objects:
-            self.objects.append(deserialized_object.object)
-            if self.batch_history.exists(batch_id=self.batch_id):
-                raise BatchAlreadyProcessed(
-                    f'Batch {self.batch_id} has already been processed')
-            if not self.verified:
-                raise InvalidBatchSequence(
-                    f'Invalid batch sequence for {self.filename}')
+        if not deserialized_txs:
+            raise BatchError(
+                'Failed to populate batch. There are no objects to add.')
+        self.filename = filename
+        if not self.filename:
+            raise BatchError('Invalid filename. Got None')
+        for deserialized_tx in deserialized_txs:
+            self.peek(deserialized_tx)
+            self.objects.append(deserialized_tx.object)
             break
-        for deserialized_object in deserialized_objects:
-            self.objects.append(deserialized_object.object)
+        for deserialized_tx in deserialized_txs:
+            self.objects.append(deserialized_tx.object)
+
+    def peek(self, deserialized_tx):
+        """Peeks into first tx and sets self attrs.
+        """
+        self.batch_id = deserialized_tx.object.batch_id
+        self.prev_batch_id = deserialized_tx.object.prev_batch_id
+        self.producer = deserialized_tx.object.producer
+        if self.batch_history.exists(batch_id=self.batch_id):
+            raise BatchAlreadyProcessed(
+                f'Batch {self.batch_id} has already been processed')
+        elif not self.valid_sequence:
+            raise InvalidBatchSequence(
+                f'Invalid batch sequence for file \'{self.filename}\'. '
+                f'Got {self.batch_id}')
 
     def save(self):
-        """Saves all objects in the batch as IncomingTransactions.
+        """Saves all model instances in the batch as model.
         """
         saved = 0
-        for deserialized_object in self.objects:
+        if not self.objects:
+            raise BatchError('Save failed. Batch is empty')
+        for deserialized_tx in self.objects:
             try:
-                IncomingTransaction.objects.get(pk=deserialized_object.pk)
-            except IncomingTransaction.DoesNotExist:
+                self.model.objects.get(pk=deserialized_tx.pk)
+            except self.model.DoesNotExist:
                 data = {}
-                for field in IncomingTransaction._meta.get_fields():
+                for field in self.model._meta.get_fields():
                     try:
                         data.update({field.name: getattr(
-                            deserialized_object, field.name)})
+                            deserialized_tx, field.name)})
                     except AttributeError:
                         pass
-                IncomingTransaction.objects.create(**data)
+                self.model.objects.create(**data)
                 saved += 1
         return saved
+
+    def update_history(self):
+        if not self.objects:
+            raise BatchIsEmpty('Update history failed. Batch is empty')
+        if self.objects_unsaved:
+            raise BatchUnsaved(
+                'Update history failed. Batch has unsaved objects')
+        self.batch_history.update(
+            filename=self.filename,
+            batch_id=self.batch_id,
+            prev_batch_id=self.prev_batch_id,
+            producer=self.producer,
+            count=self.saved_objects)
+
+    @property
+    def saved_objects(self):
+        """Returns the count of saved model instances for this batch.
+        """
+        return self.model.objects.filter(batch_id=self.batch_id).count()
 
     @property
     def count(self):
@@ -129,41 +204,22 @@ class Batch:
         return len(self.objects)
 
     @property
-    def batch_id(self):
-        """Returns the batch_id.
+    def objects_unsaved(self):
+        """Returns True if any batch objects have not been saved.
         """
-        try:
-            return self.objects[0].batch_id
-        except IndexError:
-            raise BatchNotReady('Batch not ready')
+        return self.count > self.saved_objects
 
     @property
-    def prev_batch_id(self):
-        """Returns the previous batch_id.
-        """
-        try:
-            return self.objects[0].prev_batch_id
-        except IndexError:
-            raise BatchNotReady('Batch not ready')
-
-    @property
-    def producer(self):
-        try:
-            return self.objects[0].producer
-        except IndexError:
-            raise BatchNotReady('Batch not ready')
-
-    @property
-    def verified(self):
+    def valid_sequence(self):
         """Returns True if previous and current batch id imply the
         current batch is the "next" or "first" batch of the sequence.
         """
-        if not self._verified:
+        if not self._valid_sequence:
             if self.prev_batch_id == self.batch_id:
-                self._verified = True
+                self._valid_sequence = True
             elif self.batch_history.exists(batch_id=self.prev_batch_id):
-                self._verified = True
-        return self._verified
+                self._valid_sequence = True
+        return self._valid_sequence
 
 
 class TransactionImporter:
@@ -184,17 +240,9 @@ class TransactionImporter:
         model IncomingTransaction.
         """
         batch = self.batch_cls()
-        try:
-            batch.populate(
-                deserialized_objects=self.json_file.deserialized_objects)
-        except InvalidBatchSequence as e:
-            raise TransactionImporterError(str(e))
-        except BatchAlreadyProcessed as e:
-            raise TransactionImporterError(str(e))
-        else:
-            batch.save()
-            batch.batch_history.update(
-                filename=self.json_file.name,
-                count=batch.count)
-        self.json_file.archive()
-        return batch
+        batch.populate(
+            deserialized_txs=self.json_file.deserialized_objects,
+            filename=self.json_file.name)
+        batch.save()
+        batch.update_history()
+        return batch.batch_id

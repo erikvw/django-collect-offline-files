@@ -20,6 +20,10 @@ class ImportedTransactionFileHistory(BaseUuidModel):
         max_length=100,
         null=True)
 
+    prev_batch_id = models.CharField(
+        max_length=100,
+        null=True)
+
     filedate = models.DateField(
         null=True,
         editable=False)
