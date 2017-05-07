@@ -5,8 +5,10 @@ from django.apps import apps as django_apps
 from django.test.testcases import TestCase
 from django.test.utils import tag
 
+from edc_sync.models import OutgoingTransaction
+
 from ..event_handlers import TransactionFileEventHandler
-from ..models import ImportedTransactionFileHistory
+from ..models import ImportedTransactionFileHistory, ExportedTransactionFileHistory
 from ..transaction import TransactionExporter
 from .models import TestModel
 
@@ -22,15 +24,21 @@ class Event:
 
 class TestFileEventHandler(TestCase):
 
+    def setUp(self):
+        ExportedTransactionFileHistory.objects.using('client').all().delete()
+        OutgoingTransaction.objects.using('client').all().delete()
+        TestModel.objects.using('client').all().delete()
+
     def test_create(self):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
         self.assertEqual(TestModel.objects.all().count(), 0)
         tx_exporter = TransactionExporter(using='client')
+        history = tx_exporter.export_batch()
         # Uploaded by watchdog
         event_handler = TransactionFileEventHandler()
         event_handler.process(
-            Event(filename=tx_exporter.filename),
+            Event(filename=history.filename),
             check_device=False,
             check_hostname=False,
             verbose=False)
@@ -46,7 +54,8 @@ class TestFileEventHandler(TestCase):
             TestModel.objects.using('client').create(f1=fake.name())
             self.assertEqual(TestModel.objects.all().count(), 0)
             tx_exporter = TransactionExporter(using='client')
-            filenames.append(tx_exporter.filename)
+            history = tx_exporter.export_batch()
+            filenames.append(history.filename)
         # Uploaded by watchdog
         event_handler = TransactionFileEventHandler()
         for filename in filenames:
@@ -67,10 +76,11 @@ class TestFileEventHandler(TestCase):
         obj2.delete()
         self.assertEqual(TestModel.objects.all().count(), 0)
         tx_exporter = TransactionExporter(using='client')
+        history = tx_exporter.export_batch()
         # Uploaded by watchdog
         event_handler = TransactionFileEventHandler()
         event_handler.process(
-            Event(filename=tx_exporter.filename),
+            Event(filename=history.filename),
             check_device=False,
             check_hostname=False,
             verbose=False)

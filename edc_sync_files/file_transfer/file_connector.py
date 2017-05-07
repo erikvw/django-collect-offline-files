@@ -10,7 +10,7 @@ from django.apps import apps as django_apps
 from edc_base.utils import get_utcnow
 
 from ..constants import REMOTE
-from ..models import History
+from ..models import ExportedTransactionFileHistory
 from .ssh_connection_mixin import SSHConnectMixin
 
 
@@ -89,7 +89,7 @@ class FileConnector(SSHConnectMixin):
         return archived
 
     def update_history(self, filename, sent=False):
-        history = History.objects.get(filename=filename)
+        history = ExportedTransactionFileHistory.objects.get(filename=filename)
         history.sent = sent
         history.sent_datetime = get_utcnow()
         history.save()

@@ -4,7 +4,7 @@ import collections
 from hurry.filesize import size
 from os import listdir
 
-from ..models import History
+from ..models import ExportedTransactionFileHistory
 from .file_connector import FileConnector
 
 
@@ -31,7 +31,7 @@ class FileTransfer:
         """ Build a list of file attrs.
         """
         file_attrs = []
-        recorded_files = History.objects.filter(
+        recorded_files = ExportedTransactionFileHistory.objects.filter(
             filename__in=self.files, sent=False).order_by('created')
         for history in recorded_files:
             source_filename = os.path.join(
@@ -71,8 +71,9 @@ class FileTransfer:
         """ Update history record after all files sent to the server.
         """
         try:
-            sent_file_history = History.objects.get(filename=filename)
+            sent_file_history = ExportedTransactionFileHistory.objects.get(
+                filename=filename)
             sent_file_history.approval_code = approval_code
             sent_file_history.save()
-        except History.DoesNotExist:
+        except ExportedTransactionFileHistory.DoesNotExist:
             pass

@@ -5,7 +5,7 @@ import shutil
 from django.apps import apps as django_apps
 from django.core.management import BaseCommand, call_command
 
-from ...models import UploadTransactionFile
+from ...models import ImportedTransactionFileHistory
 
 
 class Command(BaseCommand):
@@ -47,8 +47,9 @@ class Command(BaseCommand):
         for filename in files:
             if pattern.match(filename):
                 try:
-                    UploadTransactionFile.objects.get(file_name=filename)
-                except UploadTransactionFile.DoesNotExist:
+                    ImportedTransactionFileHistory.objects.get(
+                        filename=filename)
+                except ImportedTransactionFileHistory.DoesNotExist:
                     incoming_files.append(filename)
         return incoming_files
 

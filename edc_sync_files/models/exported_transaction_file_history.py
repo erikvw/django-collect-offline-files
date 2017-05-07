@@ -17,14 +17,14 @@ class ExportedTransactionFileHistory(BaseUuidModel):
     sent by this host.
     """
 
-    filename = models.CharField(
-        max_length=100,
-        unique=True)
-
     hostname = models.CharField(
         max_length=100,
         default=socket.gethostname,
     )
+
+    device_id = models.CharField(
+        max_length=5,
+        null=True)
 
     batch_id = models.CharField(
         max_length=100
@@ -49,14 +49,17 @@ class ExportedTransactionFileHistory(BaseUuidModel):
         null=True)
 
     filetimestamp = models.DateTimeField(
-        default=timezone.now)
+        null=True)
+
+    sent = models.BooleanField(
+        default=False,
+        blank=True)
 
     sent_datetime = models.DateTimeField(null=True)
 
     acknowledged = models.BooleanField(
         default=False,
-        blank=True,
-    )
+        blank=True)
 
     approval_code = models.CharField(
         max_length=50,
@@ -74,12 +77,6 @@ class ExportedTransactionFileHistory(BaseUuidModel):
 
     objects = HistoryManager()
 
-    sent = models.BooleanField(
-        default=False,
-        blank=True,
-        help_text='from history'
-    )
-
     def __str__(self):
         return f'host:{self.hostname} file:{self.filename} batch:{self.batch_id} '
 
@@ -88,7 +85,7 @@ class ExportedTransactionFileHistory(BaseUuidModel):
 
     class Meta:
         app_label = 'edc_sync_files'
-        ordering = ('-created', )
+        ordering = ('created', )
         verbose_name = 'Sent History'
         verbose_name_plural = 'Sent History'
         unique_together = (('filename', 'hostname'),)

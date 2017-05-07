@@ -1,2 +1,2 @@
-from .transaction_exporter import TransactionExporter
+from .transaction_exporter import TransactionExporter, TransactionExporterError
 from .transaction_importer import TransactionImporter

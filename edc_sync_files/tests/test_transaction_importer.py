@@ -24,7 +24,8 @@ class TestJSONFile(TestCase):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
         tx_exporter = TransactionExporter(using='client', device_id="010")
-        self.filename = tx_exporter.filename
+        history = tx_exporter.export_batch()
+        self.filename = history.filename
         self.path = tx_exporter.path
 
     def test_file(self):
@@ -54,7 +55,8 @@ class TestDeserializer(TestCase):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
         tx_exporter = TransactionExporter(using='client', device_id="010")
-        self.filename = tx_exporter.filename
+        history = tx_exporter.export_batch()
+        self.filename = history.filename
         self.path = tx_exporter.path
 
     def test_deserializer(self):
@@ -153,7 +155,6 @@ class TestBatch(TestCase):
 class TestTransactionImporter(TestCase):
 
     def setUp(self):
-        super().setUp()
         TestModel.objects.using('client').all().delete()
         ExportedTransactionFileHistory.objects.using('client').all().delete()
         OutgoingTransaction.objects.using('client').all().delete()
@@ -162,18 +163,20 @@ class TestTransactionImporter(TestCase):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
         tx_exporter = TransactionExporter(using='client', device_id="010")
-        tx_importer = TransactionImporter(filename=tx_exporter.filename)
-        batch_id = tx_importer.import_batch()
-        self.assertIsNotNone(batch_id)
+        history = tx_exporter.export_batch()
+        tx_importer = TransactionImporter(filename=history.filename)
+        batch = tx_importer.import_batch()
+        self.assertIsNotNone(batch.batch_id)
 
     def test_export_and_import_many_in_order(self):
         for _ in range(0, 5):
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
             tx_exporter = TransactionExporter(using='client', device_id="010")
-            tx_importer = TransactionImporter(filename=tx_exporter.filename)
-            batch_id = tx_importer.import_batch()
-            self.assertIsNotNone(batch_id)
+            history = tx_exporter.export_batch()
+            tx_importer = TransactionImporter(filename=history.filename)
+            batch = tx_importer.import_batch()
+            self.assertIsNotNone(batch.batch_id)
 
     def test_export_and_import_many_unordered(self):
         """Assert raises error if batches imported out of sequence.
@@ -183,6 +186,7 @@ class TestTransactionImporter(TestCase):
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
             tx_exporter = TransactionExporter(using='client', device_id="010")
-            filenames.append(tx_exporter.filename)
+            history = tx_exporter.export_batch()
+            filenames.append(history.filename)
         tx_importer = TransactionImporter(filename=filenames[3])
         self.assertRaises(InvalidBatchSequence, tx_importer.import_batch)

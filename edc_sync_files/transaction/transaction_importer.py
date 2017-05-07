@@ -1,5 +1,4 @@
 import os
-import shutil
 
 from django.apps import apps as django_apps
 from django.core import serializers
@@ -8,6 +7,7 @@ from django.db.utils import IntegrityError
 from edc_sync.models import IncomingTransaction
 
 from ..models import ImportedTransactionFileHistory
+from .file_archiver import FileArchiver
 
 
 class TransactionImporterError(Exception):
@@ -38,12 +38,6 @@ class InvalidBatchSequence(Exception):
     pass
 
 
-def archive(self, src=None, dst=None):
-    shutil.move(
-        os.path.join(self.path, self.name),
-        self.archive_folder)
-
-
 def deserialize(json_text=None):
     """Wraps django deserialize with defaults for JSON
     and natural keys.
@@ -53,18 +47,6 @@ def deserialize(json_text=None):
         ensure_ascii=True,
         use_natural_foreign_keys=True,
         use_natural_primary_keys=False)
-
-
-class FileArchiver:
-
-    def __init__(self, src_path=None, dst_path=None):
-        self.src_path = src_path
-        self.dst_path = dst_path
-
-    def archive(self, filename):
-        shutil.move(
-            os.path.join(self.src_path, filename),
-            self.dst_path)
 
 
 class JSONFile:
@@ -271,4 +253,4 @@ class TransactionImporter:
             filename=self.json_file.name)
         batch.save()
         batch.update_history()
-        return batch.batch_id
+        return batch
