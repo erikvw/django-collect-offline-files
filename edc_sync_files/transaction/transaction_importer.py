@@ -38,6 +38,12 @@ class InvalidBatchSequence(Exception):
     pass
 
 
+def archive(self, src=None, dst=None):
+    shutil.move(
+        os.path.join(self.path, self.name),
+        self.archive_folder)
+
+
 def deserialize(json_text=None):
     """Wraps django deserialize with defaults for JSON
     and natural keys.
@@ -49,19 +55,39 @@ def deserialize(json_text=None):
         use_natural_primary_keys=False)
 
 
+class FileArchiver:
+
+    def __init__(self, src_path=None, dst_path=None):
+        self.src_path = src_path
+        self.dst_path = dst_path
+
+    def archive(self, filename):
+        shutil.move(
+            os.path.join(self.src_path, filename),
+            self.dst_path)
+
+
 class JSONFile:
 
     def __init__(self, name=None, path=None, archive_folder=None, **kwargs):
-        self.archive_folder = archive_folder
+        self._deserialized_objects = None
+        self._json_text = None
         self.name = name
         self.path = path
-        self._deserialized_objects = None
+        self.archive_folder = archive_folder
         self.deserialize = deserialize
-        with open(os.path.join(self.path, self.name)) as f:
-            self.json_text = f.read()
-        shutil.move(
-            os.path.join(self.path, self.name),
-            self.archive_folder)
+        self.file_archiver = FileArchiver(
+            src_path=self.path, dst_path=self.archive_folder)
+
+    @property
+    def json_text(self):
+        """Reads the file contents into `json_text` then archives.
+        """
+        if not self._json_text:
+            with open(os.path.join(self.path, self.name)) as f:
+                self._json_text = f.read()
+            self.file_archiver.archive(self.name)
+        return self._json_text
 
     @property
     def deserialized_objects(self):

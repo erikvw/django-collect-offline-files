@@ -1,14 +1,11 @@
 from django.contrib import admin
 
-from ..models import History
 from ..admin_site import edc_sync_files_admin
+from ..models import ExportedTransactionFileHistory
 
 
-@admin.register(History, site=edc_sync_files_admin)
-class HistoryAdmin (admin.ModelAdmin):
-
-    """A history model of created transaction files.
-    """
+@admin.register(ExportedTransactionFileHistory, site=edc_sync_files_admin)
+class ExportedTransactionFileHistoryAdmin (admin.ModelAdmin):
 
     ordering = ('-created', )
 

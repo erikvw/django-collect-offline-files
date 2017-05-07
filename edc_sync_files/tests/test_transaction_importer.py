@@ -41,6 +41,9 @@ class TestJSONFile(TestCase):
     def test_archive_file(self):
         json_file = JSONFile(
             name=self.filename, path=self.path, archive_folder='/tmp')
+        json_file.file_archiver.archive(self.filename)
+        path = os.path.join(json_file.path, json_file.name)
+        self.assertFalse(os.path.exists(path))
         path = os.path.join(json_file.archive_folder, json_file.name)
         self.assertTrue(os.path.exists(path))
 
