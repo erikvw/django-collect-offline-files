@@ -98,8 +98,8 @@ class Batch:
             is_consumed_server=True,
             consumer=remote_host,
             consumed_datetime=timestamp)
-        self.history.sent_datetime = timestamp
-        self.history.sent = True
+        self.history.exported_datetime = timestamp
+        self.history.exported = True
         self.history.save()
 
     @property

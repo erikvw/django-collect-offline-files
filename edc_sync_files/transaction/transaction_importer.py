@@ -53,7 +53,6 @@ class JSONFile:
 
     def __init__(self, name=None, path=None, archive_folder=None, **kwargs):
         self._deserialized_objects = None
-        self._json_text = None
         self.name = name
         self.path = path
         self.archive_folder = archive_folder
@@ -61,23 +60,24 @@ class JSONFile:
         self.file_archiver = FileArchiver(
             src_path=self.path, dst_path=self.archive_folder)
 
-    @property
-    def json_text(self):
-        """Reads the file contents into `json_text` then archives.
+    def read(self):
+        """Returns the file contents as JSON text.
         """
-        if not self._json_text:
-            with open(os.path.join(self.path, self.name)) as f:
-                self._json_text = f.read()
-            self.file_archiver.archive(self.name)
-        return self._json_text
+        with open(os.path.join(self.path, self.name)) as f:
+            json_text = f.read()
+        return json_text
+
+    def archive(self):
+        self.file_archiver.archive(self.name)
 
     @property
     def deserialized_objects(self):
         """Returns a generator of deserialized objects.
         """
         if not self._deserialized_objects:
+            json_text = self.read()
             self._deserialized_objects = self.deserialize(
-                json_text=self.json_text)
+                json_text=json_text)
         return self._deserialized_objects
 
 
@@ -235,7 +235,7 @@ class TransactionImporter:
        archives the file.
     """
 
-    def __init__(self, filename=None, path=None, archive_folder=None):
+    def __init__(self, filename=None, path=None, archive_folder=None, **kwargs):
         app_config = django_apps.get_app_config('edc_sync_files')
         self.path = path or app_config.outgoing_folder
         self.archive_folder = archive_folder or app_config.archive_folder
@@ -253,4 +253,5 @@ class TransactionImporter:
             filename=self.json_file.name)
         batch.save()
         batch.update_history()
+        self.json_file.archive()
         return batch

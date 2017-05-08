@@ -143,8 +143,8 @@ class TestTransactionExporter(TestCase):
         self.assertIsNotNone(history.prev_batch_id)
         self.assertIsNotNone(history.filename)
         self.assertIsNotNone(history.device_id)
-        self.assertTrue(history.sent)
-        self.assertIsNotNone(history.sent_datetime)
+        self.assertTrue(history.exported)
+        self.assertIsNotNone(history.exported_datetime)
 
     def test_matching_batch_id(self):
         """Assert assigns same batch_id to all exported transactions.

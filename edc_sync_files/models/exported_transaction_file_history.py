@@ -1,7 +1,6 @@
 import socket
 
 from django.db import models
-from django.utils import timezone
 
 from edc_base.model_mixins import BaseUuidModel
 
@@ -50,6 +49,12 @@ class ExportedTransactionFileHistory(BaseUuidModel):
 
     filetimestamp = models.DateTimeField(
         null=True)
+
+    exported = models.BooleanField(
+        default=False,
+        blank=True)
+
+    exported_datetime = models.DateTimeField(null=True)
 
     sent = models.BooleanField(
         default=False,

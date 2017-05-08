@@ -31,7 +31,8 @@ class TestJSONFile(TestCase):
     def test_file(self):
         json_file = JSONFile(
             name=self.filename, path=self.path, archive_folder='/tmp')
-        self.assertIsNotNone(json_file.json_text)
+        json_text = json_file.read()
+        self.assertIsNotNone(json_text)
 
     def test_deserialize_file(self):
         json_file = JSONFile(
