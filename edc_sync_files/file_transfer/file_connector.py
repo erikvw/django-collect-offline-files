@@ -20,7 +20,7 @@ class FileConnector(SSHConnectMixin):
     """
 
     def __init__(self, remote_host=None, source_folder=None,
-                 destination_folder=None, archive_folder=None):
+                 destination_folder=None, archive_folder=None, **kwargs):
         self.trusted_host = True
         app_config = django_apps.get_app_config('edc_sync_files')
         self.progress_status = None
@@ -48,7 +48,8 @@ class FileConnector(SSHConnectMixin):
 
     def copy(self, filename):
         """ Copy file from  source folder to destination folder in the
-            current filesystem or to remote file system."""
+            current filesystem or to remote file system.
+        """
         client = self.connect(REMOTE)
         with client.open_sftp() as host_sftp:
             try:
@@ -56,8 +57,8 @@ class FileConnector(SSHConnectMixin):
                     self.destination_tmp_folder, filename)
                 destination_file = os.path.join(
                     self.destination_folder, filename)
-                sent = True
                 source_filename = os.path.join(self.source_folder, filename)
+                sent = False
                 try:
                     host_sftp.put(
                         source_filename,
@@ -66,6 +67,7 @@ class FileConnector(SSHConnectMixin):
                     host_sftp.rename(
                         destination_tmp_file,
                         destination_file)
+                    sent = True
                 except IOError as e:
                     raise IOError(
                         'IOError Got {} . Sending {}'.format(e, destination_tmp_file))
@@ -78,12 +80,14 @@ class FileConnector(SSHConnectMixin):
         return sent
 
     def archive(self, filename):
-        """ Move file from source_folder to archive folder """
-        archived = True
+        """ Move file from source_folder to archive folder.
+        """
+        archived = False
         try:
             source_filename = join(self.source_folder, filename)
             destination_filename = join(self.archive_folder, filename)
             shutil.move(source_filename, destination_filename)
+            archived = True
         except FileNotFoundError as e:
             raise FileNotFoundError('FileNotFoundError Got {}'.format(str(e)))
         return archived
