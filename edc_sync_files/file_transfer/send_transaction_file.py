@@ -1,7 +1,3 @@
-from django.apps import apps as django_apps
-
-from edc_base.utils import get_utcnow
-
 from .file_connector import FileConnector
 
 
@@ -18,5 +14,5 @@ class TransactionFileSender:
         sent = self.file_connector.copy(self.filename)
         archived = False
         if sent:
-            archived = self.file_transfer.archive(self.filename)
+            archived = self.file_connector.archive(self.filename)
         return (sent, archived)
