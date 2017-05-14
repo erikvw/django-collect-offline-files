@@ -62,23 +62,12 @@ class ExportedTransactionFileHistory(BaseUuidModel):
 
     sent_datetime = models.DateTimeField(null=True)
 
-    acknowledged = models.BooleanField(
-        default=False,
-        blank=True)
-
-    approval_code = models.CharField(
+    confirmation_code = models.CharField(
         max_length=50,
         null=True,
         blank=True)
 
-    ack_datetime = models.DateTimeField(
-        null=True,
-        blank=True)
-
-    ack_user = models.CharField(
-        max_length=50,
-        null=True,
-        blank=True)
+    confirmation_datetime = models.DateTimeField(null=True)
 
     objects = HistoryManager()
 
