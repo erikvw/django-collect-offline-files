@@ -69,6 +69,3 @@ class SSHClient(ClosingContextManager):
             return s._transport.is_active()
         except AttributeError:
             return False
-
-    def open_sftp(self):
-        return self.ssh_client.open_sftp()
