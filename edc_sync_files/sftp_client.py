@@ -50,4 +50,3 @@ class SFTPClient(ClosingContextManager):
         except IOError as e:
             raise SFTPClientError(
                 f'IOError. Failed to rename {dst_tmp}. Got {e}')
-        return True
