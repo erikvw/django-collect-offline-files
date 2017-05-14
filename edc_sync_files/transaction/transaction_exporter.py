@@ -132,12 +132,13 @@ class TransactionExporter:
     and update the export `History` model.
     """
 
+    model = OutgoingTransaction
+    history_model = ExportedTransactionFileHistory
+
     def __init__(self, path=None, device_id=None, using=None, **kwargs):
         app_config = django_apps.get_app_config('edc_sync_files')
         self.batch_cls = Batch
-        self.history_model = ExportedTransactionFileHistory
         self.json_file_cls = JSONFile
-        self.model = OutgoingTransaction
         self.path = path or app_config.outgoing_folder
         self.serialize = serialize
         self.using = using

@@ -1,10 +1,10 @@
 import os
 
 from django.apps import apps as django_apps
-from django.core import serializers
 from django.db.utils import IntegrityError
 
 from edc_sync.models import IncomingTransaction
+from edc_sync.transaction_deserializer import deserialize
 
 from ..models import ImportedTransactionFileHistory
 from .file_archiver import FileArchiver
@@ -38,15 +38,15 @@ class InvalidBatchSequence(Exception):
     pass
 
 
-def deserialize(json_text=None):
-    """Wraps django deserialize with defaults for JSON
-    and natural keys.
-    """
-    return serializers.deserialize(
-        "json", json_text,
-        ensure_ascii=True,
-        use_natural_foreign_keys=True,
-        use_natural_primary_keys=False)
+# def deserialize(json_text=None):
+#     """Wraps django deserialize with defaults for JSON
+#     and natural keys.
+#     """
+#     return serializers.deserialize(
+#         "json", json_text,
+#         ensure_ascii=True,
+#         use_natural_foreign_keys=True,
+#         use_natural_primary_keys=False)
 
 
 class JSONFile:
@@ -197,13 +197,13 @@ class Batch:
             batch_id=self.batch_id,
             prev_batch_id=self.prev_batch_id,
             producer=self.producer,
-            count=self.saved_objects)
+            count=self.saved_transactions.count())
 
     @property
-    def saved_objects(self):
+    def saved_transactions(self):
         """Returns the count of saved model instances for this batch.
         """
-        return self.model.objects.filter(batch_id=self.batch_id).count()
+        return self.model.objects.filter(batch_id=self.batch_id)
 
     @property
     def count(self):
@@ -215,7 +215,7 @@ class Batch:
     def objects_unsaved(self):
         """Returns True if any batch objects have not been saved.
         """
-        return self.count > self.saved_objects
+        return self.count > self.saved_transactions.count()
 
     @property
     def valid_sequence(self):
