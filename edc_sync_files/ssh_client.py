@@ -21,13 +21,13 @@ class SSHClient(ClosingContextManager):
         self.timeout = timeout or 5
         self.trusted_host = trusted_host
         self.username = username
-        self.ssh_client = paramiko.SSHClient()
+        self._ssh_client = paramiko.SSHClient()
 
     def connect(self):
         if self.trusted_host:
-            self.ssh_client.set_missing_host_key_policy(AutoAddPolicy())
+            self._ssh_client.set_missing_host_key_policy(AutoAddPolicy())
         try:
-            self.ssh_client.connect(
+            self._ssh_client.connect(
                 self.remote_host,
                 username=self.username,
                 timeout=self.timeout,
@@ -60,15 +60,15 @@ class SSHClient(ClosingContextManager):
         return self
 
     def close(self):
-        self.ssh_client.close()
+        self._ssh_client.close()
 
     @property
     def connected(self):
-        s = self.ssh_client
+        s = self._ssh_client
         try:
             return s._transport.is_active()
         except AttributeError:
             return False
 
     def open_sftp(self):
-        return self.ssh_client.open_sftp()
+        return self._ssh_client.open_sftp()

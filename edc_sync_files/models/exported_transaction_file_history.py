@@ -83,3 +83,6 @@ class ExportedTransactionFileHistory(BaseUuidModel):
         verbose_name = 'Sent History'
         verbose_name_plural = 'Sent History'
         unique_together = (('filename', 'hostname'),)
+        indexes = [
+            models.Index(fields=['created']),
+            models.Index(fields=['sent_datetime'])]

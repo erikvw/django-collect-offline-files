@@ -97,8 +97,9 @@ class TestConnector(TestCase):
         with ssh_client.connect() as ssh_conn:
             sftp_client = SFTPClient(ssh_conn=ssh_conn, verbose=True)
             with sftp_client.connect() as sftp_conn:
-                sftp_conn.get_progress(1, 100)
+                sftp_conn.update_progress(1, 100)
 
+    @tag('connect')
     def test_sftp_put_progress(self):
         ssh_client = SSHClient(
             remote_host='localhost', trusted_host=True, timeout=1)

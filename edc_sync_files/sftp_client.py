@@ -29,16 +29,16 @@ class SFTPClient(ClosingContextManager):
         self.dst_path = dst_path or app_config.destination_folder
         self.dst_tmp_path = dst_tmp_path or app_config.destination_tmp_folder
         self.ssh_conn = ssh_conn
-        self.sftp = None
+        self._sftp_client = None
         self.verbose = verbose
         self.progress = 0
 
     def connect(self):
-        self.sftp = self.ssh_conn.open_sftp()
+        self._sftp_client = self.ssh_conn.open_sftp()
         return self
 
     def close(self):
-        self.sftp.close()
+        self._sftp_client.close()
 
     def copy(self, filename=None):
         """Puts on destination as a temp file, renames on the destination.
@@ -46,7 +46,8 @@ class SFTPClient(ClosingContextManager):
         dst_tmp = os.path.join(self.dst_tmp_path, f'{filename}.tmp')
         dst = os.path.join(self.dst_path, filename)
         src = os.path.join(self.src_path, filename)
-        self.put(src=src, dst=dst_tmp, callback=self.get_progress, confirm=True)
+        self.put(src=src, dst=dst_tmp,
+                 callback=self.update_progress, confirm=True)
         self.rename(src=dst_tmp, dst=dst)
 
     def put(self, src=None, dst=None, callback=None, confirm=None):
@@ -54,7 +55,7 @@ class SFTPClient(ClosingContextManager):
             raise SFTPClientError(f'Source file does not exist. Got \'{src}\'')
         self.progress = 0
         try:
-            self.sftp.put(src, dst, callback=callback, confirm=confirm)
+            self._sftp_client.put(src, dst, callback=callback, confirm=confirm)
         except IOError as e:
             raise SFTPClientError(
                 f'IOError. Failed to copy {src}. Got {e}')
@@ -64,12 +65,12 @@ class SFTPClient(ClosingContextManager):
 
     def rename(self, src=None, dst=None):
         try:
-            self.sftp.rename(src, dst)
+            self._sftp_client.rename(src, dst)
         except IOError as e:
             raise SFTPClientError(
                 f'IOError. Failed to rename {src} to {dst}. Got {e}')
 
-    def get_progress(self, sent_bytes, total_bytes):
+    def update_progress(self, sent_bytes, total_bytes):
         self.progress = (sent_bytes / total_bytes) * 100
         if self.verbose:
             sys.stdout.write(f'Progress {self.progress}% \r')

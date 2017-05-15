@@ -7,7 +7,7 @@ from .confirmation import BatchConfirmationCode
 from .transaction import TransactionExporter
 from paramiko.ssh_exception import AuthenticationException, BadHostKeyException,\
     SSHException
-from edc_sync_files.file_transfer.file_connector import FileConnector
+# from edc_sync_files.file_transfer.file_connector import FileConnector
 
 
 class TransactionFileSenderError(Exception):
@@ -68,8 +68,6 @@ class TransactionExporterViewMixin:
 
 
 class TransactionFileSenderViewMixin:
-
-    file_connector = FileConnector
 
     def send_file(self, filename=None):
         """Returns response data after sending the file.

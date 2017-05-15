@@ -66,7 +66,6 @@ class TransactionBatchEventHandler(PatternMatchingEventHandler):
         if self.verbose:
             print('{} {} {}'.format(
                 timezone.now(), event.event_type, event.src_path))
-        print(batch_queue.qsize())
         while not batch_queue.empty():
             batch_id = batch_queue.get()
             batch = Batch(batch_id=batch_id)
