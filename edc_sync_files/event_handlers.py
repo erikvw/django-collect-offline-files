@@ -4,14 +4,19 @@ from django.utils import timezone
 from queue import Queue
 from watchdog.events import PatternMatchingEventHandler
 
-from edc_sync.consumer import Consumer
+from edc_sync.transaction_deserializer import TransactionDeserializer
 
 from .patterns import transaction_filename_pattern
 from .transaction import TransactionImporter
+from edc_sync_files.transaction.transaction_exporter import Batch
 
 
 class EventHandlerError(Exception):
     pass
+
+
+batch_queue = Queue()
+file_queue = Queue()
 
 
 class TransactionFileEventHandler(PatternMatchingEventHandler):
@@ -20,7 +25,7 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         patterns = patterns or transaction_filename_pattern
         super().__init__(patterns=patterns, ignore_directories=True)
         self.verbose = verbose
-        self.q = Queue()
+        # self.q = Queue()
 
     def on_created(self, event):
         self.process(event)
@@ -32,11 +37,40 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         if self.verbose:
             print('{} {} {}'.format(
                 timezone.now(), event.event_type, event.src_path))
-        self.q.put(event.src_path)
-        while not self.q.empty():
-            path = self.q.get()
+        file_queue.put(event.src_path)
+        while not file_queue.empty():
+            path = file_queue.get()
             tx_importer = TransactionImporter(filename=os.path.basename(path))
             batch = tx_importer.import_batch()
-            self.q.task_done()
-    #         self.consumed = Consumer(
-    # tx_pks=[obj.tx_pk for obj in batch.objects], **kwargs).consume()
+            file_queue.task_done()
+            batch_queue.put(batch.batch_id)
+
+
+class TransactionBatchEventHandler(PatternMatchingEventHandler):
+
+    """Monitors the archive folder and processes on created.
+    """
+
+    def __init__(self, patterns=None, verbose=None):
+        patterns = patterns or transaction_filename_pattern
+        super().__init__(patterns=patterns, ignore_directories=True)
+        self.verbose = verbose
+
+    def on_created(self, event):
+        self.process(event)
+
+    def on_moved(self, event):
+        self.process(event)
+
+    def process(self, event, **kwargs):
+        if self.verbose:
+            print('{} {} {}'.format(
+                timezone.now(), event.event_type, event.src_path))
+        print(batch_queue.qsize())
+        while not batch_queue.empty():
+            batch_id = batch_queue.get()
+            batch = Batch(batch_id=batch_id)
+            tx_deserializer = TransactionDeserializer(batch_id=batch_id)
+            tx_deserializer.deserialize_transactions(
+                transactions=batch.saved_transactions)
+            batch_queue.task_done()

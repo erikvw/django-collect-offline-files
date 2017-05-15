@@ -7,7 +7,7 @@ from django.test.utils import tag
 
 from edc_sync.models import OutgoingTransaction
 
-from ..event_handlers import TransactionFileEventHandler
+from ..event_handlers import TransactionFileEventHandler, file_queue, batch_queue
 from ..models import ImportedTransactionFileHistory, ExportedTransactionFileHistory
 from ..transaction import TransactionExporter
 from .models import TestModel
@@ -22,6 +22,7 @@ class Event:
             'edc_sync_files').destination_folder, filename)
 
 
+@tag('event')
 class TestFileEventHandler(TestCase):
 
     def setUp(self):
@@ -42,10 +43,11 @@ class TestFileEventHandler(TestCase):
             check_device=False,
             check_hostname=False,
             verbose=False)
-        self.assertGreater(event_handler.consumed, 0)
+        self.assertTrue(file_queue.all_tasks_done)
         self.assertEqual(
             ImportedTransactionFileHistory.objects.all().count(), 1)
-        self.assertEqual(TestModel.objects.all().count(), 2)
+#         self.assertEqual(TestModel.objects.all().count(), 2)
+        self.assertFalse(batch_queue.empty())
 
     def test_create_many(self):
         filenames = []
@@ -64,10 +66,11 @@ class TestFileEventHandler(TestCase):
                 check_device=False,
                 check_hostname=False,
                 verbose=False)
-            self.assertGreater(event_handler.consumed, 0)
+            self.assertTrue(file_queue.all_tasks_done)
         self.assertEqual(
             ImportedTransactionFileHistory.objects.all().count(), 5)
-        self.assertEqual(TestModel.objects.all().count(), 10)
+#         self.assertEqual(TestModel.objects.all().count(), 10)
+        self.assertFalse(batch_queue.empty())
 
     def test_create_and_delete(self):
         obj1 = TestModel.objects.using('client').create(f1=fake.name())
@@ -84,7 +87,27 @@ class TestFileEventHandler(TestCase):
             check_device=False,
             check_hostname=False,
             verbose=False)
-        self.assertGreater(event_handler.consumed, 0)
-        self.assertEqual(
-            ImportedTransactionFileHistory.objects.all().count(), 1)
+        self.assertTrue(file_queue.all_tasks_done)
+        self.assertFalse(batch_queue.empty())
+
+    def test_batch_queue(self):
+        obj1 = TestModel.objects.using('client').create(f1=fake.name())
+        obj2 = TestModel.objects.using('client').create(f1=fake.name())
+        obj1.delete()
+        obj2.delete()
         self.assertEqual(TestModel.objects.all().count(), 0)
+        tx_exporter = TransactionExporter(using='client')
+        history = tx_exporter.export_batch()
+        # Uploaded by watchdog
+        event_handler = TransactionFileEventHandler()
+        event_handler.process(
+            Event(filename=history.filename),
+            check_device=False,
+            check_hostname=False,
+            verbose=False)
+        self.assertTrue(file_queue.all_tasks_done)
+        self.assertFalse(batch_queue.empty())
+        batch_id = batch_queue.get()
+        self.assertIsNotNone(batch_id)
+        self.assertEqual(
+            ImportedTransactionFileHistory.objects.filter(batch_id=batch_id).count(), 1)
