@@ -1,8 +1,7 @@
 from django.test import TestCase, tag
 
-from edc_sync_files.transaction.transaction_exporter import TransactionExporter
-
 from ..confirmation import BatchConfirmationCode, BatchConfirmation
+from ..transaction import TransactionExporter
 from .models import TestModel
 
 
