@@ -7,19 +7,20 @@ from django.utils import timezone
 
 from watchdog.observers import Observer as WatchdogObserver
 
+app_config = django_apps.get_app_config('edc_sync_files')
+logging.basicConfig(
+    filename=os.path.join(app_config.log_folder, 'observer.log'),
+    level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 class Observer:
 
-    def start(self, event_handler_class=None, path=None):
-        app_config = django_apps.get_app_config('edc_sync_files')
+    def start(self, event_handlers=None):
         self.observer = WatchdogObserver()
-        event_handler = event_handler_class()
-        self.observer.schedule(event_handler, path=path)
+        for event_handler in event_handlers:
+            self.observer.schedule(event_handler, path=event_handler.path)
         self.observer.start()
-        logging.basicConfig(
-            filename=os.path.join(app_config.log_folder, 'observer.log'),
-            level=logging.INFO)
-        logger = logging.getLogger(__name__)
         try:
             records = {'time': timezone.now(), 'status': 'running'}
             logger.info('{}'.format(records))
@@ -32,7 +33,7 @@ class Observer:
             logger.error('{}'.format(records))
             time.sleep(1)
             self.observer.stop()
-            self.start(event_handler_class=event_handler_class)
+            self.start(event_handlers=event_handlers)
         self.observer.join()
 
     def stop(self):

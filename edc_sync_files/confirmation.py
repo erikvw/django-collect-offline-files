@@ -27,19 +27,19 @@ class Confirmation:
         the history model for this batch.
         """
         if batch_id or filename:
-            sent_history = self.history_model.objects.using(
+            export_history = self.history_model.objects.using(
                 self.using).filter(
                     Q(batch_id=batch_id) | Q(filename=filename),
                     sent=True, confirmation_code__isnull=True)
         else:
-            sent_history = self.history_model.objects.using(self.using).filter(
+            export_history = self.history_model.objects.using(self.using).filter(
                 sent=True, confirmation_code__isnull=True)
-        if sent_history.count() == 0:
+        if export_history.count() == 0:
             raise ConfirmationError(
                 'Nothing to do. No history of sent and unconfirmed files')
         else:
             confirmation_code = ConfirmationCode()
-            sent_history.update(
+            export_history.update(
                 confirmation_code=confirmation_code.identifier,
                 confirmation_datetime=get_utcnow())
         return confirmation_code.identifier

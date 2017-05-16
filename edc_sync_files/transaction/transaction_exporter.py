@@ -74,6 +74,14 @@ class Batch:
         self.using = using
         self.open()
 
+    def reload(self, batch_id):
+        obj = self.model.objects.using(self.using).get(batch_id=batch_id)
+        self.batch_id = obj.batch_id
+        self.prev_batch_id = obj.prev_batch_id
+        self.filename = f'{self.batch_id}.json'
+        self.history = self.history_model.objects.using(self.using).get(
+            batch_id=self.batch_id)
+
     def open(self):
         if self.batch_id:
             raise BatchAlreadyOpen('Batch is already open.')
@@ -144,17 +152,16 @@ class TransactionExporter:
     model = OutgoingTransaction
     history_model = ExportedTransactionFileHistory
 
-    def __init__(self, path=None, device_id=None, using=None, **kwargs):
+    def __init__(self, export_path=None, using=None, **kwargs):
         app_config = django_apps.get_app_config('edc_sync_files')
         self.batch_cls = Batch
         self.json_file_cls = JSONFile
-        self.path = path or app_config.outgoing_folder
+        self.path = export_path or app_config.outgoing_folder
         self.serialize = serialize
         self.using = using
 
     def export_batch(self):
-        """Returns a history model instance after exporting a batch
-        of txs.
+        """Returns a batch instance after exporting a batch of txs.
         """
         batch = self.batch_cls(
             model=self.model, history_model=self.history_model, using=self.using)

@@ -11,24 +11,22 @@ class ActionHandlerError(Exception):
 
 
 class ActionHandler:
-    def __init__(self, using=None, remote_host=None, trusted_host=None):
+
+    def __init__(self, using=None, **kwargs):
         app_config = django_apps.get_app_config('edc_sync_files')
         self.data = {}
-        self.action_labels = [
-            EXPORT_BATCH, SEND_FILES, CONFIRM_BATCH, PENDING_FILES]
-        self.archive_path = app_config.archive_folder
         self.using = using
-        self.tx_exporter = TransactionExporter(using=self.using)
+        self.archive_path = app_config.archive_folder
+        self.tx_exporter = TransactionExporter(using=self.using, **kwargs)
         self.history_model = self.tx_exporter.history_model
         self.confirmation = Confirmation(
             history_model=self.history_model, using=self.using)
         self.tx_file_sender = TransactionFileSender(
-            history_model=self.history_model, using=self.using)
+            history_model=self.history_model, using=self.using, **kwargs)
         self.sent_history = self.tx_exporter.history_model.objects.using(
             self.using).filter(sent=True).order_by('-sent_datetime')
         self.recently_sent_filenames = [
             obj.filename for obj in self.sent_history[0:20]]
-        self.remote_host = remote_host or app_config.remote_host
 
     def action(self, label=None, **kwargs):
         self.data = dict(
@@ -76,10 +74,9 @@ class ActionHandler:
                 last_sent_files=filenames, last_archived_files=filenames)
 
     def _confirm_batch(self):
-        if not self.pending_filenames:
-            try:
-                code = self.confirmation.confirm()
-            except ConfirmationError as e:
-                raise ActionHandlerError(
-                    f'Reraised ConfirmationError. Got {e}')
-            self.data.update(confirmation_code=code)
+        try:
+            code = self.confirmation.confirm()
+        except ConfirmationError as e:
+            raise ActionHandlerError(
+                f'Reraised ConfirmationError. Got {e}')
+        self.data.update(confirmation_code=code)

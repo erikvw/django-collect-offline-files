@@ -1,30 +1,28 @@
 import os
 
+from django.apps import apps as django_apps
 from django.utils import timezone
-from queue import Queue
 from watchdog.events import PatternMatchingEventHandler
 
 from edc_sync.transaction_deserializer import TransactionDeserializer
 
 from .patterns import transaction_filename_pattern
-from .transaction import TransactionImporter
-from edc_sync_files.transaction.transaction_exporter import Batch
+from .transaction import Batch
+from .queues import batch_queue, tx_file_queue
 
 
 class EventHandlerError(Exception):
     pass
 
 
-batch_queue = Queue()
-file_queue = Queue()
-
-
 class TransactionFileEventHandler(PatternMatchingEventHandler):
 
-    def __init__(self, patterns=None, verbose=None):
+    def __init__(self, patterns=None, path=None, verbose=None):
+        app_config = django_apps.get_app_config('edc_sync_files')
         patterns = patterns or transaction_filename_pattern
         super().__init__(patterns=patterns, ignore_directories=True)
         self.verbose = verbose
+        self.path = path or app_config.archive_folder
 
     def on_created(self, event):
         self.process(event)
@@ -33,16 +31,11 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         self.process(event)
 
     def process(self, event, **kwargs):
-        if self.verbose:
-            print('{} {} {}'.format(
-                timezone.now(), event.event_type, event.src_path))
-        file_queue.put(event.src_path)
-        while not file_queue.empty():
-            path = file_queue.get()
-            tx_importer = TransactionImporter(filename=os.path.basename(path))
-            batch = tx_importer.import_batch()
-            file_queue.task_done()
-            batch_queue.put(batch.batch_id)
+        """Processes tasks in tx_file_queue.
+        """
+        tx_file_queue.put(event.src_path)
+        while not tx_file_queue.empty():
+            tx_file_queue.next_task()
 
 
 class TransactionBatchEventHandler(PatternMatchingEventHandler):
@@ -50,10 +43,12 @@ class TransactionBatchEventHandler(PatternMatchingEventHandler):
     """Monitors the archive folder and processes on created.
     """
 
-    def __init__(self, patterns=None, verbose=None):
+    def __init__(self, patterns=None, path=None, verbose=None):
+        app_config = django_apps.get_app_config('edc_sync_files')
         patterns = patterns or transaction_filename_pattern
         super().__init__(patterns=patterns, ignore_directories=True)
         self.verbose = verbose
+        self.path = path or app_config.archive_folder
 
     def on_created(self, event):
         self.process(event)
@@ -62,13 +57,7 @@ class TransactionBatchEventHandler(PatternMatchingEventHandler):
         self.process(event)
 
     def process(self, event, **kwargs):
-        if self.verbose:
-            print('{} {} {}'.format(
-                timezone.now(), event.event_type, event.src_path))
+        """Processes tasks in batch_queue.
+        """
         while not batch_queue.empty():
-            batch_id = batch_queue.get()
-            batch = Batch(batch_id=batch_id)
-            tx_deserializer = TransactionDeserializer(batch_id=batch_id)
-            tx_deserializer.deserialize_transactions(
-                transactions=batch.saved_transactions)
-            batch_queue.task_done()
+            batch_queue.next_task()

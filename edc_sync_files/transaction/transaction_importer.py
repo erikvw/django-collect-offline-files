@@ -8,6 +8,8 @@ from edc_sync.transaction_deserializer import deserialize
 
 from ..models import ImportedTransactionFileHistory
 from .file_archiver import FileArchiver
+from django.core.serializers.base import DeserializationError
+from edc_base.utils import get_utcnow
 
 
 class TransactionImporterError(Exception):
@@ -31,6 +33,10 @@ class BatchError(Exception):
 
 
 class BatchUnsaved(Exception):
+    pass
+
+
+class BatchDeserializationError(Exception):
     pass
 
 
@@ -95,6 +101,12 @@ class BatchHistory:
             return False
         return True
 
+    def close(self, batch_id):
+        obj = self.model.objects.get(batch_id=batch_id)
+        obj.consumed = True
+        obj.consumed_datetime = get_utcnow()
+        obj.save()
+
     def update(self, filename=None, batch_id=None, prev_batch_id=None,
                producer=None, count=None):
         """Creates an history model instance.
@@ -134,6 +146,12 @@ class Batch:
         self.batch_history = BatchHistory()
         self.model = IncomingTransaction
 
+    def __str__(self):
+        return f'Batch(batch_id={self.batch_id}, filename={self.filename})'
+
+    def __repr__(self):
+        return f'Batch(batch_id={self.batch_id}, filename={self.filename})'
+
     def populate(self, deserialized_txs=None, filename=None, retry=None):
         """Populates the batch with unsaved model instances
         from a generator of deserialized objects.
@@ -144,12 +162,15 @@ class Batch:
         self.filename = filename
         if not self.filename:
             raise BatchError('Invalid filename. Got None')
-        for deserialized_tx in deserialized_txs:
-            self.peek(deserialized_tx)
-            self.objects.append(deserialized_tx.object)
-            break
-        for deserialized_tx in deserialized_txs:
-            self.objects.append(deserialized_tx.object)
+        try:
+            for deserialized_tx in deserialized_txs:
+                self.peek(deserialized_tx)
+                self.objects.append(deserialized_tx.object)
+                break
+            for deserialized_tx in deserialized_txs:
+                self.objects.append(deserialized_tx.object)
+        except DeserializationError as e:
+            raise BatchDeserializationError(e)
 
     def peek(self, deserialized_tx):
         """Peeks into first tx and sets self attrs.
@@ -229,6 +250,9 @@ class Batch:
                 self._valid_sequence = True
         return self._valid_sequence
 
+    def close(self):
+        self.batch_history.close(self.batch_id)
+
 
 class TransactionImporter:
     """Imports transactions from a file as incoming transaction and
@@ -248,9 +272,13 @@ class TransactionImporter:
         model IncomingTransaction.
         """
         batch = self.batch_cls()
-        batch.populate(
-            deserialized_txs=self.json_file.deserialized_objects,
-            filename=self.json_file.name)
+        try:
+            batch.populate(
+                deserialized_txs=self.json_file.deserialized_objects,
+                filename=self.json_file.name)
+        except BatchDeserializationError as e:
+            raise TransactionImporterError(
+                f'BatchDeserializationError. \'{batch}\'. Got {e}')
         batch.save()
         batch.update_history()
         self.json_file.archive()
