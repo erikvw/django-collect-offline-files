@@ -19,7 +19,7 @@ class SSHClient(ClosingContextManager):
         self.compress = True if compress is None else compress
         self.remote_host = remote_host
         self.timeout = timeout or 5
-        self.trusted_host = trusted_host
+        self.trusted_host = True if trusted_host is None else trusted_host
         self.username = username
         self._ssh_client = paramiko.SSHClient()
 

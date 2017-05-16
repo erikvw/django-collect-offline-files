@@ -46,7 +46,7 @@ class TestConnector(TestCase):
             with ssh_client.connect() as c:
                 c.close()
         except SSHClientError as e:
-            self.assertIn('SSHException', str(e))
+            self.assertIn('AuthenticationException', str(e))
         else:
             self.fail('SSHClientError unexpectedly not raised')
 
@@ -54,8 +54,8 @@ class TestConnector(TestCase):
         ssh_client = SSHClient(remote_host='localhost',
                                trusted_host=True, timeout=1)
         with ssh_client.connect() as ssh_conn:
-            sftp_client = SFTPClient(ssh_conn=ssh_conn)
-            with sftp_client.connect() as sftp_conn:
+            sftp_client = SFTPClient()
+            with sftp_client.connect(ssh_conn=ssh_conn) as sftp_conn:
                 sftp_conn.close()
 
     def test_sftp_put(self):
@@ -64,8 +64,8 @@ class TestConnector(TestCase):
         _, src = tempfile.mkstemp()
         dst = tempfile.mktemp()
         with ssh_client.connect() as ssh_conn:
-            sftp_client = SFTPClient(ssh_conn=ssh_conn)
-            with sftp_client.connect() as sftp_conn:
+            sftp_client = SFTPClient()
+            with sftp_client.connect(ssh_conn=ssh_conn) as sftp_conn:
                 sftp_conn.put(src, dst)
         self.assertTrue(os.path.exists(dst))
 
@@ -75,8 +75,8 @@ class TestConnector(TestCase):
         src = tempfile.mktemp()
         dst = tempfile.mktemp()
         with ssh_client.connect() as ssh_conn:
-            sftp_client = SFTPClient(ssh_conn=ssh_conn)
-            with sftp_client.connect() as sftp_conn:
+            sftp_client = SFTPClient()
+            with sftp_client.connect(ssh_conn=ssh_conn) as sftp_conn:
                 self.assertRaises(SFTPClientError, sftp_conn.put, src, dst)
         self.assertFalse(os.path.exists(dst))
 
@@ -86,8 +86,8 @@ class TestConnector(TestCase):
         src = tempfile.mktemp()
         dst = f'/badfolder/{tempfile.mktemp()}'
         with ssh_client.connect() as ssh_conn:
-            sftp_client = SFTPClient(ssh_conn=ssh_conn)
-            with sftp_client.connect() as sftp_conn:
+            sftp_client = SFTPClient()
+            with sftp_client.connect(ssh_conn=ssh_conn) as sftp_conn:
                 self.assertRaises(SFTPClientError, sftp_conn.put, src, dst)
         self.assertFalse(os.path.exists(dst))
 
@@ -95,8 +95,8 @@ class TestConnector(TestCase):
         ssh_client = SSHClient(remote_host='localhost',
                                trusted_host=True, timeout=1)
         with ssh_client.connect() as ssh_conn:
-            sftp_client = SFTPClient(ssh_conn=ssh_conn, verbose=True)
-            with sftp_client.connect() as sftp_conn:
+            sftp_client = SFTPClient(verbose=True)
+            with sftp_client.connect(ssh_conn=ssh_conn) as sftp_conn:
                 sftp_conn.update_progress(1, 100)
 
     @tag('connect')
@@ -116,11 +116,11 @@ class TestConnector(TestCase):
             os.mkdir(dst_path)
         with ssh_client.connect() as ssh_conn:
             sftp_client = SFTPClient(
-                ssh_conn=ssh_conn, verbose=True,
+                verbose=True,
                 dst_path=dst_path,
                 dst_tmp_path=dst_tmp_path,
                 src_path=src_path)
-            with sftp_client.connect() as sftp_conn:
+            with sftp_client.connect(ssh_conn=ssh_conn) as sftp_conn:
                 with self.assertLogs(logger=logger, level=logging.INFO) as cm:
                     sftp_conn.copy(filename=src_filename)
         self.assertTrue(os.path.exists(os.path.join(dst_path, src_filename)))

@@ -4,8 +4,6 @@ import sys
 
 from paramiko.util import ClosingContextManager
 
-from django.apps import apps as django_apps
-
 logging.basicConfig(format='%(asctime)s %(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p')
 logger = logging.getLogger(__name__)
@@ -17,24 +15,22 @@ class SFTPClientError(Exception):
 
 class SFTPClient(ClosingContextManager):
 
-    """Wraps open_sftp with folder defaults for copy (and archive).
+    """Wraps open_sftp with folder defaults for copy.
 
     Copy is two steps; put then rename.
     """
 
-    def __init__(self, ssh_conn=None, dst_path=None, dst_tmp_path=None,
-                 src_path=None, verbose=None):
-        app_config = django_apps.get_app_config('edc_sync_files')
-        self.src_path = src_path or app_config.source_folder
-        self.dst_path = dst_path or app_config.destination_folder
-        self.dst_tmp_path = dst_tmp_path or app_config.destination_tmp_folder
-        self.ssh_conn = ssh_conn
+    def __init__(self, dst_path=None, dst_tmp_path=None,
+                 src_path=None, verbose=None, **kwargs):
+        self.src_path = src_path
+        self.dst_path = dst_path
+        self.dst_tmp_path = dst_tmp_path
         self._sftp_client = None
         self.verbose = verbose
         self.progress = 0
 
-    def connect(self):
-        self._sftp_client = self.ssh_conn.open_sftp()
+    def connect(self, ssh_conn=None):
+        self._sftp_client = ssh_conn.open_sftp()
         return self
 
     def close(self):

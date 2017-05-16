@@ -25,7 +25,6 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         patterns = patterns or transaction_filename_pattern
         super().__init__(patterns=patterns, ignore_directories=True)
         self.verbose = verbose
-        # self.q = Queue()
 
     def on_created(self, event):
         self.process(event)

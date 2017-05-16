@@ -18,6 +18,10 @@ class BatchNotOpen(Exception):
     pass
 
 
+class BatchClosed(Exception):
+    pass
+
+
 class BatchAlreadyExported(Exception):
     pass
 
@@ -59,12 +63,12 @@ class Batch:
     def __init__(self, device_id=None, using=None, model=None,
                  history_model=None, **kwargs):
         edc_device_app_config = django_apps.get_app_config('edc_device')
+        self.closed = False
         self.batch_id = None
         self.device_id = device_id or edc_device_app_config.device_id
         self.filename = None
         self.history = None
         self.history_model = history_model or ExportedTransactionFileHistory
-        self.is_closed = False
         self.model = model or OutgoingTransaction
         self.prev_batch_id = None
         self.using = using
@@ -93,6 +97,9 @@ class Batch:
             self.create_history()
 
     def close(self, remote_host=None):
+        if self.closed:
+            raise BatchClosed('Batch is already closed')
+        self.closed = True
         timestamp = get_utcnow()
         self.items.update(
             is_consumed_server=True,
@@ -116,6 +123,8 @@ class Batch:
         return 0
 
     def create_history(self):
+        if self.closed:
+            raise BatchClosed('Batch is closed')
         if self.history:
             raise HistoryAlreadyExists(
                 'Failed to create history. History already exists')
@@ -153,5 +162,5 @@ class TransactionExporter:
             json_file = self.json_file_cls(batch=batch, path=self.path)
             json_file.write()
             batch.close()
-            return batch.history
+            return batch
         return None

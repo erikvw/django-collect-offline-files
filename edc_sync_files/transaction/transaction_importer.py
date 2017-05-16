@@ -58,7 +58,7 @@ class JSONFile:
         self.archive_folder = archive_folder
         self.deserialize = deserialize
         self.file_archiver = FileArchiver(
-            src_path=self.path, dst_path=self.archive_folder)
+            src_path=self.path, archive_path=self.archive_folder)
 
     def read(self):
         """Returns the file contents as JSON text.

@@ -1,10 +1,13 @@
 from django.test import TestCase, tag
 
-from ..confirmation import BatchConfirmationCode, BatchConfirmation
+from edc_base.utils import get_utcnow
+
+from ..confirmation import ConfirmationCode, Confirmation
 from ..transaction import TransactionExporter
 from .models import TestModel
 
 
+@tag('confirm')
 class TestConfirmation(TestCase):
 
     multi_db = True
@@ -13,73 +16,62 @@ class TestConfirmation(TestCase):
         self.using = 'client'
         TestModel.objects.using(self.using).create(f1='f1')
         tx_exporter = TransactionExporter(using=self.using)
-        self.history = tx_exporter.export_batch()
+        batch = self.history = tx_exporter.export_batch()
+        self.history = batch.history
 
     def test_code(self):
         """Asserts identifier class creates a code.
         """
-        confirmation_code = BatchConfirmationCode()
+        confirmation_code = ConfirmationCode()
         identifier = confirmation_code.identifier
         self.assertIsNotNone(identifier)
-
-    def test_confirmation_code(self):
-        """Asserts Confirmation class creates a code.
-        """
-        confirmation = BatchConfirmation(
-            batch_id=self.history.batch_id,
-            history_model=self.history.__class__,
-            using=self.using)
-        self.assertIsNotNone(confirmation.code)
 
     def test_confirmed_as_batch(self):
         """Asserts confirms a batch using batch_id.
         """
-        confirmation = BatchConfirmation(
-            batch_id=self.history.batch_id,
+        confirmation = Confirmation(
             history_model=self.history.__class__,
             using=self.using)
-        confirmation.confirm()
+        qs = confirmation.history_model.objects.using(self.using).filter(
+            batch_id=self.history.batch_id,
+            confirmation_code__isnull=True)
+        qs.update(sent=True, sent_datetime=get_utcnow())
+        code = confirmation.confirm(batch_id=self.history.batch_id)
         try:
             confirmation.history_model.objects.using(self.using).get(
                 batch_id=self.history.batch_id,
-                confirmation_code=confirmation.code)
+                confirmation_code=code)
         except confirmation.history_model.DoesNotExist:
             self.fail(
                 'tx_exporter.history_model.DoesNotExist unexpectedly does not exist')
 
-    def test_confirmed_as_batch_from_filename(self):
+    def test_confirm_all(self):
+        """Asserts confirms all not yet confirmed.
+        """
+        confirmation = Confirmation(
+            history_model=self.history.__class__,
+            using=self.using)
+        qs = confirmation.history_model.objects.using(self.using).filter(
+            confirmation_code__isnull=True)
+        qs.update(sent=True, sent_datetime=get_utcnow())
+        code = confirmation.confirm()
+        self.assertIsNotNone(code)
+
+    def test_confirmed_from_filename(self):
         """Asserts confirms a batch using a filename.
         """
-        confirmation = BatchConfirmation(
-            filename=self.history.filename,
+        confirmation = Confirmation(
             history_model=self.history.__class__,
             using=self.using)
-        confirmation.confirm()
+        qs = confirmation.history_model.objects.using(self.using).filter(
+            filename=self.history.filename,
+            confirmation_code__isnull=True)
+        qs.update(sent=True, sent_datetime=get_utcnow())
+        code = confirmation.confirm(filename=self.history.filename)
         try:
             confirmation.history_model.objects.using(self.using).get(
                 batch_id=self.history.batch_id,
-                confirmation_code=confirmation.code)
-        except confirmation.history_model.DoesNotExist:
-            self.fail(
-                'tx_exporter.history_model.DoesNotExist unexpectedly does not exist')
-
-    def test_confirmed_as_batch_from_code(self):
-        """Asserts confirms a batch using a code.
-        """
-        confirmation = BatchConfirmation(
-            filename=self.history.filename,
-            history_model=self.history.__class__,
-            using=self.using)
-        code = confirmation.code
-        confirmation = BatchConfirmation(
-            code=code,
-            history_model=self.history.__class__,
-            using=self.using)
-        confirmation.confirm()
-        try:
-            confirmation.history_model.objects.using(self.using).get(
-                batch_id=self.history.batch_id,
-                confirmation_code=confirmation.code)
+                confirmation_code=code)
         except confirmation.history_model.DoesNotExist:
             self.fail(
                 'tx_exporter.history_model.DoesNotExist unexpectedly does not exist')

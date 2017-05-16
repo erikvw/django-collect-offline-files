@@ -1,97 +1,116 @@
 import os
 
+from django.apps import apps as django_apps
 from django.test import TestCase, tag
 from faker import Faker
 
 from edc_sync.models import OutgoingTransaction
 
-from ..constants import PENDING_FILES, EXPORT_BATCH, SEND_FILE
-from ..view_actions import ViewActions, ViewActionError
+from ..action_handler import ActionHandler, ActionHandlerError
+from ..constants import PENDING_FILES, EXPORT_BATCH, SEND_FILES, CONFIRM_BATCH
+from ..models import ExportedTransactionFileHistory
 from .models import TestModel
 
 fake = Faker()
 
+app_config = django_apps.get_app_config('edc_sync_files')
 
-@tag('tx')
-class TestViewActions(TestCase):
+
+@tag('actions')
+class TestActionHandler(TestCase):
 
     multi_db = True
 
     def setUp(self):
-        view_actions = ViewActions(using='client')
-        view_actions.history_model.objects.using('client').all().delete()
+        ExportedTransactionFileHistory.objects.using('client').all().delete()
         OutgoingTransaction.objects.using('client').all().delete()
         TestModel.objects.using('client').all().delete()
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
 
     def test_invalid_action(self):
-        view_actions = ViewActions(using='client')
+        action_handler = ActionHandler(using='client')
         self.assertRaises(
-            ViewActionError, view_actions.action, label='blahblah')
+            ActionHandlerError, action_handler.action, label='blahblah')
 
     def test_export_batch(self):
-        view_actions = ViewActions(using='client')
-        view_actions.action(label=EXPORT_BATCH)
-        self.assertFalse(view_actions.data.get('errmsg'))
+        action_handler = ActionHandler(using='client')
+        action_handler.action(label=EXPORT_BATCH)
+        self.assertFalse(action_handler.data.get('errmsg'))
         self.assertGreater(
-            view_actions.history_model.objects.using('client').all().count(), 0)
+            action_handler.history_model.objects.using('client').all().count(), 0)
 
     def test_send_files(self):
-        view_actions = ViewActions(using='client')
-        view_actions.action(label=EXPORT_BATCH)
-        view_actions = ViewActions(using='client')
-        view_actions.action(label=SEND_FILE)
-        self.assertFalse(view_actions.data.get('errmsg'))
+        action_handler = ActionHandler(using='client')
+        action_handler.action(label=EXPORT_BATCH)
+        action_handler = ActionHandler(using='client')
+        action_handler.action(label=SEND_FILES)
+        self.assertFalse(action_handler.data.get('errmsg'))
 
     def test_send_and_archive_files(self):
-        view_actions = ViewActions(using='client')
-        view_actions.action(label=EXPORT_BATCH)
-        view_actions = ViewActions(using='client')
-        view_actions.action(label=SEND_FILE)
-        self.assertFalse(os.path.exists(
-            view_actions.data.get('last_sent_file')))
-        self.assertTrue(os.path.exists(
-            view_actions.data.get('last_archived_file')))
+        action_handler = ActionHandler(using='client')
+        action_handler.action(label=EXPORT_BATCH)
+        action_handler = ActionHandler(using='client')
+        action_handler.action(label=SEND_FILES)
+        for filename in action_handler.data.get('last_sent_files'):
+            self.assertFalse(os.path.exists(
+                os.path.join(app_config.source_folder, filename)))
+        for filename in action_handler.data.get('last_archived_files'):
+            self.assertTrue(os.path.exists(
+                os.path.join(app_config.archive_folder, filename)))
+        self.assertEqual(action_handler.data.get('pending_files'), [])
 
     def test_pending_files(self):
         for _ in range(0, 3):
-            view_actions = ViewActions(using='client')
-            view_actions.action(label=EXPORT_BATCH)
+            action_handler = ActionHandler(using='client')
+            action_handler.action(label=EXPORT_BATCH)
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
-        view_actions = ViewActions(using='client')
-        data = view_actions.action(label=PENDING_FILES)
-        self.assertEqual(len(data.get('pending_files')), 3)
+        action_handler = ActionHandler(using='client')
+        action_handler.action(label=PENDING_FILES)
+        self.assertEqual(len(action_handler.data.get('pending_files')), 3)
 
     def test_pending_count(self):
         for _ in range(0, 3):
-            view_actions = ViewActions(using='client')
-            view_actions.action(label=EXPORT_BATCH)
+            action_handler = ActionHandler(using='client')
+            action_handler.action(label=EXPORT_BATCH)
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
-        view_actions = ViewActions(using='client')
-        self.assertGreater(len(view_actions.pending_filenames), 0)
-        self.assertEqual(len(view_actions.pending_filenames), 3)
+        action_handler = ActionHandler(using='client')
+        self.assertGreater(len(action_handler.pending_filenames), 0)
+        self.assertEqual(len(action_handler.pending_filenames), 3)
 
-    def test_pending_decreases_on_send(self):
-        for i in range(0, 3):
-            view_actions = ViewActions(using='client')
-            view_actions.action(label=EXPORT_BATCH)
+    def test_pending_empty_after_sends_all(self):
+        for _ in range(0, 3):
+            action_handler = ActionHandler(using='client')
+            action_handler.action(label=EXPORT_BATCH)
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
-        view_actions = ViewActions(using='client')
-        for i in range(0, 3):
-            self.assertEqual(len(view_actions.pending_filenames), 3 - i)
-            view_actions.action(label=SEND_FILE)
+        action_handler = ActionHandler(using='client')
+        self.assertEqual(len(action_handler.pending_filenames), 3)
+        action_handler.action(label=SEND_FILES)
+        self.assertEqual(len(action_handler.pending_filenames), 0)
 
-    def test_pending_decreases_on_send2(self):
+    def test_confirm_batch_not_sent(self):
         for i in range(0, 3):
-            view_actions = ViewActions(using='client')
-            view_actions.action(label=EXPORT_BATCH)
+            action_handler = ActionHandler(using='client')
+            action_handler.action(label=EXPORT_BATCH)
+            TestModel.objects.using('client').create(f1=fake.name())
+            TestModel.objects.using('client').create(f1=fake.name())
+        action_handler = ActionHandler(using='client')
+        action_handler.action(label=CONFIRM_BATCH)
+        self.assertIsNone(action_handler.data.get('confirmation_code'))
+
+    @tag('1')
+    def test_confirm_batch_sent(self):
+        for i in range(0, 3):
+            action_handler = ActionHandler(using='client')
+            action_handler.action(label=EXPORT_BATCH)
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
         for i in range(0, 3):
-            view_actions = ViewActions(using='client')
-            self.assertEqual(len(view_actions.pending_filenames), 3 - i)
-            view_actions.action(label=SEND_FILE)
+            action_handler = ActionHandler(using='client')
+            action_handler.action(label=SEND_FILES)
+        action_handler = ActionHandler(using='client')
+        action_handler.action(label=CONFIRM_BATCH)
+        self.assertIsNotNone(action_handler.data.get('confirmation_code'))

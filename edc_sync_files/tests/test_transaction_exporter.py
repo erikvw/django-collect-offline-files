@@ -17,6 +17,7 @@ from edc_sync_files.transaction.transaction_exporter import BatchAlreadyOpen, Hi
 fake = Faker()
 
 
+@tag('jsonfile')
 class TestJSONFile(TestCase):
 
     def setUp(self):
@@ -43,6 +44,7 @@ class TestJSONFile(TestCase):
             os.path.join(json_file.path, json_file.name)))
 
 
+@tag('batch')
 class TestBatch(TestCase):
 
     def setUp(self):
@@ -82,6 +84,7 @@ class TestBatch(TestCase):
         self.assertEqual(batch.history.batch_id, batch.batch_id)
 
 
+@tag('exporter')
 class TestTransactionExporter(TestCase):
 
     def setUp(self):
@@ -138,28 +141,29 @@ class TestTransactionExporter(TestCase):
         """Assert exports pending transactions updates history.
         """
         tx_exporter = TransactionExporter(using='client', device_id='010')
-        history = tx_exporter.export_batch()
-        self.assertIsNotNone(history.batch_id)
-        self.assertIsNotNone(history.prev_batch_id)
-        self.assertIsNotNone(history.filename)
-        self.assertIsNotNone(history.device_id)
-        self.assertTrue(history.exported)
-        self.assertIsNotNone(history.exported_datetime)
+        batch = tx_exporter.export_batch()
+        self.assertIsNotNone(batch.batch_id)
+        self.assertIsNotNone(batch.history.prev_batch_id)
+        self.assertIsNotNone(batch.history.filename)
+        self.assertIsNotNone(batch.history.device_id)
+        self.assertTrue(batch.history.exported)
+        self.assertIsNotNone(batch.history.exported_datetime)
 
     def test_matching_batch_id(self):
         """Assert assigns same batch_id to all exported transactions.
         """
         tx_exporter = TransactionExporter(using='client', device_id='010')
-        history = tx_exporter.export_batch()
+        batch = tx_exporter.export_batch()
         outgoing_transactions = OutgoingTransaction.objects.using(
-            'client').filter(is_consumed_server=True, batch_id=history.batch_id)
+            'client').filter(is_consumed_server=True, batch_id=batch.batch_id)
         for obj in outgoing_transactions:
-            self.assertEqual(history.batch_id, obj.batch_id)
-            self.assertEqual(history.prev_batch_id, obj.prev_batch_id)
-            self.assertEqual(history.hostname,
+            self.assertEqual(batch.history.batch_id, obj.batch_id)
+            self.assertEqual(batch.history.prev_batch_id, obj.prev_batch_id)
+            self.assertEqual(batch.history.hostname,
                              '-'.join(obj.producer.split('-')[:-1]))
 
 
+@tag('exporter')
 class TestTransactionExporter2(TestCase):
 
     def setUp(self):
