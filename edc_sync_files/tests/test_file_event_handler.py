@@ -30,8 +30,12 @@ class TestFileEventHandler(TestCase):
         ExportedTransactionFileHistory.objects.using('client').all().delete()
         OutgoingTransaction.objects.using('client').all().delete()
         TestModel.objects.using('client').all().delete()
+        while not tx_file_queue.empty():
+            tx_file_queue.get()
+            tx_file_queue.task_done()
         while not batch_queue.empty():
             batch_queue.get()
+            batch_queue.task_done()
 
     def test_export_send_process(self):
         TestModel.objects.using('client').create(f1=fake.name())
