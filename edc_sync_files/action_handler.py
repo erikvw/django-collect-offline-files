@@ -56,7 +56,8 @@ class ActionHandler:
         try:
             history = self.tx_exporter.export_batch()
         except TransactionExporterError as e:
-            raise ActionHandlerError(e)
+            raise ActionHandlerError(
+                f'Reraised TransactionExporterError. Got {e}')
         else:
             if history:
                 self.data.update(batch_id=history.batch_id)

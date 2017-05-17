@@ -2,14 +2,10 @@
 
 ### EDC Sync File Transfer
 
-Transfer `edc_sync` transactions as files.
+Transfer `edc_sync` transactions as files using SFTP over an SSH connection.
 
 Data flows from client to server where a server is either a node server or the central server.
 
-new transaction files are placed in the `source` folder. 
-
-- destination_folder where/to/copy/files/to
-- archive_folder where/to/copy/files/to/archive
 
 #### Add above attributes for AppConfig in your Application in the child class of Edc Sync AppConfig
 
@@ -31,20 +27,11 @@ Incoming folder: remote_user@edc.sample.com:/Users/edc_user/source/bcpp/transact
 Outgoing folder: remote_user@edc.sample.com:/Users/edc_user/source/bcpp/transactions/outgoing
 Archive folder: remote_user@edc.sample.com:/Users/edc_user/source/bcpp/transactions/archive
 
-```
-
-### Setup USB
-
-```
-	1. Renamed USB to BCPP.
-	2. mkdir -p /Volumes/BCPP/transactions/incoming
-	3. mkdir -p /Volumes/BCPP/transactions/archive
-```
 ### Start Watchdog Observer In The Server.
 
 ```
-	1. workon bcpp
-	2. cd source/bcpp/
+	1. source myenv/bin/activate
+	2. cd source/my_project/
 	3. python manage.py start_observer
 ```
 

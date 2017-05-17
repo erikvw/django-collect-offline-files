@@ -1,6 +1,6 @@
 import logging
-import re
 import os
+import re
 import tempfile
 
 from django.apps import apps as django_apps
