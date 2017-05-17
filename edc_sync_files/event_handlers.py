@@ -13,12 +13,12 @@ class EventHandlerError(Exception):
 
 class TransactionFileEventHandler(PatternMatchingEventHandler):
 
-    def __init__(self, patterns=None, archive_path=None, verbose=None):
+    def __init__(self, patterns=None, path=None, verbose=None):
         app_config = django_apps.get_app_config('edc_sync_files')
         patterns = patterns or transaction_filename_pattern
         super().__init__(patterns=patterns, ignore_directories=True)
         self.verbose = verbose
-        self.archive_path = archive_path or app_config.archive_folder
+        self.path = path or app_config.archive_folder
 
     def on_created(self, event):
         self.process(event)
