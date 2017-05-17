@@ -16,7 +16,7 @@ fake = Faker()
 app_config = django_apps.get_app_config('edc_sync_files')
 
 
-# @tag('actions')
+@tag('actions')
 class TestActionHandler(TestCase):
 
     multi_db = True
@@ -29,47 +29,80 @@ class TestActionHandler(TestCase):
         TestModel.objects.using('client').create(f1=fake.name())
 
     def test_invalid_action(self):
-        action_handler = ActionHandler(using='client')
+        kwargs = dict(
+            using='client', src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
+        action_handler = ActionHandler(**kwargs)
         self.assertRaises(
             ActionHandlerError, action_handler.action, label='blahblah')
 
     def test_export_batch(self):
-        action_handler = ActionHandler(using='client')
+        kwargs = dict(
+            using='client', src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
+        action_handler = ActionHandler(**kwargs)
         action_handler.action(label=EXPORT_BATCH)
         self.assertFalse(action_handler.data.get('errmsg'))
         self.assertGreater(
             action_handler.history_model.objects.using('client').all().count(), 0)
 
-    @tag('actions')
     def test_export_batch_error(self):
         """Asserts raises error if export fails.
         """
-        action_handler = ActionHandler(using='client', export_path='blah')
+        kwargs = dict(
+            using='client', src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
+        action_handler = ActionHandler(export_path='blah', **kwargs)
         self.assertRaises(
             ActionHandlerError,
             action_handler.action, label=EXPORT_BATCH)
 
     def test_send_files(self):
-        action_handler = ActionHandler(using='client')
+        kwargs = dict(
+            using='client', src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
+        action_handler = ActionHandler(**kwargs)
         action_handler.action(label=EXPORT_BATCH)
-        action_handler = ActionHandler(using='client')
+        action_handler = ActionHandler(**kwargs)
         action_handler.action(label=SEND_FILES)
         self.assertFalse(action_handler.data.get('errmsg'))
 
-    @tag('actions')
     def test_send_files_error(self):
         """Asserts raises error if send fails.
         """
-        action_handler = ActionHandler(using='client')
+        kwargs = dict(
+            using='client', src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
+        action_handler = ActionHandler(**kwargs)
         action_handler.action(label=EXPORT_BATCH)
-        action_handler = ActionHandler(using='client', trusted_host=False)
+        action_handler = ActionHandler(trusted_host=False, **kwargs)
         self.assertRaises(ActionHandlerError,
                           action_handler.action, label=SEND_FILES)
 
-    def test_send_and_archive_files(self):
-        action_handler = ActionHandler(using='client')
+    def test_send_files_invalid_user_error(self):
+        """Asserts raises error if send fails on invalid user.
+        """
+        kwargs = dict(
+            using='client', src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
+        action_handler = ActionHandler(**kwargs)
         action_handler.action(label=EXPORT_BATCH)
-        action_handler = ActionHandler(using='client')
+        action_handler = ActionHandler(
+            trusted_host=False, username='bob', **kwargs)
+        try:
+            action_handler.action(label=SEND_FILES)
+        except ActionHandlerError as e:
+            self.assertIn('bob@', str(e))
+        else:
+            self.fail('ActionHandlerError unexpectedly not raises')
+
+    def test_send_and_archive_files(self):
+        kwargs = dict(
+            using='client', src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
+        action_handler = ActionHandler(**kwargs)
+        action_handler.action(label=EXPORT_BATCH)
+        action_handler = ActionHandler(**kwargs)
         action_handler.action(label=SEND_FILES)
         for filename in action_handler.data.get('last_sent_files'):
             self.assertFalse(os.path.exists(
@@ -80,55 +113,70 @@ class TestActionHandler(TestCase):
         self.assertEqual(action_handler.data.get('pending_files'), [])
 
     def test_pending_files(self):
+        kwargs = dict(
+            using='client', src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
         for _ in range(0, 3):
-            action_handler = ActionHandler(using='client')
+            action_handler = ActionHandler(**kwargs)
             action_handler.action(label=EXPORT_BATCH)
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
-        action_handler = ActionHandler(using='client')
+        action_handler = ActionHandler(**kwargs)
         action_handler.action(label=PENDING_FILES)
         self.assertEqual(len(action_handler.data.get('pending_files')), 3)
 
     def test_pending_count(self):
+        kwargs = dict(
+            using='client', src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
         for _ in range(0, 3):
-            action_handler = ActionHandler(using='client')
+            action_handler = ActionHandler(**kwargs)
             action_handler.action(label=EXPORT_BATCH)
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
-        action_handler = ActionHandler(using='client')
+        action_handler = ActionHandler(**kwargs)
         self.assertGreater(len(action_handler.pending_filenames), 0)
         self.assertEqual(len(action_handler.pending_filenames), 3)
 
     def test_pending_empty_after_sends_all(self):
+        kwargs = dict(
+            using='client', src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
         for _ in range(0, 3):
-            action_handler = ActionHandler(using='client')
+            action_handler = ActionHandler(**kwargs)
             action_handler.action(label=EXPORT_BATCH)
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
-        action_handler = ActionHandler(using='client')
+        action_handler = ActionHandler(**kwargs)
         self.assertEqual(len(action_handler.pending_filenames), 3)
         action_handler.action(label=SEND_FILES)
         self.assertEqual(len(action_handler.pending_filenames), 0)
 
     def test_confirm_not_sent_raises(self):
-        for i in range(0, 3):
-            action_handler = ActionHandler(using='client')
+        kwargs = dict(
+            using='client', src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
+        for _ in range(0, 3):
+            action_handler = ActionHandler(**kwargs)
             action_handler.action(label=EXPORT_BATCH)
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
-        action_handler = ActionHandler(using='client')
+        action_handler = ActionHandler(**kwargs)
         self.assertRaises(ActionHandlerError,
                           action_handler.action, label=CONFIRM_BATCH)
 
     def test_confirm(self):
-        for i in range(0, 3):
-            action_handler = ActionHandler(using='client')
+        kwargs = dict(
+            using='client', src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
+        for _ in range(0, 3):
+            action_handler = ActionHandler(**kwargs)
             action_handler.action(label=EXPORT_BATCH)
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
-        for i in range(0, 3):
-            action_handler = ActionHandler(using='client')
+        for _ in range(0, 3):
+            action_handler = ActionHandler(**kwargs)
             action_handler.action(label=SEND_FILES)
-        action_handler = ActionHandler(using='client')
+        action_handler = ActionHandler(**kwargs)
         action_handler.action(label=CONFIRM_BATCH)
         self.assertIsNotNone(action_handler.data.get('confirmation_code'))

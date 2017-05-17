@@ -9,9 +9,9 @@ from ..transaction import TransactionFileSender
 from edc_sync_files.transaction.transaction_file_sender import TransactionFileSenderError
 
 
+@tag('send')
 class TestTransactionFileSender(TestCase):
 
-    @tag('send')
     def test_init(self):
         _, src = tempfile.mkstemp(text=True)
         src_path = os.path.dirname(src)
@@ -19,14 +19,15 @@ class TestTransactionFileSender(TestCase):
         if not os.path.exists(dst_tmp_path):
             os.mkdir(dst_tmp_path)
         dst_path = f'{tempfile.gettempdir()}/dst'
+        archive_path = f'{tempfile.gettempdir()}/archive'
         if not os.path.exists(dst_path):
             os.mkdir(dst_path)
         TransactionFileSender(
             history_model=ExportedTransactionFileHistory,
             update_history_model=False,
-            src_path=src_path, dst_path=dst_path, dst_tmp_path=dst_tmp_path)
+            src_path=src_path, dst_path=dst_path, dst_tmp_path=dst_tmp_path,
+            archive_path=archive_path)
 
-    @tag('send')
     def test_send_custom_paths(self):
         _, src = tempfile.mkstemp(text=True)
         with open(src, 'w') as fd:
@@ -52,21 +53,21 @@ class TestTransactionFileSender(TestCase):
         self.assertTrue(os.path.exists(
             os.path.join(archive_path, src_filename)))
 
-    @tag('send')
     def test_send_default_paths(self):
         app_config = django_apps.get_app_config('edc_sync_files')
         _, src = tempfile.mkstemp(text=True, dir=app_config.source_folder)
         src_filename = os.path.basename(src)
         tx_file_sender = TransactionFileSender(
             history_model=ExportedTransactionFileHistory,
-            update_history_model=False)
+            update_history_model=False,
+            src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
         tx_file_sender.send(filenames=[src_filename])
         self.assertTrue(os.path.exists(os.path.join(
             app_config.destination_folder, src_filename)))
         self.assertTrue(os.path.exists(
             os.path.join(app_config.archive_folder, src_filename)))
 
-    @tag('send')
     def test_send_update_history(self):
         app_config = django_apps.get_app_config('edc_sync_files')
         _, src = tempfile.mkstemp(text=True, dir=app_config.source_folder)
@@ -74,7 +75,9 @@ class TestTransactionFileSender(TestCase):
         ExportedTransactionFileHistory.objects.create(
             filename=src_filename, sent=False)
         tx_file_sender = TransactionFileSender(
-            history_model=ExportedTransactionFileHistory)
+            history_model=ExportedTransactionFileHistory,
+            src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
         tx_file_sender.send(filenames=[src_filename])
         try:
             ExportedTransactionFileHistory.objects.get(
@@ -84,12 +87,27 @@ class TestTransactionFileSender(TestCase):
             self.fail(
                 'ExportedTransactionFileHistory.DoesNotExist unexpectedly raised')
 
-    @tag('user')
     def test_transaction_file_sender_username(self):
         app_config = django_apps.get_app_config('edc_sync_files')
-        tx_file_sender = TransactionFileSender(
-            history_model=ExportedTransactionFileHistory,
-            update_history_model=False, username=app_config.user)
         _, src = tempfile.mkstemp(text=True, dir=app_config.source_folder)
         src_filename = os.path.basename(src)
-        self.assertRaises(TransactionFileSenderError, tx_file_sender.send, filenames=[src_filename])
+        tx_file_sender = TransactionFileSender(
+            history_model=ExportedTransactionFileHistory,
+            update_history_model=False, username=app_config.user, trusted_host=False,
+            src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
+        self.assertRaises(
+            TransactionFileSenderError,
+            tx_file_sender.send, filenames=[src_filename])
+
+    def test_transaction_file_sender_username2(self):
+        """Asserts username gets to SSH client.
+        """
+        app_config = django_apps.get_app_config('edc_sync_files')
+        username = 'bob'
+        tx_file_sender = TransactionFileSender(
+            history_model=ExportedTransactionFileHistory,
+            update_history_model=False, username=username, trusted_host=False,
+            src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
+        self.assertEqual(tx_file_sender.ssh_client.username, username)

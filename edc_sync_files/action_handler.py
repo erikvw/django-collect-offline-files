@@ -1,5 +1,3 @@
-from django.apps import apps as django_apps
-
 from .confirmation import Confirmation, ConfirmationError
 from .constants import EXPORT_BATCH, SEND_FILES, CONFIRM_BATCH, PENDING_FILES
 from .transaction import TransactionExporter, TransactionExporterError
@@ -13,10 +11,8 @@ class ActionHandlerError(Exception):
 class ActionHandler:
 
     def __init__(self, using=None, **kwargs):
-        app_config = django_apps.get_app_config('edc_sync_files')
         self.data = {}
         self.using = using
-        self.archive_path = app_config.archive_folder
         self.tx_exporter = TransactionExporter(using=self.using, **kwargs)
         self.history_model = self.tx_exporter.history_model
         self.confirmation = Confirmation(

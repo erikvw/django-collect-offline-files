@@ -1,5 +1,6 @@
 import os
 
+from django.apps import apps as django_apps
 from django.test import TestCase, tag
 
 from ..transaction import FileArchiver, FileArchiverError
@@ -9,11 +10,8 @@ import tempfile
 @tag('archive')
 class TestFileArchiver(TestCase):
 
-    def test_default_paths(self):
-        try:
-            FileArchiver()
-        except FileArchiverError:
-            self.fail('FileArchiverError unexpectedly raised')
+    def test_no_parameters(self):
+        self.assertRaises(FileArchiverError, FileArchiver)
 
     def test_custom_paths_same(self):
         src_path = tempfile.gettempdir()
@@ -43,7 +41,8 @@ class TestFileArchiver(TestCase):
         os.rmdir(archive_path)
 
     def test_archive_file(self):
-        file_archiver = FileArchiver()
+        app_config = django_apps.get_app_config('edc_sync_files')
+        file_archiver = FileArchiver(archive_path=app_config.archive_folder)
         _, p = tempfile.mkstemp(dir=file_archiver.src_path)
         filename = os.path.basename(p)
         file_archiver.archive(filename)

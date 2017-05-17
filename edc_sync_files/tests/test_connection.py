@@ -8,6 +8,7 @@ from ..ssh_client import SSHClient, SSHClientError
 from ..sftp_client import SFTPClient, SFTPClientError, logger
 
 
+@tag('connect')
 class TestConnector(TestCase):
 
     def test_localhost_trusted(self):
@@ -16,6 +17,22 @@ class TestConnector(TestCase):
             self.assertTrue(ssh_client.connected)
             c.close()
         self.assertFalse(ssh_client.connected)
+
+    def test_username(self):
+        options = dict(remote_host='127.0.0.1',
+                       trusted_host=False,
+                       username='bob',
+                       timeout=1)
+        for trusted_host in [True, False]:
+            options.update(trusted_host=trusted_host)
+            ssh_client = SSHClient(**options)
+            try:
+                with ssh_client.connect() as c:
+                    c.close()
+            except SSHClientError as e:
+                self.assertIn('bob@', str(e))
+            else:
+                self.fail('SSHClientError unexpectedly not raised')
 
     def test_timeout_nottrusted(self):
         ssh_client = SSHClient(remote_host='127.0.0.1',

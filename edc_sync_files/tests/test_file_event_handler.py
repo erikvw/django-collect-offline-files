@@ -1,6 +1,7 @@
 import os
 
 from faker import Faker
+from django.apps import apps as django_apps
 from django.test.testcases import TestCase
 from django.test.utils import tag
 
@@ -12,6 +13,7 @@ from ..transaction import TransactionExporter, TransactionFileSender
 from ..queues import tx_file_queue, batch_queue
 from .models import TestModel
 
+app_config = django_apps.get_app_config('edc_sync_files')
 fake = Faker()
 
 
@@ -45,7 +47,10 @@ class TestFileEventHandler(TestCase):
         batch = tx_exporter.export_batch()
 
         tx_file_sender = TransactionFileSender(
-            history_model=tx_exporter.history_model, using='client')
+            history_model=tx_exporter.history_model,
+            using='client',
+            src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
         tx_file_sender.send([batch.filename])
 
         event_handler = TransactionFileEventHandler()
@@ -72,7 +77,9 @@ class TestFileEventHandler(TestCase):
             filenames.append(batch.filename)
 
         tx_file_sender = TransactionFileSender(
-            history_model=tx_exporter.history_model, using='client')
+            history_model=tx_exporter.history_model, using='client',
+            src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
         tx_file_sender.send(filenames)
 
         event_handler = TransactionFileEventHandler()
@@ -99,7 +106,9 @@ class TestFileEventHandler(TestCase):
         batch = tx_exporter.export_batch()
 
         tx_file_sender = TransactionFileSender(
-            history_model=tx_exporter.history_model, using='client')
+            history_model=tx_exporter.history_model, using='client',
+            src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
         tx_file_sender.send([batch.filename])
 
         event_handler = TransactionFileEventHandler()
@@ -122,7 +131,9 @@ class TestFileEventHandler(TestCase):
         batch = tx_exporter.export_batch()
 
         tx_file_sender = TransactionFileSender(
-            history_model=tx_exporter.history_model, using='client')
+            history_model=tx_exporter.history_model, using='client',
+            src_path=app_config.source_folder,
+            archive_path=app_config.archive_folder)
         tx_file_sender.send([batch.filename])
 
         event_handler = TransactionFileEventHandler()
