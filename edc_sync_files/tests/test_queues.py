@@ -53,7 +53,7 @@ class TestQueues(TestCase):
         self.assertEqual(q.unfinished_tasks, 5)
 
     def test_batch_queue_reload_empty(self):
-        q = BatchQueue(model=ImportedTransactionFileHistory)
+        q = BatchQueue(history_model=ImportedTransactionFileHistory)
         q.reload()
         self.assertEqual(q.qsize(), 0)
 
@@ -61,7 +61,7 @@ class TestQueues(TestCase):
         for i in range(0, 5):
             ImportedTransactionFileHistory.objects.create(
                 batch_id=f'{i}XXXX', consumed=False)
-        q = BatchQueue(model=ImportedTransactionFileHistory)
+        q = BatchQueue(history_model=ImportedTransactionFileHistory)
         q.reload()
         self.assertEqual(q.qsize(), 5)
 
@@ -72,7 +72,7 @@ class TestQueues(TestCase):
             _, p = tempfile.mkstemp(suffix='.json')
             ImportedTransactionFileHistory.objects.create(
                 batch_id=f'{i}XXXX', consumed=False, filename=os.path.basename(p))
-        q = BatchQueue(model=ImportedTransactionFileHistory)
+        q = BatchQueue(history_model=ImportedTransactionFileHistory)
         q.reload()
         self.assertEqual(q.qsize(), 5)
         while not q.empty():
@@ -102,7 +102,7 @@ class TestQueues(TestCase):
         history = tx_exporter.export_batch()
         tx_importer = TransactionImporter(filename=history.filename)
         batch = tx_importer.import_batch()
-        q = BatchQueue(model=ImportedTransactionFileHistory)
+        q = BatchQueue(history_model=ImportedTransactionFileHistory)
         q.put(batch.batch_id)
         while not q.empty():
             try:

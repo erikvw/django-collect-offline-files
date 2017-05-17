@@ -29,12 +29,16 @@ class TransactionFileQueue(Queue):
         self.patterns = patterns or transaction_filename_pattern
 
     def reload(self):
+        """Reloads filenames into the queue that match the pattern.
+        """
         combined = "(" + ")|(".join(self.patterns) + ")"
         for filename in os.listdir(self.path):
             if re.match(combined, filename):
                 self.put(filename)
 
     def next_task(self):
+        """Calls import_batch for the next filename in the queue.
+        """
         filename = self.get()
         tx_importer = TransactionImporter(filename=filename, path=self.path)
         try:
@@ -48,15 +52,20 @@ class TransactionFileQueue(Queue):
 
 class BatchQueue(Queue):
 
-    def __init__(self, model=None, **kwargs):
+    def __init__(self, history_model=None, **kwargs):
         super().__init__(**kwargs)
-        self.model = model
+        self.history_model = history_model
 
     def reload(self):
-        for obj in self.model.objects.filter(consumed=False).order_by('created'):
+        """Reloads batch_ids not yet deserialized into the queue
+        from the history model.
+        """
+        for obj in self.history_model.objects.filter(consumed=False).order_by('created'):
             self.put(obj.batch_id)
 
     def next_task(self):
+        """Deserializes all transactions for this batch.
+        """
         batch_id = self.get()
         batch = Batch()
         batch.batch_id = batch_id
@@ -71,5 +80,5 @@ class BatchQueue(Queue):
             self.task_done()
 
 
-batch_queue = BatchQueue(model=ImportedTransactionFileHistory)
+batch_queue = BatchQueue(history_model=ImportedTransactionFileHistory)
 tx_file_queue = TransactionFileQueue(path=app_config.destination_folder)
