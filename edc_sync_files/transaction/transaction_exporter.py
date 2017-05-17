@@ -58,7 +58,7 @@ class JSONFile:
                 f'Unable to create export file. Got \'{str(e)}\'')
 
 
-class Batch:
+class ExportBatch:
 
     def __init__(self, device_id=None, using=None, model=None,
                  history_model=None, **kwargs):
@@ -154,7 +154,7 @@ class TransactionExporter:
 
     def __init__(self, export_path=None, using=None, **kwargs):
         app_config = django_apps.get_app_config('edc_sync_files')
-        self.batch_cls = Batch
+        self.batch_cls = ExportBatch
         self.json_file_cls = JSONFile
         self.path = export_path or app_config.outgoing_folder
         self.serialize = serialize

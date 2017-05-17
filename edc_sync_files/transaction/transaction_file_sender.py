@@ -29,6 +29,8 @@ class TransactionFileSender:
         self.history_model = history_model
         self.ssh_client = SSHClient(**kwargs)
         self.sftp_client = SFTPClient(**kwargs)
+        self.src_path = self.sftp_client.src_path
+        self.dst_path = self.sftp_client.dst_path
 
     def send(self, filenames=None):
         try:

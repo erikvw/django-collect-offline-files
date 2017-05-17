@@ -23,7 +23,7 @@ class TestJSONFile(TestCase):
     def setUp(self):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        tx_exporter = TransactionExporter(using='client', device_id="010")
+        tx_exporter = TransactionExporter(using='client')
         history = tx_exporter.export_batch()
         self.filename = history.filename
         self.path = tx_exporter.path
@@ -55,7 +55,7 @@ class TestDeserializer(TestCase):
     def setUp(self):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        tx_exporter = TransactionExporter(using='client', device_id="010")
+        tx_exporter = TransactionExporter(using='client')
         history = tx_exporter.export_batch()
         self.filename = history.filename
         self.path = tx_exporter.path
@@ -163,7 +163,7 @@ class TestTransactionImporter(TestCase):
     def test_export_and_import(self):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        tx_exporter = TransactionExporter(using='client', device_id="010")
+        tx_exporter = TransactionExporter(using='client')
         history = tx_exporter.export_batch()
         tx_importer = TransactionImporter(filename=history.filename)
         batch = tx_importer.import_batch()
@@ -173,7 +173,7 @@ class TestTransactionImporter(TestCase):
         for _ in range(0, 5):
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
-            tx_exporter = TransactionExporter(using='client', device_id="010")
+            tx_exporter = TransactionExporter(using='client')
             history = tx_exporter.export_batch()
             tx_importer = TransactionImporter(filename=history.filename)
             batch = tx_importer.import_batch()
@@ -186,7 +186,7 @@ class TestTransactionImporter(TestCase):
         for _ in range(0, 5):
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
-            tx_exporter = TransactionExporter(using='client', device_id="010")
+            tx_exporter = TransactionExporter(using='client')
             history = tx_exporter.export_batch()
             filenames.append(history.filename)
         tx_importer = TransactionImporter(filename=filenames[3])

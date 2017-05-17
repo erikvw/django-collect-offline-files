@@ -9,9 +9,8 @@ from edc_sync.models import OutgoingTransaction
 from ..models import ExportedTransactionFileHistory
 from ..transaction import TransactionExporter, TransactionExporterError
 from .models import TestModel
-from ..transaction.transaction_exporter import Batch
-from edc_sync_files.transaction.transaction_exporter import BatchAlreadyOpen, HistoryAlreadyExists,\
-    JSONFile
+from ..transaction.transaction_exporter import (
+    ExportBatch, BatchAlreadyOpen, HistoryAlreadyExists, JSONFile)
 
 
 fake = Faker()
@@ -28,16 +27,16 @@ class TestJSONFile(TestCase):
         TestModel.objects.using('client').create(f1=fake.name())
 
     def test_file(self):
-        batch = Batch(using='client')
+        batch = ExportBatch(using='client')
         JSONFile(batch=batch, path='/tmp')
 
     def test_file_text(self):
-        batch = Batch(using='client')
+        batch = ExportBatch(using='client')
         json_file = JSONFile(batch=batch, path='/tmp')
         self.assertIsNotNone(json_file.json_txt)
 
     def test_write_file_text(self):
-        batch = Batch(using='client')
+        batch = ExportBatch(using='client')
         json_file = JSONFile(batch=batch, path='/tmp')
         json_file.write()
         self.assertTrue(os.path.exists(
@@ -45,7 +44,7 @@ class TestJSONFile(TestCase):
 
 
 @tag('batch')
-class TestBatch(TestCase):
+class TestExportBatch(TestCase):
 
     def setUp(self):
         ExportedTransactionFileHistory.objects.using('client').all().delete()
@@ -53,7 +52,7 @@ class TestBatch(TestCase):
         TestModel.objects.using('client').all().delete()
 
     def test_empty_batch(self):
-        batch = Batch()
+        batch = ExportBatch()
         self.assertEqual(batch.count, 0)
         self.assertIsNone(batch.filename)
         self.assertIsNone(batch.batch_id)
@@ -62,25 +61,25 @@ class TestBatch(TestCase):
     def test_nonempty_batch(self):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        batch = Batch(using='client')
+        batch = ExportBatch(using='client')
         self.assertGreater(batch.count, 0)
 
     def test_reopen_batch(self):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        batch = Batch(using='client')
+        batch = ExportBatch(using='client')
         self.assertRaises(BatchAlreadyOpen, batch.open)
 
     def test_recreate_history(self):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        batch = Batch(using='client')
+        batch = ExportBatch(using='client')
         self.assertRaises(HistoryAlreadyExists, batch.create_history)
 
     def test_batch_history(self):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        batch = Batch(using='client')
+        batch = ExportBatch(using='client')
         self.assertEqual(batch.history.batch_id, batch.batch_id)
 
 

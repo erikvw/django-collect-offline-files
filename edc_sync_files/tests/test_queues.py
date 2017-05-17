@@ -1,3 +1,4 @@
+import logging
 import re
 import os
 import tempfile
@@ -8,10 +9,9 @@ from django.test import TestCase, tag
 from edc_device.constants import NODE_SERVER
 from edc_sync.models import OutgoingTransaction, IncomingTransaction
 
-from ..queues import TransactionFileQueue, BatchQueue
 from ..models import ImportedTransactionFileHistory
+from ..queues import TransactionFileQueue, BatchQueue, logger
 from ..transaction import TransactionExporter, TransactionImporter
-
 from .models import TestModel
 
 
@@ -45,7 +45,10 @@ class TestQueues(TestCase):
         q.reload()
         self.assertEqual(q.qsize(), 5)
         while not q.empty():
-            q.next_task()
+            with self.assertLogs(logger=logger, level=logging.INFO) as cm:
+                q.next_task()
+            self.assertIn('TransactionImporterError', ''.join(cm.output))
+            self.assertIn('BatchDeserializationError', ''.join(cm.output))
         self.assertEqual(q.qsize(), 0)
         self.assertEqual(q.unfinished_tasks, 5)
 
@@ -73,7 +76,13 @@ class TestQueues(TestCase):
         q.reload()
         self.assertEqual(q.qsize(), 5)
         while not q.empty():
-            q.next_task()
+            try:
+                with self.assertLogs(logger=logger, level=logging.INFO) as cm:
+                    q.next_task()
+            except AssertionError:
+                pass
+            else:
+                self.fail(f'AssertionError not raised. Got {cm.output}')
         self.assertEqual(q.qsize(), 0)
         self.assertEqual(q.unfinished_tasks, 0)  # there was nothing to do
         self.assertEqual(ImportedTransactionFileHistory.objects.filter(
@@ -96,7 +105,14 @@ class TestQueues(TestCase):
         q = BatchQueue(model=ImportedTransactionFileHistory)
         q.put(batch.batch_id)
         while not q.empty():
-            q.next_task()
+            try:
+                with self.assertLogs(logger=logger, level=logging.INFO) as cm:
+                    q.next_task()
+            except AssertionError:
+                pass
+            else:
+                self.fail(f'AssertionError not raised. Got {cm.output}')
+
         self.assertEqual(q.qsize(), 0)
         self.assertEqual(q.unfinished_tasks, 0)
         self.assertEqual(

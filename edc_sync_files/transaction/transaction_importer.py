@@ -1,15 +1,15 @@
 import os
 
 from django.apps import apps as django_apps
+from django.core.serializers.base import DeserializationError
 from django.db.utils import IntegrityError
 
+from edc_base.utils import get_utcnow
 from edc_sync.models import IncomingTransaction
 from edc_sync.transaction_deserializer import deserialize
 
 from ..models import ImportedTransactionFileHistory
 from .file_archiver import FileArchiver
-from django.core.serializers.base import DeserializationError
-from edc_base.utils import get_utcnow
 
 
 class TransactionImporterError(Exception):
@@ -44,6 +44,9 @@ class InvalidBatchSequence(Exception):
     pass
 
 
+class JSONFileError(Exception):
+    pass
+
 # def deserialize(json_text=None):
 #     """Wraps django deserialize with defaults for JSON
 #     and natural keys.
@@ -66,11 +69,21 @@ class JSONFile:
         self.file_archiver = FileArchiver(
             src_path=self.path, archive_path=self.archive_folder)
 
+    def __str__(self):
+        return os.path.join(self.path, self.name)
+
+    def __repr__(self):
+        return f'{self.__class__.__name__}(name={self.name})'
+
     def read(self):
         """Returns the file contents as JSON text.
         """
-        with open(os.path.join(self.path, self.name)) as f:
-            json_text = f.read()
+        try:
+            with open(os.path.join(self.path, self.name)) as f:
+                json_text = f.read()
+        except FileNotFoundError as e:
+            raise JSONFileError(
+                f'{self.__class__.__name__} FileNotFoundError. Got {e}')
         return json_text
 
     def archive(self):
@@ -273,8 +286,12 @@ class TransactionImporter:
         """
         batch = self.batch_cls()
         try:
+            deserialized_txs = self.json_file.deserialized_objects
+        except JSONFileError as e:
+            raise TransactionImporterError(e)
+        try:
             batch.populate(
-                deserialized_txs=self.json_file.deserialized_objects,
+                deserialized_txs=deserialized_txs,
                 filename=self.json_file.name)
         except BatchDeserializationError as e:
             raise TransactionImporterError(

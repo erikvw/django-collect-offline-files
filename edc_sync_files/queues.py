@@ -40,7 +40,7 @@ class TransactionFileQueue(Queue):
         try:
             batch = tx_importer.import_batch()
         except TransactionImporterError as e:
-            logger.error(e)
+            logger.error(f'TransactionImporterError. Got {e}')
         else:
             batch_queue.put(batch.batch_id)
             self.task_done()
@@ -65,7 +65,7 @@ class BatchQueue(Queue):
             tx_deserializer.deserialize_transactions(
                 transactions=batch.saved_transactions)
         except TransactionDeserializerError as e:
-            logger.error(e)
+            logger.error(f'TransactionDeserializerError. Got {e}')
         else:
             batch.close()
             self.task_done()
