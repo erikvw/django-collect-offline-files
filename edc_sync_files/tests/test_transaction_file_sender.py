@@ -6,6 +6,7 @@ from django.test import TestCase, tag
 
 from ..models import ExportedTransactionFileHistory
 from ..transaction import TransactionFileSender
+from edc_sync_files.transaction.transaction_file_sender import TransactionFileSenderError
 
 
 class TestTransactionFileSender(TestCase):
@@ -82,3 +83,13 @@ class TestTransactionFileSender(TestCase):
         except ExportedTransactionFileHistory.DoesNotExist:
             self.fail(
                 'ExportedTransactionFileHistory.DoesNotExist unexpectedly raised')
+
+    @tag('user')
+    def test_transaction_file_sender_username(self):
+        app_config = django_apps.get_app_config('edc_sync_files')
+        tx_file_sender = TransactionFileSender(
+            history_model=ExportedTransactionFileHistory,
+            update_history_model=False, username=app_config.user)
+        _, src = tempfile.mkstemp(text=True, dir=app_config.source_folder)
+        src_filename = os.path.basename(src)
+        self.assertRaises(TransactionFileSenderError, tx_file_sender.send, filenames=[src_filename])
