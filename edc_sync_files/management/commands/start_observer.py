@@ -1,3 +1,4 @@
+from datetime import datetime
 import sys
 
 from django.core.management.base import BaseCommand
@@ -16,8 +17,11 @@ class Command(BaseCommand):
         tx_file_queue.reload()
         batch_queue.reload()
         observer = Observer()
+        dt = datetime.now().strftime('%Y-%m-%d %H:%M')
+        sys.stdout.write(f'\nStarted {dt}\n')
+        sys.stdout.write('\npress CTRL-C to stop.\n\n')
         observer.start(
             event_handlers=[
                 TransactionFileEventHandler(),
                 TransactionBatchEventHandler()])
-        sys.stdout.write('\npress CTRL-C to stop.\n\n')
+        sys.stdout.flush()
