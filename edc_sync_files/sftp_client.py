@@ -4,9 +4,7 @@ import sys
 
 from paramiko.util import ClosingContextManager
 
-logging.basicConfig(format='%(asctime)s %(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p')
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('edc_sync_files')
 
 
 class SFTPClientError(Exception):

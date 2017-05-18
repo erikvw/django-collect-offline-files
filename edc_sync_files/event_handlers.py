@@ -1,4 +1,5 @@
 import os
+import sys
 
 from django.apps import apps as django_apps
 from watchdog.events import PatternMatchingEventHandler
@@ -17,8 +18,10 @@ class TransactionFileEventHandler(PatternMatchingEventHandler):
         app_config = django_apps.get_app_config('edc_sync_files')
         patterns = patterns or transaction_filename_pattern
         super().__init__(patterns=patterns, ignore_directories=True)
-        self.verbose = verbose
         self.path = path or app_config.archive_folder
+        if verbose:
+            sys.stdout.write(f'archive path: {self.path}\n')
+            sys.stdout.flush()
 
     def on_created(self, event):
         self.process(event)
@@ -45,6 +48,9 @@ class TransactionBatchEventHandler(PatternMatchingEventHandler):
         super().__init__(patterns=patterns, ignore_directories=True)
         self.verbose = verbose
         self.path = path or app_config.archive_folder
+        if verbose:
+            sys.stdout.write(f'archive path: {self.path}\n')
+            sys.stdout.flush()
 
     def on_created(self, event):
         self.process(event)

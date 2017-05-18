@@ -14,11 +14,7 @@ from .transaction import TransactionImporter, TransactionImporterError
 from .patterns import transaction_filename_pattern
 
 app_config = django_apps.get_app_config('edc_sync_files')
-
-logging.basicConfig(
-    filename=os.path.join(app_config.log_folder, 'observer.log'),
-    level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('edc_sync_files')
 
 
 class TransactionFileQueue(Queue):

@@ -17,9 +17,6 @@ class Command(BaseCommand):
         tx_file_queue.reload()
         batch_queue.reload()
         observer = Observer()
-        dt = datetime.now().strftime('%Y-%m-%d %H:%M')
-        sys.stdout.write(f'\nStarted {dt}\n')
-        sys.stdout.write('\npress CTRL-C to stop.\n\n')
         observer.start(
             event_handlers=[
                 TransactionFileEventHandler(),
