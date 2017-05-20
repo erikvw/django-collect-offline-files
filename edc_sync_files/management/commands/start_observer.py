@@ -12,7 +12,6 @@ from django.core.management.base import BaseCommand
 from ...event_handlers import DeserializeTransactionsFileHandler
 from ...event_handlers import IncomingTransactionsFileHandler
 from ...models import ImportedTransactionFileHistory
-# from ...patterns import transaction_filename_regexes
 
 
 app_config = django_apps.get_app_config('edc_sync_files')
@@ -41,19 +40,15 @@ class Command(BaseCommand):
         observer.schedule(deserialize_tx_handler, app_config.pending_folder)
         observer.start()
         dt = datetime.now().strftime('%Y-%m-%d %H:%M')
-        sys.stdout.write(f'\nStarted {dt}\n')
-        while not incoming_tx_handler.queue.empty():
-            sys.stdout.write(
-                f' * file queue {incoming_tx_handler.queue.qsize()}   \r')
-            incoming_tx_handler.queue.next_task()
-        sys.stdout.write(
-            f' * file queue {incoming_tx_handler.queue.qsize()}   \n')
-        sys.stdout.write(
-            f' * batch queue {incoming_tx_handler.queue.qsize()}   \n')
+        sys.stdout.write(f'\nObserver started {dt}\n')
+        sys.stdout.write(f'\nclearing queues ...\n')
+        self.clear_queue(incoming_tx_handler)
+        self.clear_queue(deserialize_tx_handler)
+        sys.stdout.write(f'done clearing queues.\n')
         sys.stdout.write('\npress CTRL-C to stop.\n\n')
-        logger.info('Started')
-        tempfile.mkstemp(suffix='.json', prefix='test_',
-                         dir=app_config.incoming_folder)
+        logger.info('Observer started')
+        # tempfile.mkstemp(suffix='.json', prefix='test_',
+        #                 dir=app_config.incoming_folder)
         try:
             while True:
                 time.sleep(1)
@@ -64,3 +59,11 @@ class Command(BaseCommand):
         logger.info('Stopped')
         dt = datetime.now().strftime('%Y-%m-%d %H:%M')
         sys.stdout.write(f'\nStopped {dt}\n')
+
+    def clear_queue(self, queue):
+        while not queue.queue.empty():
+            sys.stdout.write(
+                f' * {queue.__class__.__name__} queue {queue.queue.qsize()}   \r')
+            queue.queue.next_task()
+        sys.stdout.write(
+            f' * {queue.__class__.__name__} queue {queue.queue.qsize()}   \n')

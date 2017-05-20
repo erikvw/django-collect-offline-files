@@ -126,14 +126,17 @@ class BatchHistory:
             raise BatchHistoryError('Invalid producer. Got None')
         if self.exists(batch_id=batch_id):
             raise IntegrityError('Duplicate batch_id')
-        obj = self.model(
-            filename=filename,
-            batch_id=batch_id,
-            prev_batch_id=prev_batch_id,
-            producer=producer,
-            total=count)
-        obj.transaction_file.name = filename
-        obj.save()
+        try:
+            obj = self.model.objects.get(batch_id=batch_id)
+        except self.model.DoesNotExist:
+            obj = self.model(
+                filename=filename,
+                batch_id=batch_id,
+                prev_batch_id=prev_batch_id,
+                producer=producer,
+                total=count)
+            obj.transaction_file.name = filename
+            obj.save()
         return obj
 
 
@@ -284,6 +287,10 @@ class TransactionImporter:
         except BatchDeserializationError as e:
             raise TransactionImporterError(
                 f'BatchDeserializationError. \'{batch}\'. Got {e}')
+        except BatchAlreadyProcessed as e:
+            pass
+#             raise TransactionImporterError(
+#                 f'BatchAlreadyProcessed. \'{batch}\'. Got {e}')
         batch.save()
         batch.update_history()
         return batch

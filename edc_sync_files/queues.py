@@ -15,6 +15,10 @@ app_config = django_apps.get_app_config('edc_sync_files')
 logger = logging.getLogger('edc_sync_files')
 
 
+class DeserializeTransactionsFileQueueError(Exception):
+    pass
+
+
 class BaseFileQueue(Queue):
 
     file_archiver_cls = FileArchiver
@@ -46,9 +50,9 @@ class IncomingTransactionsFileQueue(BaseFileQueue):
 
     tx_importer_cls = TransactionImporter
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.tx_importer = self.tx_importer_cls(import_path=self.src_path)
+    def __init__(self, src_path=None, **kwargs):
+        super().__init__(src_path=src_path, **kwargs)
+        self.tx_importer = self.tx_importer_cls(import_path=src_path)
 
     def next_task(self):
         """Calls import_batch for the next filename in the queue
@@ -56,7 +60,8 @@ class IncomingTransactionsFileQueue(BaseFileQueue):
 
         The archive folder is typically the folder for the deserializer queue.
         """
-        filename = self.get()
+        p = self.get()
+        filename = os.path.basename(p)
 
         try:
             self.tx_importer.import_batch(filename=filename)
@@ -101,8 +106,14 @@ class DeserializeTransactionsFileQueue(BaseFileQueue):
     def get_batch(self, filename=None):
         """Returns a batch instance given the filename.
         """
-        history = self.history_model.objects.get(
-            filename=filename, consumed=False)
+        try:
+            history = self.history_model.objects.get(filename=filename)
+        except self.history_model.DoesNotExist as e:
+            raise DeserializeTransactionsFileQueueError(
+                f'Batch not found for \'{filename}\'. Got {e}.')
+        if history.consumed:
+            raise DeserializeTransactionsFileQueueError(
+                f'Batch closed for \'{filename}\'. Got consumed=True')
         batch = self.batch_cls()
         batch.batch_id = history.batch_id
         batch.filename = history.filename

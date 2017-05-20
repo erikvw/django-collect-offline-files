@@ -5,6 +5,10 @@ class FileArchiverError(Exception):
     pass
 
 
+class FileXArchiverError(Exception):
+    pass
+
+
 class FileArchiver:
 
     def __init__(self, src_path=None, dst_path=None, **kwargs):
