@@ -2,7 +2,6 @@ import os
 
 from watchdog.events import RegexMatchingEventHandler
 
-from .patterns import transaction_filename_regexes
 from .queues import IncomingTransactionsFileQueue, DeserializeTransactionsFileQueue
 
 
@@ -24,11 +23,11 @@ class BaseFileHandler(Base):
 
     def __init__(self, regexes=None, src_path=None, dst_path=None, **kwargs):
         super().__init__(regexes=regexes, **kwargs)
-        regexes = regexes or transaction_filename_regexes
+        regexes = regexes
         self.src_path = src_path
         self.dst_path = dst_path
         self.queue = self.queue_cls(
-            src_path=src_path, dst_path=dst_path, **kwargs)
+            regexes=regexes, src_path=src_path, dst_path=dst_path, **kwargs)
 
     def on_created(self, event):
         self.process(event)
