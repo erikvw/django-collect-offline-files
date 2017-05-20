@@ -1,7 +1,4 @@
 import os
-import shutil
-
-from django.apps import apps as django_apps
 
 
 class FileArchiverError(Exception):
@@ -10,25 +7,28 @@ class FileArchiverError(Exception):
 
 class FileArchiver:
 
-    def __init__(self, src_path=None, archive_path=None, **kwargs):
-        app_config = django_apps.get_app_config('edc_sync_files')
-        self.src_path = src_path or app_config.source_folder
-        self.archive_path = archive_path  # or app_config.archive_folder
+    def __init__(self, src_path=None, dst_path=None, **kwargs):
+        self.src_path = src_path
+        self.dst_path = dst_path
         try:
             if not os.path.exists(self.src_path):
                 raise FileArchiverError(
                     f'Source path does not exist. Got {self.src_path}')
-            if not os.path.exists(self.archive_path):
-                raise FileArchiverError(
-                    f'Archive path does not exist. Got {self.archive_path}')
         except TypeError as e:
             raise FileArchiverError(
-                f'Either source or archive path not defined. Got {e}')
-        if self.src_path == self.archive_path:
+                f'Source path does not exist. src_path={self.src_path}. Got {e}')
+        try:
+            if not os.path.exists(self.dst_path):
+                raise FileArchiverError(
+                    f'Destination path does not exist. Got {self.dst_path}')
+        except TypeError as e:
             raise FileArchiverError(
-                f'Source folder same as archive folder!. Got {self.src_path}')
+                f'Destination path does not exist. dst_path={self.dst_path}. Got {e}')
+        if self.src_path == self.dst_path:
+            raise FileArchiverError(
+                f'Source folder same as destination folder!. Got {self.src_path}')
 
     def archive(self, filename):
-        shutil.move(
+        os.rename(
             os.path.join(self.src_path, filename),
-            os.path.join(self.archive_path, filename))
+            os.path.join(self.dst_path, filename))

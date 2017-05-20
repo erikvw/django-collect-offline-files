@@ -2,7 +2,6 @@ import sys
 
 from django.core.management.base import BaseCommand
 
-from ...file_transfer import SendTransactionFile
 from ...transaction import TransactionExporter
 
 

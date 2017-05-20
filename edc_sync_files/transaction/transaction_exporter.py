@@ -34,6 +34,10 @@ class TransactionExporterError(Exception):
     pass
 
 
+class JSONDumpFileError(Exception):
+    pass
+
+
 def serialize(objects=None):
     return serializers.serialize(
         'json', objects,
@@ -41,7 +45,7 @@ def serialize(objects=None):
         use_natural_primary_keys=False)
 
 
-class JSONFile:
+class JSONDumpFile:
     def __init__(self, batch=None, path=None, **kwargs):
         self.batch = batch
         self.name = self.batch.filename
@@ -54,8 +58,12 @@ class JSONFile:
             with open(os.path.join(self.path, self.batch.filename), 'w') as f:
                 f.write(self.json_txt)
         except IOError as e:
-            raise TransactionExporterError(
-                f'Unable to create export file. Got \'{str(e)}\'')
+            raise JSONDumpFileError(
+                f'Unable to write to file. Got \'{str(e)}\'')
+        except TypeError as e:
+            raise JSONDumpFileError(
+                f'Unable to open/find file. path={self.path}, '
+                f'filename={self.batch.filename}. Got \'{str(e)}\'')
 
 
 class ExportBatch:
@@ -149,14 +157,13 @@ class TransactionExporter:
     and update the export `History` model.
     """
 
+    batch_cls = ExportBatch
+    json_file_cls = JSONDumpFile
     model = OutgoingTransaction
     history_model = ExportedTransactionFileHistory
 
     def __init__(self, export_path=None, using=None, **kwargs):
-        app_config = django_apps.get_app_config('edc_sync_files')
-        self.batch_cls = ExportBatch
-        self.json_file_cls = JSONFile
-        self.path = export_path or app_config.outgoing_folder
+        self.path = export_path
         self.serialize = serialize
         self.using = using
 
@@ -166,8 +173,11 @@ class TransactionExporter:
         batch = self.batch_cls(
             model=self.model, history_model=self.history_model, using=self.using)
         if batch.items:
-            json_file = self.json_file_cls(batch=batch, path=self.path)
-            json_file.write()
+            try:
+                json_file = self.json_file_cls(batch=batch, path=self.path)
+                json_file.write()
+            except JSONDumpFileError as e:
+                raise TransactionExporterError(e)
             batch.close()
             return batch
         return None

@@ -23,8 +23,9 @@ class Command(BaseCommand):
             for filename in pending_files:
                 if re.match(transaction_filename_pattern, filename):
                     sys.stdout.write('Importing: {}\r'.format(filename))
-                    tx_importer = TransactionImporter(filename=filename)
-                    tx_importer.import_batch()
+                    tx_importer = TransactionImporter(
+                        import_path=app_config.incoming_folder)
+                    tx_importer.import_batch(filename=filename)
                     sys.stdout.write('Importing: {}. Done.\n'.format(filename))
         else:
             sys.stdout.write('No transaction files to import')

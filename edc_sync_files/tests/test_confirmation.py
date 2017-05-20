@@ -1,3 +1,6 @@
+import os
+import tempfile
+
 from django.test import TestCase, tag
 
 from edc_base.utils import get_utcnow
@@ -15,7 +18,11 @@ class TestConfirmation(TestCase):
     def setUp(self):
         self.using = 'client'
         TestModel.objects.using(self.using).create(f1='f1')
-        tx_exporter = TransactionExporter(using=self.using)
+        export_path = os.path.join(tempfile.gettempdir(), 'export')
+        if not os.path.exists(export_path):
+            os.mkdir(export_path)
+        tx_exporter = TransactionExporter(
+            export_path=export_path, using=self.using)
         batch = self.history = tx_exporter.export_batch()
         self.history = batch.history
 

@@ -15,36 +15,38 @@ class TestFileArchiver(TestCase):
 
     def test_custom_paths_same(self):
         src_path = tempfile.gettempdir()
-        archive_path = tempfile.gettempdir()
+        dst_path = tempfile.gettempdir()
         self.assertRaises(
-            FileArchiverError, FileArchiver, src_path=src_path, archive_path=archive_path)
+            FileArchiverError, FileArchiver, src_path=src_path, dst_path=dst_path)
 
     def test_custom_paths_do_not_exist(self):
         src_path = tempfile.gettempdir()
-        archive_path = os.path.join(tempfile.gettempdir(), 'blah1')
+        dst_path = os.path.join(tempfile.gettempdir(), 'blah1')
         self.assertRaises(
-            FileArchiverError, FileArchiver, src_path=src_path, archive_path=archive_path)
+            FileArchiverError, FileArchiver, src_path=src_path, dst_path=dst_path)
         src_path = os.path.join(tempfile.gettempdir(), 'blah1')
-        archive_path = tempfile.gettempdir()
+        dst_path = tempfile.gettempdir()
         self.assertRaises(
-            FileArchiverError, FileArchiver, src_path=src_path, archive_path=archive_path)
+            FileArchiverError, FileArchiver, src_path=src_path, dst_path=dst_path)
 
     def test_custom_paths_exist(self):
         src_path = tempfile.gettempdir()
-        archive_path = os.path.join(tempfile.gettempdir(), 'blah')
-        if not os.path.exists(archive_path):
-            os.mkdir(archive_path)
+        dst_path = os.path.join(tempfile.gettempdir(), 'blah')
+        if not os.path.exists(dst_path):
+            os.mkdir(dst_path)
         try:
-            FileArchiver(src_path=src_path, archive_path=archive_path)
+            FileArchiver(src_path=src_path, dst_path=dst_path)
         except FileArchiverError:
             self.fail('FileArchiverError unexpectedly raises')
-        os.rmdir(archive_path)
+        os.rmdir(dst_path)
 
-    def test_archive_file(self):
+    def test_archive_file_with_app_config_folders(self):
         app_config = django_apps.get_app_config('edc_sync_files')
-        file_archiver = FileArchiver(archive_path=app_config.archive_folder)
+        file_archiver = FileArchiver(
+            src_path=app_config.outgoing_folder,
+            dst_path=app_config.archive_folder)
         _, p = tempfile.mkstemp(dir=file_archiver.src_path)
         filename = os.path.basename(p)
         file_archiver.archive(filename)
         self.assertTrue(os.path.exists(
-            os.path.join(file_archiver.archive_path, filename)))
+            os.path.join(file_archiver.dst_path, filename)))

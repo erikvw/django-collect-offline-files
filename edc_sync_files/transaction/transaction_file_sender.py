@@ -1,5 +1,3 @@
-from django.apps import apps as django_apps
-
 from edc_base.utils import get_utcnow
 
 from ..ssh_client import SSHClient, SSHClientError
@@ -13,32 +11,26 @@ class TransactionFileSenderError(Exception):
 
 class TransactionFileSender:
 
-    def __init__(self, history_model=None, using=None, update_history_model=None, **kwargs):
-        app_config = django_apps.get_app_config('edc_sync_files')
+    def __init__(self, remote_host=None, src_path=None, dst_path=None, archive_path=None,
+                 history_model=None, using=None, update_history_model=None, **kwargs):
         self.using = using
         self.update_history_model = True if update_history_model is None else update_history_model
-        kwargs.update(remote_host=kwargs.get(
-            'remote_host', app_config.remote_host))
-        kwargs.update(src_path=kwargs.get(
-            'src_path', app_config.source_folder))
-        kwargs.update(dst_path=kwargs.get(
-            'dst_path', app_config.destination_folder))
-        kwargs.update(dst_tmp_path=kwargs.get(
-            'dst_tmp_path', app_config.destination_tmp_folder))
-        self.file_archiver = FileArchiver(**kwargs)
+        self.file_archiver = FileArchiver(
+            src_path=src_path, dst_path=archive_path)
         self.history_model = history_model
-        self.ssh_client = SSHClient(**kwargs)
-        self.sftp_client = SFTPClient(**kwargs)
-        self.src_path = self.sftp_client.src_path
-        self.dst_path = self.sftp_client.dst_path
+        self.ssh_client = SSHClient(remote_host=remote_host, **kwargs)
+        self.sftp_client = SFTPClient(
+            src_path=src_path, dst_path=dst_path, **kwargs)
 
     def send(self, filenames=None):
+        """Sends the file to the remote host and archives the sent file locally.
+        """
         try:
             with self.ssh_client.connect() as ssh_conn:
                 with self.sftp_client.connect(ssh_conn) as sftp_conn:
                     for filename in filenames:
                         sftp_conn.copy(filename=filename)
-                        self.file_archiver.archive(filename=filename)
+                        self.archive(filename=filename)
                         if self.update_history_model:
                             self.update_history(filename=filename)
         except SSHClientError as e:
@@ -58,3 +50,6 @@ class TransactionFileSender:
             obj.sent = True
             obj.sent_datetime = get_utcnow()
             obj.save()
+
+    def archive(self, filename):
+        self.file_archiver.archive(filename=filename)

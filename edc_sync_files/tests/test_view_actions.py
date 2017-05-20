@@ -10,6 +10,7 @@ from ..action_handler import ActionHandler, ActionHandlerError
 from ..constants import PENDING_FILES, EXPORT_BATCH, SEND_FILES, CONFIRM_BATCH
 from ..models import ExportedTransactionFileHistory
 from .models import TestModel
+import tempfile
 
 fake = Faker()
 
@@ -30,16 +31,22 @@ class TestActionHandler(TestCase):
 
     def test_invalid_action(self):
         kwargs = dict(
-            using='client', src_path=app_config.source_folder,
-            archive_path=app_config.archive_folder)
+            using='client',
+            src_path=app_config.outgoing_folder,
+            dst_path=app_config.incoming_folder,
+            archive_path=app_config.archive_folder,
+            remote_host='localhost')
         action_handler = ActionHandler(**kwargs)
         self.assertRaises(
             ActionHandlerError, action_handler.action, label='blahblah')
 
     def test_export_batch(self):
         kwargs = dict(
-            using='client', src_path=app_config.source_folder,
-            archive_path=app_config.archive_folder)
+            using='client',
+            src_path=app_config.outgoing_folder,
+            dst_path=app_config.incoming_folder,
+            archive_path=app_config.archive_folder,
+            remote_host='localhost')
         action_handler = ActionHandler(**kwargs)
         action_handler.action(label=EXPORT_BATCH)
         self.assertFalse(action_handler.data.get('errmsg'))
@@ -49,18 +56,26 @@ class TestActionHandler(TestCase):
     def test_export_batch_error(self):
         """Asserts raises error if export fails.
         """
+        bad_src_path = os.path.join(tempfile.gettempdir(), 'bad_src_path')
         kwargs = dict(
-            using='client', src_path=app_config.source_folder,
-            archive_path=app_config.archive_folder)
-        action_handler = ActionHandler(export_path='blah', **kwargs)
+            using='client',
+            src_path=app_config.outgoing_folder,
+            dst_path=app_config.incoming_folder,
+            archive_path=app_config.archive_folder,
+            remote_host='localhost')
+        action_handler = ActionHandler(**kwargs)
+        action_handler.tx_exporter.path = bad_src_path
         self.assertRaises(
             ActionHandlerError,
             action_handler.action, label=EXPORT_BATCH)
 
     def test_send_files(self):
         kwargs = dict(
-            using='client', src_path=app_config.source_folder,
-            archive_path=app_config.archive_folder)
+            using='client',
+            src_path=app_config.outgoing_folder,
+            dst_path=app_config.incoming_folder,
+            archive_path=app_config.archive_folder,
+            remote_host='localhost')
         action_handler = ActionHandler(**kwargs)
         action_handler.action(label=EXPORT_BATCH)
         action_handler = ActionHandler(**kwargs)
@@ -71,8 +86,11 @@ class TestActionHandler(TestCase):
         """Asserts raises error if send fails.
         """
         kwargs = dict(
-            using='client', src_path=app_config.source_folder,
-            archive_path=app_config.archive_folder)
+            using='client',
+            src_path=app_config.outgoing_folder,
+            dst_path=app_config.incoming_folder,
+            archive_path=app_config.archive_folder,
+            remote_host='localhost')
         action_handler = ActionHandler(**kwargs)
         action_handler.action(label=EXPORT_BATCH)
         action_handler = ActionHandler(trusted_host=False, **kwargs)
@@ -83,8 +101,11 @@ class TestActionHandler(TestCase):
         """Asserts raises error if send fails on invalid user.
         """
         kwargs = dict(
-            using='client', src_path=app_config.source_folder,
-            archive_path=app_config.archive_folder)
+            using='client',
+            src_path=app_config.outgoing_folder,
+            dst_path=app_config.incoming_folder,
+            archive_path=app_config.archive_folder,
+            remote_host='localhost')
         action_handler = ActionHandler(**kwargs)
         action_handler.action(label=EXPORT_BATCH)
         action_handler = ActionHandler(
@@ -98,15 +119,18 @@ class TestActionHandler(TestCase):
 
     def test_send_and_archive_files(self):
         kwargs = dict(
-            using='client', src_path=app_config.source_folder,
-            archive_path=app_config.archive_folder)
+            using='client',
+            src_path=app_config.outgoing_folder,
+            dst_path=app_config.incoming_folder,
+            archive_path=app_config.archive_folder,
+            remote_host='localhost')
         action_handler = ActionHandler(**kwargs)
         action_handler.action(label=EXPORT_BATCH)
         action_handler = ActionHandler(**kwargs)
         action_handler.action(label=SEND_FILES)
         for filename in action_handler.data.get('last_sent_files'):
             self.assertFalse(os.path.exists(
-                os.path.join(app_config.source_folder, filename)))
+                os.path.join(app_config.outgoing_folder, filename)))
         for filename in action_handler.data.get('last_archived_files'):
             self.assertTrue(os.path.exists(
                 os.path.join(app_config.archive_folder, filename)))
@@ -114,8 +138,11 @@ class TestActionHandler(TestCase):
 
     def test_pending_files(self):
         kwargs = dict(
-            using='client', src_path=app_config.source_folder,
-            archive_path=app_config.archive_folder)
+            using='client',
+            src_path=app_config.outgoing_folder,
+            dst_path=app_config.incoming_folder,
+            archive_path=app_config.archive_folder,
+            remote_host='localhost')
         for _ in range(0, 3):
             action_handler = ActionHandler(**kwargs)
             action_handler.action(label=EXPORT_BATCH)
@@ -127,8 +154,11 @@ class TestActionHandler(TestCase):
 
     def test_pending_count(self):
         kwargs = dict(
-            using='client', src_path=app_config.source_folder,
-            archive_path=app_config.archive_folder)
+            using='client',
+            src_path=app_config.outgoing_folder,
+            dst_path=app_config.incoming_folder,
+            archive_path=app_config.archive_folder,
+            remote_host='localhost')
         for _ in range(0, 3):
             action_handler = ActionHandler(**kwargs)
             action_handler.action(label=EXPORT_BATCH)
@@ -140,8 +170,11 @@ class TestActionHandler(TestCase):
 
     def test_pending_empty_after_sends_all(self):
         kwargs = dict(
-            using='client', src_path=app_config.source_folder,
-            archive_path=app_config.archive_folder)
+            using='client',
+            src_path=app_config.outgoing_folder,
+            dst_path=app_config.incoming_folder,
+            archive_path=app_config.archive_folder,
+            remote_host='localhost')
         for _ in range(0, 3):
             action_handler = ActionHandler(**kwargs)
             action_handler.action(label=EXPORT_BATCH)
@@ -154,8 +187,11 @@ class TestActionHandler(TestCase):
 
     def test_confirm_not_sent_raises(self):
         kwargs = dict(
-            using='client', src_path=app_config.source_folder,
-            archive_path=app_config.archive_folder)
+            using='client',
+            src_path=app_config.outgoing_folder,
+            dst_path=app_config.incoming_folder,
+            archive_path=app_config.archive_folder,
+            remote_host='localhost')
         for _ in range(0, 3):
             action_handler = ActionHandler(**kwargs)
             action_handler.action(label=EXPORT_BATCH)
@@ -167,8 +203,11 @@ class TestActionHandler(TestCase):
 
     def test_confirm(self):
         kwargs = dict(
-            using='client', src_path=app_config.source_folder,
-            archive_path=app_config.archive_folder)
+            using='client',
+            src_path=app_config.outgoing_folder,
+            dst_path=app_config.incoming_folder,
+            archive_path=app_config.archive_folder,
+            remote_host='localhost')
         for _ in range(0, 3):
             action_handler = ActionHandler(**kwargs)
             action_handler.action(label=EXPORT_BATCH)

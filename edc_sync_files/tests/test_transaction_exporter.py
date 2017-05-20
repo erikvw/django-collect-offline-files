@@ -8,39 +8,13 @@ from edc_sync.models import OutgoingTransaction
 
 from ..models import ExportedTransactionFileHistory
 from ..transaction import TransactionExporter, TransactionExporterError
+from ..transaction import TransactionExporterBatch
+from ..transaction.transaction_exporter import BatchAlreadyOpen, HistoryAlreadyExists
 from .models import TestModel
-from ..transaction.transaction_exporter import (
-    ExportBatch, BatchAlreadyOpen, HistoryAlreadyExists, JSONFile)
+import tempfile
 
 
 fake = Faker()
-
-
-@tag('jsonfile')
-class TestJSONFile(TestCase):
-
-    def setUp(self):
-        ExportedTransactionFileHistory.objects.using('client').all().delete()
-        OutgoingTransaction.objects.using('client').all().delete()
-        TestModel.objects.using('client').all().delete()
-        TestModel.objects.using('client').create(f1=fake.name())
-        TestModel.objects.using('client').create(f1=fake.name())
-
-    def test_file(self):
-        batch = ExportBatch(using='client')
-        JSONFile(batch=batch, path='/tmp')
-
-    def test_file_text(self):
-        batch = ExportBatch(using='client')
-        json_file = JSONFile(batch=batch, path='/tmp')
-        self.assertIsNotNone(json_file.json_txt)
-
-    def test_write_file_text(self):
-        batch = ExportBatch(using='client')
-        json_file = JSONFile(batch=batch, path='/tmp')
-        json_file.write()
-        self.assertTrue(os.path.exists(
-            os.path.join(json_file.path, json_file.name)))
 
 
 @tag('batch')
@@ -52,7 +26,7 @@ class TestExportBatch(TestCase):
         TestModel.objects.using('client').all().delete()
 
     def test_empty_batch(self):
-        batch = ExportBatch()
+        batch = TransactionExporterBatch()
         self.assertEqual(batch.count, 0)
         self.assertIsNone(batch.filename)
         self.assertIsNone(batch.batch_id)
@@ -61,25 +35,25 @@ class TestExportBatch(TestCase):
     def test_nonempty_batch(self):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        batch = ExportBatch(using='client')
+        batch = TransactionExporterBatch(using='client')
         self.assertGreater(batch.count, 0)
 
     def test_reopen_batch(self):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        batch = ExportBatch(using='client')
+        batch = TransactionExporterBatch(using='client')
         self.assertRaises(BatchAlreadyOpen, batch.open)
 
     def test_recreate_history(self):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        batch = ExportBatch(using='client')
+        batch = TransactionExporterBatch(using='client')
         self.assertRaises(HistoryAlreadyExists, batch.create_history)
 
     def test_batch_history(self):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        batch = ExportBatch(using='client')
+        batch = TransactionExporterBatch(using='client')
         self.assertEqual(batch.history.batch_id, batch.batch_id)
 
 
@@ -92,11 +66,16 @@ class TestTransactionExporter(TestCase):
         TestModel.objects.using('client').all().delete()
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
+        self.export_path = os.path.join(tempfile.gettempdir(), 'export')
+        if not os.path.exists(self.export_path):
+            os.mkdir(self.export_path)
 
     def test_export(self):
         """Assert exports pending transactions.
         """
-        tx_exporter = TransactionExporter(using='client')
+        tx_exporter = TransactionExporter(
+            export_path=self.export_path,
+            using='client')
         history = tx_exporter.export_batch()
         self.assertIsNotNone(history)
         outgoing_transactions = OutgoingTransaction.objects.using(
@@ -106,7 +85,9 @@ class TestTransactionExporter(TestCase):
     def test_export_none_pending(self):
         """Asserts can call export_batch even if no pending transactions exist.
         """
-        tx_exporter = TransactionExporter(using='client')
+        tx_exporter = TransactionExporter(
+            export_path=self.export_path,
+            using='client')
         history = tx_exporter.export_batch()
         self.assertIsNotNone(history)
         history = tx_exporter.export_batch()
@@ -115,7 +96,9 @@ class TestTransactionExporter(TestCase):
     def test_export_file(self):
         """Assert exports pending transactions creates file.
         """
-        tx_exporter = TransactionExporter(using='client')
+        tx_exporter = TransactionExporter(
+            export_path=self.export_path,
+            using='client')
         history = tx_exporter.export_batch()
         self.assertTrue(os.path.exists(os.path.join(
             tx_exporter.path, history.filename)))
@@ -131,7 +114,9 @@ class TestTransactionExporter(TestCase):
     def test_creates_history(self):
         """Assert exports pending transactions creates history.
         """
-        tx_exporter = TransactionExporter(using='client')
+        tx_exporter = TransactionExporter(
+            export_path=self.export_path,
+            using='client')
         tx_exporter.export_batch()
         self.assertGreater(tx_exporter.history_model.objects.using(
             'client').all().count(), 0)
@@ -139,7 +124,9 @@ class TestTransactionExporter(TestCase):
     def test_updates_history(self):
         """Assert exports pending transactions updates history.
         """
-        tx_exporter = TransactionExporter(using='client')
+        tx_exporter = TransactionExporter(
+            export_path=self.export_path,
+            using='client')
         batch = tx_exporter.export_batch()
         self.assertIsNotNone(batch.batch_id)
         self.assertIsNotNone(batch.history.prev_batch_id)
@@ -151,7 +138,9 @@ class TestTransactionExporter(TestCase):
     def test_matching_batch_id(self):
         """Assert assigns same batch_id to all exported transactions.
         """
-        tx_exporter = TransactionExporter(using='client')
+        tx_exporter = TransactionExporter(
+            export_path=self.export_path,
+            using='client')
         batch = tx_exporter.export_batch()
         outgoing_transactions = OutgoingTransaction.objects.using(
             'client').filter(is_consumed_server=True, batch_id=batch.batch_id)
@@ -169,13 +158,18 @@ class TestTransactionExporter2(TestCase):
         ExportedTransactionFileHistory.objects.using('client').all().delete()
         OutgoingTransaction.objects.using('client').all().delete()
         TestModel.objects.using('client').all().delete()
+        self.export_path = os.path.join(tempfile.gettempdir(), 'export')
+        if not os.path.exists(self.export_path):
+            os.mkdir(self.export_path)
 
     def test_first_prev_batch_id(self):
         """Assert sets prev batch id to batch id for first export batch.
         """
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        tx_exporter = TransactionExporter(using='client')
+        tx_exporter = TransactionExporter(
+            export_path=self.export_path,
+            using='client')
         history = tx_exporter.export_batch()
         for obj in OutgoingTransaction.objects.using(
                 'client').filter(batch_id=history.batch_id):
@@ -186,7 +180,9 @@ class TestTransactionExporter2(TestCase):
         """
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        tx_exporter = TransactionExporter(using='client')
+        tx_exporter = TransactionExporter(
+            export_path=self.export_path,
+            using='client')
         history = tx_exporter.export_batch()
         batch_id = history.batch_id
         TestModel.objects.using('client').create(f1=fake.name())
@@ -201,7 +197,9 @@ class TestTransactionExporter2(TestCase):
         otherwise to the previous batch id.
         """
         history = []
-        tx_exporter = TransactionExporter(using='client')
+        tx_exporter = TransactionExporter(
+            export_path=self.export_path,
+            using='client')
         for _ in range(0, 3):
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())

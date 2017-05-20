@@ -1,56 +1,34 @@
 import os
-import sys
 
-from django.apps import apps as django_apps
-from watchdog.events import PatternMatchingEventHandler
+from watchdog.events import RegexMatchingEventHandler
 
-from .patterns import transaction_filename_pattern
-from .queues import batch_queue, tx_file_queue
+from .patterns import transaction_filename_regexes
+from .queues import IncomingTransactionsFileQueue, DeserializeTransactionsFileQueue
 
 
 class EventHandlerError(Exception):
     pass
 
 
-class TransactionFileEventHandler(PatternMatchingEventHandler):
+class Base(RegexMatchingEventHandler):
 
-    def __init__(self, patterns=None, path=None, verbose=None):
-        app_config = django_apps.get_app_config('edc_sync_files')
-        patterns = patterns or transaction_filename_pattern
-        super().__init__(patterns=patterns, ignore_directories=True)
-        self.path = path or app_config.archive_folder
-        if verbose:
-            sys.stdout.write(f'archive path: {self.path}\n')
-            sys.stdout.flush()
-
-    def on_created(self, event):
-        self.process(event)
-
-    def on_moved(self, event):
-        self.process(event)
-
-    def process(self, event, **kwargs):
-        """Processes tasks in tx_file_queue.
-        """
-        tx_file_queue.put(os.path.basename(event.src_path))
-        while not tx_file_queue.empty():
-            tx_file_queue.next_task()
+    def __init__(self, regexes=None, **kwargs):
+        super().__init__(
+            **{k: v for k, v in kwargs.items() if k in [
+                'ignore_regexes', 'ignore_directories', 'case_sensitive']})
 
 
-class TransactionBatchEventHandler(PatternMatchingEventHandler):
+class BaseFileHandler(Base):
 
-    """Monitors the archive folder and processes on created.
-    """
+    queue_cls = None
 
-    def __init__(self, patterns=None, path=None, verbose=None):
-        app_config = django_apps.get_app_config('edc_sync_files')
-        patterns = patterns or transaction_filename_pattern
-        super().__init__(patterns=patterns, ignore_directories=True)
-        self.verbose = verbose
-        self.path = path or app_config.archive_folder
-        if verbose:
-            sys.stdout.write(f'archive path: {self.path}\n')
-            sys.stdout.flush()
+    def __init__(self, regexes=None, src_path=None, dst_path=None, **kwargs):
+        super().__init__(regexes=regexes, **kwargs)
+        regexes = regexes or transaction_filename_regexes
+        self.src_path = src_path
+        self.dst_path = dst_path
+        self.queue = self.queue_cls(
+            src_path=src_path, dst_path=dst_path, **kwargs)
 
     def on_created(self, event):
         self.process(event)
@@ -58,8 +36,19 @@ class TransactionBatchEventHandler(PatternMatchingEventHandler):
     def on_moved(self, event):
         self.process(event)
 
-    def process(self, event, **kwargs):
-        """Processes tasks in batch_queue.
+    def process(self, event):
+        """Put and process tasks in queue.
         """
-        while not batch_queue.empty():
-            batch_queue.next_task()
+        self.queue.put(os.path.basename(event.src_path))
+        while not self.queue.empty():
+            self.queue.next_task()
+
+
+class IncomingTransactionsFileHandler(BaseFileHandler):
+
+    queue_cls = IncomingTransactionsFileQueue
+
+
+class DeserializeTransactionsFileHandler(BaseFileHandler):
+
+    queue_cls = DeserializeTransactionsFileQueue

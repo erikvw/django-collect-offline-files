@@ -1,7 +1,12 @@
+from django.apps import apps as django_apps
+
 from .confirmation import Confirmation, ConfirmationError
 from .constants import EXPORT_BATCH, SEND_FILES, CONFIRM_BATCH, PENDING_FILES
 from .transaction import TransactionExporter, TransactionExporterError
 from .transaction import TransactionFileSenderError, TransactionFileSender
+
+
+app_config = django_apps.get_app_config('edc_sync_files')
 
 
 class ActionHandlerError(Exception):
@@ -13,12 +18,15 @@ class ActionHandler:
     def __init__(self, using=None, **kwargs):
         self.data = {}
         self.using = using
-        self.tx_exporter = TransactionExporter(using=self.using, **kwargs)
+        self.tx_exporter = TransactionExporter(
+            export_path=app_config.outgoing_folder,
+            using=self.using, **kwargs)
         self.history_model = self.tx_exporter.history_model
         self.confirmation = Confirmation(
             history_model=self.history_model, using=self.using)
         self.tx_file_sender = TransactionFileSender(
-            history_model=self.history_model, using=self.using, **kwargs)
+            history_model=self.history_model,
+            using=self.using, **kwargs)
         self.sent_history = self.tx_exporter.history_model.objects.using(
             self.using).filter(sent=True).order_by('-sent_datetime')
         self.recently_sent_filenames = [
@@ -50,14 +58,14 @@ class ActionHandler:
 
     def _export_batch(self):
         try:
-            history = self.tx_exporter.export_batch()
+            batch = self.tx_exporter.export_batch()
         except TransactionExporterError as e:
             raise ActionHandlerError(
                 f'Reraised TransactionExporterError. Got {e}')
         else:
-            if history:
-                self.data.update(batch_id=history.batch_id)
-                self.pending_filenames.append(history.filename)
+            if batch:
+                self.data.update(batch_id=batch.batch_id)
+                self.pending_filenames.append(batch.filename)
 
     def _send_files(self):
         try:

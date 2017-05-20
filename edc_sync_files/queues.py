@@ -1,6 +1,6 @@
-import re
 import logging
 import os
+import re
 
 from django.apps import apps as django_apps
 from queue import Queue
@@ -8,64 +8,86 @@ from queue import Queue
 from edc_sync.transaction_deserializer import TransactionDeserializer
 from edc_sync.transaction_deserializer import TransactionDeserializerError
 
-from .models import ImportedTransactionFileHistory
-from .transaction.transaction_importer import Batch
+from .transaction import TransactionImporterBatch, FileArchiver, FileArchiverError
 from .transaction import TransactionImporter, TransactionImporterError
-from .patterns import transaction_filename_pattern
 
 app_config = django_apps.get_app_config('edc_sync_files')
 logger = logging.getLogger('edc_sync_files')
 
 
-class TransactionFileQueue(Queue):
+class BaseFileQueue(Queue):
 
-    def __init__(self, path=None, patterns=None, **kwargs):
+    file_archiver_cls = FileArchiver
+
+    def __init__(self, regexes=None, src_path=None, dst_path=None, **kwargs):
         super().__init__(**kwargs)
-        self.path = path
-        self.patterns = patterns or transaction_filename_pattern
+        self.regexes = regexes
+        self.src_path = src_path
+        self.dst_path = dst_path
+        try:
+            self.file_archiver = self.file_archiver_cls(
+                src_path=src_path, dst_path=dst_path)
+        except FileArchiverError as e:
+            raise TransactionDeserializerError(e)
 
     def reload(self):
-        """Reloads filenames into the queue that match the pattern.
+        """Reloads /path/to/filenames into the queue that match the regexes.
         """
-        combined = "(" + ")|(".join(self.patterns) + ")"
-        for filename in os.listdir(self.path):
+        combined = "(" + ")|(".join(self.regexes) + ")"
+        for filename in os.listdir(self.src_path):
             if re.match(combined, filename):
-                self.put(filename)
+                self.put(os.path.join(self.src_path, filename))
+
+    def archive(self, filename=None):
+        self.file_archiver.archive(filename)
+
+
+class IncomingTransactionsFileQueue(BaseFileQueue):
+
+    tx_importer_cls = TransactionImporter
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.tx_importer = self.tx_importer_cls(import_path=self.src_path)
 
     def next_task(self):
-        """Calls import_batch for the next filename in the queue.
+        """Calls import_batch for the next filename in the queue
+        and "archives" the file.
+
+        The archive folder is typically the folder for the deserializer queue.
         """
         filename = self.get()
-        tx_importer = TransactionImporter(filename=filename, path=self.path)
+
         try:
-            batch = tx_importer.import_batch()
+            self.tx_importer.import_batch(filename=filename)
         except TransactionImporterError as e:
             logger.error(f'TransactionImporterError. Got {e}')
         else:
-            batch_queue.put(batch.batch_id)
+            self.archive(filename)
             self.task_done()
 
 
-class BatchQueue(Queue):
+class DeserializeTransactionsFileQueue(BaseFileQueue):
 
-    def __init__(self, history_model=None, **kwargs):
+    batch_cls = TransactionImporterBatch
+    tx_deserializer_cls = TransactionDeserializer
+
+    def __init__(self, history_model=None, allow_self=None, allow_any_role=None, **kwargs):
         super().__init__(**kwargs)
         self.history_model = history_model
-
-    def reload(self):
-        """Reloads batch_ids not yet deserialized into the queue
-        from the history model.
-        """
-        for obj in self.history_model.objects.filter(consumed=False).order_by('created'):
-            self.put(obj.batch_id)
+        self.allow_self = allow_self
+        self.allow_any_role = allow_any_role
 
     def next_task(self):
-        """Deserializes all transactions for this batch.
+        """Deserializes all transactions for this batch and
+        archives the file.
         """
-        batch_id = self.get()
-        batch = Batch()
-        batch.batch_id = batch_id
-        tx_deserializer = TransactionDeserializer()
+        p = self.get()
+        filename = os.path.basename(p)
+        batch = self.get_batch(filename)
+        tx_deserializer = self.tx_deserializer_cls(
+            allow_self=self.allow_self,
+            allow_any_role=self.allow_any_role)
         try:
             tx_deserializer.deserialize_transactions(
                 transactions=batch.saved_transactions)
@@ -73,8 +95,15 @@ class BatchQueue(Queue):
             logger.error(f'TransactionDeserializerError. Got {e}')
         else:
             batch.close()
+            self.archive(filename)
             self.task_done()
 
-
-batch_queue = BatchQueue(history_model=ImportedTransactionFileHistory)
-tx_file_queue = TransactionFileQueue(path=app_config.destination_folder)
+    def get_batch(self, filename=None):
+        """Returns a batch instance given the filename.
+        """
+        history = self.history_model.objects.get(
+            filename=filename, consumed=False)
+        batch = self.batch_cls()
+        batch.batch_id = history.batch_id
+        batch.filename = history.filename
+        return batch

@@ -1,6 +1,6 @@
+import json
 import os
 
-from django.apps import apps as django_apps
 from django.core.serializers.base import DeserializationError
 from django.db.utils import IntegrityError
 
@@ -9,7 +9,6 @@ from edc_sync.models import IncomingTransaction
 from edc_sync.transaction_deserializer import deserialize
 
 from ..models import ImportedTransactionFileHistory
-from .file_archiver import FileArchiver
 
 
 class TransactionImporterError(Exception):
@@ -47,27 +46,14 @@ class InvalidBatchSequence(Exception):
 class JSONFileError(Exception):
     pass
 
-# def deserialize(json_text=None):
-#     """Wraps django deserialize with defaults for JSON
-#     and natural keys.
-#     """
-#     return serializers.deserialize(
-#         "json", json_text,
-#         ensure_ascii=True,
-#         use_natural_foreign_keys=True,
-#         use_natural_primary_keys=False)
 
+class JSONLoadFile:
 
-class JSONFile:
-
-    def __init__(self, name=None, path=None, archive_folder=None, **kwargs):
+    def __init__(self, name=None, path=None, **kwargs):
         self._deserialized_objects = None
+        self.deserialize = deserialize
         self.name = name
         self.path = path
-        self.archive_folder = archive_folder
-        self.deserialize = deserialize
-        self.file_archiver = FileArchiver(
-            src_path=self.path, archive_path=self.archive_folder)
 
     def __str__(self):
         return os.path.join(self.path, self.name)
@@ -76,18 +62,22 @@ class JSONFile:
         return f'{self.__class__.__name__}(name={self.name})'
 
     def read(self):
-        """Returns the file contents as JSON text.
+        """Returns the file contents as validated JSON text.
         """
+        p = os.path.join(self.path, self.name)
         try:
-            with open(os.path.join(self.path, self.name)) as f:
+            with open(p) as f:
                 json_text = f.read()
         except FileNotFoundError as e:
             raise JSONFileError(
                 f'{self.__class__.__name__} FileNotFoundError. Got {e}')
+        try:
+            json.loads(json_text)
+        except json.JSONDecodeError as e:
+            raise JSONFileError(f'JSONDecodeError for {p}. Got {e}.')
+        except TypeError as e:
+            raise JSONFileError(f'TypeError for {p}. Got {e}.')
         return json_text
-
-    def archive(self):
-        self.file_archiver.archive(self.name)
 
     @property
     def deserialized_objects(self):
@@ -147,7 +137,7 @@ class BatchHistory:
         return obj
 
 
-class Batch:
+class ImportBatch:
 
     def __init__(self, **kwargs):
         self._valid_sequence = None
@@ -183,6 +173,8 @@ class Batch:
             for deserialized_tx in deserialized_txs:
                 self.objects.append(deserialized_tx.object)
         except DeserializationError as e:
+            raise BatchDeserializationError(e)
+        except JSONFileError as e:
             raise BatchDeserializationError(e)
 
     def peek(self, deserialized_tx):
@@ -268,35 +260,30 @@ class Batch:
 
 
 class TransactionImporter:
-    """Imports transactions from a file as incoming transaction and
-       archives the file.
+    """Imports transactions from a file as incoming transaction.
     """
+    batch_cls = ImportBatch
 
-    def __init__(self, filename=None, path=None, archive_folder=None, **kwargs):
-        app_config = django_apps.get_app_config('edc_sync_files')
-        self.path = path or app_config.outgoing_folder
-        self.archive_folder = archive_folder or app_config.archive_folder
-        self.json_file = JSONFile(
-            name=filename, path=self.path, archive_folder=self.archive_folder)
-        self.batch_cls = Batch
+    def __init__(self, import_path=None, **kwargs):
+        self.path = import_path
 
-    def import_batch(self):
+    def import_batch(self, filename):
         """Imports the batch of outgoing transactions into
         model IncomingTransaction.
         """
         batch = self.batch_cls()
+        json_file = JSONLoadFile(name=filename, path=self.path)
         try:
-            deserialized_txs = self.json_file.deserialized_objects
+            deserialized_txs = json_file.deserialized_objects
         except JSONFileError as e:
             raise TransactionImporterError(e)
         try:
             batch.populate(
                 deserialized_txs=deserialized_txs,
-                filename=self.json_file.name)
+                filename=json_file.name)
         except BatchDeserializationError as e:
             raise TransactionImporterError(
                 f'BatchDeserializationError. \'{batch}\'. Got {e}')
         batch.save()
         batch.update_history()
-        self.json_file.archive()
         return batch

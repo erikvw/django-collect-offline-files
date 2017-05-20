@@ -9,53 +9,25 @@ from django.test.utils import tag
 from edc_sync.models import OutgoingTransaction
 
 from ..models import ExportedTransactionFileHistory
-from ..transaction import TransactionImporter, TransactionExporter
+from ..transaction import TransactionImporter, TransactionExporter, TransactionImporterBatch
 from ..transaction.transaction_importer import (
-    JSONFile, deserialize, BatchHistory, BatchHistoryError, Batch,
+    deserialize, BatchHistory, BatchHistoryError,
     BatchError, BatchIsEmpty, InvalidBatchSequence)
 from .models import TestModel
+import tempfile
 
 fake = Faker()
 
 
-class TestJSONFile(TestCase):
-
-    def setUp(self):
-        TestModel.objects.using('client').create(f1=fake.name())
-        TestModel.objects.using('client').create(f1=fake.name())
-        tx_exporter = TransactionExporter(using='client')
-        history = tx_exporter.export_batch()
-        self.filename = history.filename
-        self.path = tx_exporter.path
-
-    def test_file(self):
-        json_file = JSONFile(
-            name=self.filename, path=self.path, archive_folder='/tmp')
-        json_text = json_file.read()
-        self.assertIsNotNone(json_text)
-
-    def test_deserialize_file(self):
-        json_file = JSONFile(
-            name=self.filename, path=self.path, archive_folder='/tmp')
-        self.assertGreater(
-            len([obj for obj in json_file.deserialized_objects]), 0)
-
-    def test_archive_file(self):
-        json_file = JSONFile(
-            name=self.filename, path=self.path, archive_folder='/tmp')
-        json_file.file_archiver.archive(self.filename)
-        path = os.path.join(json_file.path, json_file.name)
-        self.assertFalse(os.path.exists(path))
-        path = os.path.join(json_file.archive_folder, json_file.name)
-        self.assertTrue(os.path.exists(path))
-
-
+@tag('deserialize')
 class TestDeserializer(TestCase):
 
     def setUp(self):
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        tx_exporter = TransactionExporter(using='client')
+        tx_exporter = TransactionExporter(
+            export_path=tempfile.gettempdir(),
+            using='client')
         history = tx_exporter.export_batch()
         self.filename = history.filename
         self.path = tx_exporter.path
@@ -70,6 +42,7 @@ class TestDeserializer(TestCase):
             self.fail('StopIteration unexpectedly raised')
 
 
+@tag('batch_history')
 class TestBatchHistory(TestCase):
 
     def setUp(self):
@@ -132,19 +105,20 @@ class TestBatchHistory(TestCase):
             batch_id=self.options.get('batch_id')))
 
 
-class TestBatch(TestCase):
+@tag('batch')
+class TestImportBatch(TestCase):
 
     def test_batch_expects_objects(self):
-        batch = Batch()
+        batch = TransactionImporterBatch()
         self.assertRaises(BatchError, batch.populate,
                           deserialized_txs=[], filename='file')
 
     def test_batch_save_nothing(self):
-        batch = Batch()
+        batch = TransactionImporterBatch()
         self.assertRaises(BatchError, batch.save)
 
     def test_batch_update_history(self):
-        batch = Batch()
+        batch = TransactionImporterBatch()
         try:
             batch.update_history()
         except BatchIsEmpty:
@@ -153,30 +127,51 @@ class TestBatch(TestCase):
             self.fail('BatchIsEmpty unexpectedly not raised')
 
 
+@tag('importer')
 class TestTransactionImporter(TestCase):
 
     def setUp(self):
         TestModel.objects.using('client').all().delete()
         ExportedTransactionFileHistory.objects.using('client').all().delete()
         OutgoingTransaction.objects.using('client').all().delete()
+        self.export_path = os.path.join(tempfile.gettempdir(), 'export')
+        if not os.path.exists(self.export_path):
+            os.mkdir(self.export_path)
+        self.import_path = os.path.join(tempfile.gettempdir(), 'import')
+        if not os.path.exists(self.import_path):
+            os.mkdir(self.import_path)
+
+    def manually_move_export2import(self, filename):
+        os.rename(
+            os.path.join(self.export_path, filename),
+            os.path.join(self.import_path, filename))
 
     def test_export_and_import(self):
+        """Asserts exports a file and, after manually moving,
+        imports.
+        """
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        tx_exporter = TransactionExporter(using='client')
-        history = tx_exporter.export_batch()
-        tx_importer = TransactionImporter(filename=history.filename)
-        batch = tx_importer.import_batch()
+        tx_exporter = TransactionExporter(
+            export_path=self.export_path,
+            using='client')
+        batch = tx_exporter.export_batch()
+        self.manually_move_export2import(batch.filename)
+        tx_importer = TransactionImporter(import_path=self.import_path)
+        batch = tx_importer.import_batch(filename=batch.filename)
         self.assertIsNotNone(batch.batch_id)
 
     def test_export_and_import_many_in_order(self):
         for _ in range(0, 5):
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
-            tx_exporter = TransactionExporter(using='client')
-            history = tx_exporter.export_batch()
-            tx_importer = TransactionImporter(filename=history.filename)
-            batch = tx_importer.import_batch()
+            tx_exporter = TransactionExporter(
+                export_path=self.export_path,
+                using='client')
+            batch = tx_exporter.export_batch()
+            self.manually_move_export2import(batch.filename)
+            tx_importer = TransactionImporter(import_path=self.import_path)
+            batch = tx_importer.import_batch(filename=batch.filename)
             self.assertIsNotNone(batch.batch_id)
 
     def test_export_and_import_many_unordered(self):
@@ -186,8 +181,12 @@ class TestTransactionImporter(TestCase):
         for _ in range(0, 5):
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
-            tx_exporter = TransactionExporter(using='client')
-            history = tx_exporter.export_batch()
-            filenames.append(history.filename)
-        tx_importer = TransactionImporter(filename=filenames[3])
-        self.assertRaises(InvalidBatchSequence, tx_importer.import_batch)
+            tx_exporter = TransactionExporter(
+                export_path=self.export_path,
+                using='client')
+            batch = tx_exporter.export_batch()
+            self.manually_move_export2import(batch.filename)
+            filenames.append(batch.filename)
+        tx_importer = TransactionImporter(import_path=self.import_path)
+        self.assertRaises(InvalidBatchSequence,
+                          tx_importer.import_batch, filename=filenames[3])
