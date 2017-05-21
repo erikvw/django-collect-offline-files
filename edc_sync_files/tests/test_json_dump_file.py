@@ -7,8 +7,8 @@ from faker import Faker
 from edc_sync.models import OutgoingTransaction
 
 from ..models import ExportedTransactionFileHistory
-from .models import TestModel
 from ..transaction import TransactionExporterBatch, JSONDumpFile
+from .models import TestModel
 
 
 fake = Faker()

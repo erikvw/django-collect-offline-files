@@ -5,8 +5,7 @@ from django.apps import apps as django_apps
 from django.test import TestCase, tag
 
 from ..models import ExportedTransactionFileHistory
-from ..transaction import TransactionFileSender
-from edc_sync_files.transaction.transaction_file_sender import TransactionFileSenderError
+from ..transaction import TransactionFileSender, TransactionFileSenderError
 
 
 @tag('send')

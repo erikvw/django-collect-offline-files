@@ -1,10 +1,10 @@
 import os
+import tempfile
 
 from django.apps import apps as django_apps
 from django.test import TestCase, tag
 
 from ..transaction import FileArchiver, FileArchiverError
-import tempfile
 
 
 @tag('archive')

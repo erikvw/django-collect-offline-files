@@ -7,8 +7,6 @@ from django.test.utils import tag
 
 from edc_sync.models import OutgoingTransaction
 
-from ..event_handlers import IncomingTransactionsFileHandler
-from ..event_handlers import DeserializeTransactionsFileHandler
 from ..models import ImportedTransactionFileHistory, ExportedTransactionFileHistory
 from ..transaction import TransactionExporter, TransactionFileSender
 from .models import TestModel

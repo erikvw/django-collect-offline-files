@@ -34,9 +34,9 @@ class TransactionFileSender:
                         if self.update_history_model:
                             self.update_history(filename=filename)
         except SSHClientError as e:
-            raise TransactionFileSenderError(f'SSHClientError. Got {e}')
+            raise TransactionFileSenderError(e) from e
         except SFTPClientError as e:
-            raise TransactionFileSenderError(f'SFTPClientError. Got {e}')
+            raise TransactionFileSenderError(e) from e
         return filenames
 
     def update_history(self, filename=None):
@@ -45,7 +45,7 @@ class TransactionFileSender:
                 self.using).get(filename=filename)
         except self.history_model.DoesNotExist as e:
             raise TransactionFileSenderError(
-                f'History does not exist for file \'{filename}\'. Got {e}')
+                f'History does not exist for file \'{filename}\'. Got {e}') from e
         else:
             obj.sent = True
             obj.sent_datetime = get_utcnow()

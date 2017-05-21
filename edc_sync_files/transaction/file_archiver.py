@@ -1,3 +1,4 @@
+import logging
 import os
 
 
@@ -7,6 +8,9 @@ class FileArchiverError(Exception):
 
 class FileXArchiverError(Exception):
     pass
+
+
+logger = logging.getLogger('edc_sync_files')
 
 
 class FileArchiver:
@@ -32,7 +36,15 @@ class FileArchiver:
             raise FileArchiverError(
                 f'Source folder same as destination folder!. Got {self.src_path}')
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.src_path}, {self.dst_path})'
+
+    def __str__(self):
+        return f'{self.src_path}, {self.dst_path}'
+
     def archive(self, filename):
         os.rename(
             os.path.join(self.src_path, filename),
             os.path.join(self.dst_path, filename))
+        assert not os.path.exists(os.path.join(self.src_path, filename))
+        # logger.info(f'{self}, {filename}')

@@ -19,29 +19,44 @@ class TestConnector(TestCase):
         self.assertFalse(ssh_client.connected)
 
     def test_username(self):
-        options = dict(remote_host='127.0.0.1',
+        remote_host = '127.0.0.1'
+        options = dict(remote_host=remote_host,
                        trusted_host=False,
                        username='bob',
                        timeout=1)
-        for trusted_host in [True, False]:
-            options.update(trusted_host=trusted_host)
-            ssh_client = SSHClient(**options)
-            try:
-                with ssh_client.connect() as c:
-                    c.close()
-            except SSHClientError as e:
-                self.assertIn('bob@', str(e))
-            else:
-                self.fail('SSHClientError unexpectedly not raised')
+        trusted_host = True
+        options.update(trusted_host=trusted_host)
+        ssh_client = SSHClient(**options)
+        try:
+            with ssh_client.connect() as c:
+                c.close()
+        except SSHClientError as e:
+            self.assertEqual(
+                str(e.__cause__), f'Authentication failed.')
+        else:
+            self.fail('SSHClientError unexpectedly not raised')
+        trusted_host = False
+        options.update(trusted_host=trusted_host)
+        ssh_client = SSHClient(**options)
+        try:
+            with ssh_client.connect() as c:
+                c.close()
+        except SSHClientError as e:
+            self.assertEqual(
+                str(e.__cause__), f'Server \'{remote_host}\' not found in known_hosts')
+        else:
+            self.fail('SSHClientError unexpectedly not raised')
 
     def test_timeout_nottrusted(self):
-        ssh_client = SSHClient(remote_host='127.0.0.1',
+        remote_host = '127.0.0.1'
+        ssh_client = SSHClient(remote_host=remote_host,
                                trusted_host=False, timeout=1)
         try:
             with ssh_client.connect() as c:
                 c.close()
         except SSHClientError as e:
-            self.assertIn('SSHException', str(e))
+            self.assertEqual(
+                str(e.__cause__), f'Server \'{remote_host}\' not found in known_hosts')
         else:
             self.fail('SSHClientError unexpectedly not raised')
 
@@ -52,7 +67,7 @@ class TestConnector(TestCase):
             with ssh_client.connect() as c:
                 c.close()
         except SSHClientError as e:
-            self.assertIn('socket.timeout', str(e))
+            self.assertEqual(str(e.__cause__), 'timed out')
         else:
             self.fail('SSHClientError unexpectedly not raised')
 
@@ -63,7 +78,7 @@ class TestConnector(TestCase):
             with ssh_client.connect() as c:
                 c.close()
         except SSHClientError as e:
-            self.assertIn('AuthenticationException', str(e))
+            self.assertEqual(str(e.__cause__), 'Authentication failed.')
         else:
             self.fail('SSHClientError unexpectedly not raised')
 

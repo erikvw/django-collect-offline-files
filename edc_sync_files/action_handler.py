@@ -1,12 +1,7 @@
-from django.apps import apps as django_apps
-
 from .confirmation import Confirmation, ConfirmationError
 from .constants import EXPORT_BATCH, SEND_FILES, CONFIRM_BATCH, PENDING_FILES
 from .transaction import TransactionExporter, TransactionExporterError
 from .transaction import TransactionFileSenderError, TransactionFileSender
-
-
-app_config = django_apps.get_app_config('edc_sync_files')
 
 
 class ActionHandlerError(Exception):
@@ -19,7 +14,7 @@ class ActionHandler:
         self.data = {}
         self.using = using
         self.tx_exporter = TransactionExporter(
-            export_path=app_config.outgoing_folder,
+            export_path=kwargs.get('src_path'),
             using=self.using, **kwargs)
         self.history_model = self.tx_exporter.history_model
         self.confirmation = Confirmation(
@@ -60,8 +55,7 @@ class ActionHandler:
         try:
             batch = self.tx_exporter.export_batch()
         except TransactionExporterError as e:
-            raise ActionHandlerError(
-                f'Reraised TransactionExporterError. Got {e}')
+            raise ActionHandlerError(e) from e
         else:
             if batch:
                 self.data.update(batch_id=batch.batch_id)
@@ -72,8 +66,7 @@ class ActionHandler:
             filenames = self.tx_file_sender.send(
                 filenames=self.pending_filenames)
         except TransactionFileSenderError as e:
-            raise ActionHandlerError(
-                f'Reraised TransactionFileSenderError. Got {e}')
+            raise ActionHandlerError(e) from e
         else:
             self.data.update(
                 last_sent_files=filenames, last_archived_files=filenames)
@@ -82,6 +75,5 @@ class ActionHandler:
         try:
             code = self.confirmation.confirm()
         except ConfirmationError as e:
-            raise ActionHandlerError(
-                f'Reraised ConfirmationError. Got {e}')
+            raise ActionHandlerError(e) from e
         self.data.update(confirmation_code=code)

@@ -50,7 +50,7 @@ class SFTPClient(ClosingContextManager):
             self._sftp_client.put(src, dst, callback=callback, confirm=confirm)
         except IOError as e:
             raise SFTPClientError(
-                f'IOError. Failed to copy {src}. Got {e}')
+                f'IOError. Failed to copy {src}.') from e
         if self.verbose:
             logger.info(f'Copied {src} to {dst}')
             sys.stdout.write('\n')
@@ -60,7 +60,7 @@ class SFTPClient(ClosingContextManager):
             self._sftp_client.rename(src, dst)
         except IOError as e:
             raise SFTPClientError(
-                f'IOError. Failed to rename {src} to {dst}. Got {e}')
+                f'IOError. Failed to rename {src} to {dst}.') from e
 
     def update_progress(self, sent_bytes, total_bytes):
         self.progress = (sent_bytes / total_bytes) * 100

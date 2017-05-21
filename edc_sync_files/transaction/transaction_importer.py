@@ -69,14 +69,11 @@ class JSONLoadFile:
             with open(p) as f:
                 json_text = f.read()
         except FileNotFoundError as e:
-            raise JSONFileError(
-                f'{self.__class__.__name__} FileNotFoundError. Got {e}')
+            raise JSONFileError(e) from e
         try:
             json.loads(json_text)
-        except json.JSONDecodeError as e:
-            raise JSONFileError(f'JSONDecodeError for {p}. Got {e}.')
-        except TypeError as e:
-            raise JSONFileError(f'TypeError for {p}. Got {e}.')
+        except (json.JSONDecodeError, TypeError) as e:
+            raise JSONFileError(f'{e} Got {p}') from e
         return json_text
 
     @property
@@ -176,12 +173,12 @@ class ImportBatch:
             for deserialized_tx in deserialized_txs:
                 self.objects.append(deserialized_tx.object)
         except DeserializationError as e:
-            raise BatchDeserializationError(e)
+            raise BatchDeserializationError(e) from e
         except JSONFileError as e:
-            raise BatchDeserializationError(e)
+            raise BatchDeserializationError(e) from e
 
     def peek(self, deserialized_tx):
-        """Peeks into first tx and sets self attrs.
+        """Peeks into first tx and sets self attrs or raise.
         """
         self.batch_id = deserialized_tx.object.batch_id
         self.prev_batch_id = deserialized_tx.object.prev_batch_id
@@ -189,10 +186,12 @@ class ImportBatch:
         if self.batch_history.exists(batch_id=self.batch_id):
             raise BatchAlreadyProcessed(
                 f'Batch {self.batch_id} has already been processed')
-        elif not self.valid_sequence:
-            raise InvalidBatchSequence(
-                f'Invalid batch sequence for file \'{self.filename}\'. '
-                f'Got {self.batch_id}')
+        if self.prev_batch_id != self.batch_id:
+            if not self.batch_history.exists(batch_id=self.prev_batch_id):
+                raise InvalidBatchSequence(
+                    f'Invalid import sequence. History does not exist for prev_batch_id. '
+                    f'Got file=\'{self.filename}\', prev_batch_id='
+                    f'{self.prev_batch_id}, batch_id={self.batch_id}.')
 
     def save(self):
         """Saves all model instances in the batch as model.
@@ -246,18 +245,6 @@ class ImportBatch:
         """
         return self.count > self.saved_transactions.count()
 
-    @property
-    def valid_sequence(self):
-        """Returns True if previous and current batch id imply the
-        current batch is the "next" or "first" batch of the sequence.
-        """
-        if not self._valid_sequence:
-            if self.prev_batch_id == self.batch_id:
-                self._valid_sequence = True
-            elif self.batch_history.exists(batch_id=self.prev_batch_id):
-                self._valid_sequence = True
-        return self._valid_sequence
-
     def close(self):
         self.batch_history.close(self.batch_id)
 
@@ -279,18 +266,13 @@ class TransactionImporter:
         try:
             deserialized_txs = json_file.deserialized_objects
         except JSONFileError as e:
-            raise TransactionImporterError(e)
+            raise TransactionImporterError(e) from e
         try:
             batch.populate(
                 deserialized_txs=deserialized_txs,
                 filename=json_file.name)
-        except BatchDeserializationError as e:
-            raise TransactionImporterError(
-                f'BatchDeserializationError. \'{batch}\'. Got {e}')
-        except BatchAlreadyProcessed as e:
-            pass
-#             raise TransactionImporterError(
-#                 f'BatchAlreadyProcessed. \'{batch}\'. Got {e}')
+        except (BatchDeserializationError, InvalidBatchSequence, BatchAlreadyProcessed) as e:
+            raise TransactionImporterError(e) from e
         batch.save()
         batch.update_history()
         return batch

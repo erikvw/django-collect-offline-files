@@ -33,30 +33,12 @@ class SSHClient(ClosingContextManager):
                 timeout=self.timeout,
                 banner_timeout=self.banner_timeout,
                 compress=self.compress)
-        except (ConnectionRefusedError) as e:
+        except (ConnectionRefusedError, socket.timeout, socket.gaierror,
+                AuthenticationException, BadHostKeyException, ConnectionResetError,
+                SSHException, OSError) as e:
             raise SSHClientError(
-                f'ConnectionRefusedError. User {self.username}@{self.remote_host}. Got {e}')
-        except (socket.timeout) as e:
-            raise SSHClientError(
-                f'socket.timeout. Host {self.username}@{self.remote_host}. Got {e}')
-        except AuthenticationException as e:
-            raise SSHClientError(
-                f'AuthenticationException. Host {self.username}@{self.remote_host}. Got {e}')
-        except BadHostKeyException as e:
-            raise SSHClientError(
-                f'BadHostKeyException. Add server to known_hosts for \'{self.remote_host}\'.'
-                f' Got {e}.')
-        except socket.gaierror as e:
-            raise SSHClientError(
-                f'Socket.gaierror. Host \'{self.username}@{self.remote_host}\'. Got \'{e}\'')
-        except ConnectionResetError as e:
-            raise SSHClientError(
-                f'ConnectionResetError. User {self.username}@{self.remote_host}. Got {e}')
-        except SSHException as e:
-            raise SSHClientError(
-                f'SSHException. User {self.username}@{self.remote_host}. Got {e}')
-        except OSError as e:
-            raise SSHClientError(f'OSError. Got {e} .')
+                f'An error occurred when connecting to {self.username}@{self.remote_host}. '
+                f'Got \'{e}\'') from e
         return self
 
     def close(self):

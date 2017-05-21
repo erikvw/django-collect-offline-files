@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 from django.apps import apps as django_apps
 from django.test import TestCase, tag
@@ -10,7 +11,6 @@ from ..action_handler import ActionHandler, ActionHandlerError
 from ..constants import PENDING_FILES, EXPORT_BATCH, SEND_FILES, CONFIRM_BATCH
 from ..models import ExportedTransactionFileHistory
 from .models import TestModel
-import tempfile
 
 fake = Faker()
 
@@ -100,12 +100,13 @@ class TestActionHandler(TestCase):
     def test_send_files_invalid_user_error(self):
         """Asserts raises error if send fails on invalid user.
         """
+        remote_host = 'localhost'
         kwargs = dict(
             using='client',
             src_path=app_config.outgoing_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
-            remote_host='localhost')
+            remote_host=remote_host)
         action_handler = ActionHandler(**kwargs)
         action_handler.action(label=EXPORT_BATCH)
         action_handler = ActionHandler(
@@ -113,9 +114,9 @@ class TestActionHandler(TestCase):
         try:
             action_handler.action(label=SEND_FILES)
         except ActionHandlerError as e:
-            self.assertIn('bob@', str(e))
+            self.assertIn(f'Server \'{remote_host}\' not found in known_hosts', str(e.__cause__))
         else:
-            self.fail('ActionHandlerError unexpectedly not raises')
+            self.fail('ActionHandlerError unexpectedly not raised')
 
     def test_send_and_archive_files(self):
         kwargs = dict(

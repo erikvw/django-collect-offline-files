@@ -1,14 +1,13 @@
 import os
-from faker import Faker
-from tempfile import mkstemp
+import tempfile
 
 from django.test.testcases import TestCase
 from django.test.utils import tag
+from faker import Faker
 
 from ..transaction import TransactionExporter
 from ..transaction.transaction_importer import JSONLoadFile, JSONFileError
 from .models import TestModel
-import tempfile
 
 fake = Faker()
 
@@ -32,7 +31,7 @@ class TestJSONLoadFile(TestCase):
         self.assertIsNotNone(json_text)
 
     def test_bad_json_file(self):
-        _, p = mkstemp()
+        _, p = tempfile.mkstemp()
         with open(p, 'w') as f:
             f.write('][][][][][sdfsdfs')
         filename = os.path.basename(p)
