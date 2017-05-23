@@ -10,19 +10,20 @@ from edc_device.constants import NODE_SERVER
 from edc_sync.models import OutgoingTransaction, IncomingTransaction
 
 from ..models import ImportedTransactionFileHistory, ExportedTransactionFileHistory
-from ..file_queues import IncomingTransactionsFileQueue, DeserializeTransactionsFileQueue
+from ..file_queues import IncomingTransactionsFileQueue, DeserializeTransactionsFileQueue, process_queue
 from ..transaction import TransactionExporter, TransactionImporter
 from .models import TestModel
 
 logger = logging.getLogger('edc_sync_files')
 
 
+@tag('q')
 class TestQueues(TestCase):
 
     multi_db = True
 
     def setUp(self):
-        self.regexes = r'^\w+\.json$'
+        self.regex = r'^\w+\.json$'
         self.src_path = os.path.join(tempfile.gettempdir(), 'src')
         self.dst_path = os.path.join(tempfile.gettempdir(), 'dst')
         if not os.path.exists(self.src_path):
@@ -30,7 +31,7 @@ class TestQueues(TestCase):
         if not os.path.exists(self.dst_path):
             os.mkdir(self.dst_path)
         files = [f for f in os.listdir(
-            path=self.src_path) if re.match(self.regexes, f)]
+            path=self.src_path) if re.match(self.regex, f)]
         for f in files:
             os.remove(os.path.join(self.src_path, f))
 
@@ -49,9 +50,8 @@ class TestQueues(TestCase):
     def test_incoming_tx_queue_reload_empty(self):
         q = IncomingTransactionsFileQueue(
             src_path=self.src_path,
-            dst_path=self.dst_path,
-            regexes=[self.regexes])
-        q.reload()
+            dst_path=self.dst_path)
+        q.reload(regexes=[self.regex])
         self.assertEqual(q.qsize(), 0)
 
     def test_incoming_tx_queue_reload(self):
@@ -59,9 +59,8 @@ class TestQueues(TestCase):
             tempfile.mkstemp(suffix='.json', dir=self.src_path)
         q = IncomingTransactionsFileQueue(
             src_path=self.src_path,
-            dst_path=self.dst_path,
-            regexes=[self.regexes])
-        q.reload()
+            dst_path=self.dst_path)
+        q.reload(regexes=[self.regex])
         self.assertEqual(q.qsize(), 5)
 
 #     def test_incoming_tx_queue_task_logs_error(self):
@@ -84,9 +83,8 @@ class TestQueues(TestCase):
         q = DeserializeTransactionsFileQueue(
             src_path=self.src_path,
             dst_path=self.dst_path,
-            regexes=[self.regexes],
             history_model=ImportedTransactionFileHistory)
-        q.reload()
+        q.reload(regexes=[self.regex])
         self.assertEqual(q.qsize(), 0)
 
     def test_deserialize_tx_queue_reload(self):
@@ -94,12 +92,10 @@ class TestQueues(TestCase):
         q = DeserializeTransactionsFileQueue(
             src_path=self.src_path,
             dst_path=self.dst_path,
-            regexes=[self.regexes],
             history_model=ImportedTransactionFileHistory)
-        q.reload()
+        q.reload(regexes=[self.regex])
         self.assertEqual(q.qsize(), 5)
 
-    @tag('queues')
     def test_deserialize_tx_queue_task_without_tx(self):
         django_apps.app_configs['edc_device'].device_id = '98'
         django_apps.app_configs['edc_device'].device_role = NODE_SERVER
@@ -107,24 +103,21 @@ class TestQueues(TestCase):
         q = DeserializeTransactionsFileQueue(
             src_path=self.src_path,
             dst_path=self.dst_path,
-            regexes=[self.regexes],
-            history_model=ImportedTransactionFileHistory)
-        q.reload()
+            history_model=ImportedTransactionFileHistory,
+            override_role=NODE_SERVER)
+        q.reload(regexes=[self.regex])
         self.assertEqual(q.qsize(), 5)
-        while not q.empty():
-            try:
-                with self.assertLogs(logger=logger, level=logging.INFO) as cm:
-                    q.next_task()
-            except AssertionError:
-                pass
-            else:
-                self.fail(f'AssertionError not raised. Got {cm.output}')
+        q.put(None)
+        with self.assertLogs(logger=logger, level=logging.INFO) as cm:
+            process_queue(queue=q)
+        self.assertIn('Successfully processed', ' '.join(cm.output))
+        q.join()
+
         self.assertEqual(q.qsize(), 0)
         self.assertEqual(q.unfinished_tasks, 0)  # there was nothing to do
         self.assertEqual(ImportedTransactionFileHistory.objects.filter(
             consumed=True).count(), 5)
 
-    @tag('1')
     def test_deserialize_tx_queue_task_with_tx(self):
         ExportedTransactionFileHistory.objects.using('client').all().delete()
         ImportedTransactionFileHistory.objects.all().delete()
@@ -173,17 +166,16 @@ class TestQueues(TestCase):
         q = DeserializeTransactionsFileQueue(
             src_path=pending_path,
             dst_path=archive_path,
-            regexes=[self.regexes],
-            history_model=ImportedTransactionFileHistory)
+            regexes=[self.regex],
+            history_model=ImportedTransactionFileHistory,
+            override_role=NODE_SERVER)
+
         q.put(os.path.join(pending_path, batch.filename))
-        while not q.empty():
-            try:
-                with self.assertLogs(logger=logger, level=logging.INFO) as cm:
-                    q.next_task()
-            except AssertionError:
-                pass
-            else:
-                self.fail(f'AssertionError not raised. Got {cm.output}')
+        q.put(None)
+        with self.assertLogs(logger=logger, level=logging.INFO) as cm:
+            process_queue(queue=q)
+        self.assertIn('Successfully processed', ' '.join(cm.output))
+        q.join()
 
         self.assertEqual(q.qsize(), 0)
         self.assertEqual(q.unfinished_tasks, 0)

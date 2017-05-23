@@ -21,8 +21,7 @@ LOGGING = LOGGING
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
-# BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+ETC_DIR = os.path.join(str(PurePath(BASE_DIR).parent), 'etc')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
 
@@ -44,16 +43,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'edc_base.apps.AppConfig',
-    'edc_device.apps.AppConfig',
-    'edc_sync_files.apps.AppConfig',
-    'edc_sync.apps.AppConfig',
-    # 'edc_identifier.apps.AppConfig',
-    # 'edc_protocol.apps.AppConfig',
-    'django_crypto_fields.apps.AppConfig',
-    # 'edc_appointment.apps.AppConfig',
     'rest_framework',
     'rest_framework.authtoken',
+    'django_crypto_fields.apps.AppConfig',
+    'edc_base.apps.AppConfig',
+    'edc_device.apps.AppConfig',
+    'edc_sync.apps.AppConfig',
+    'edc_sync_files.apps.AppConfig',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -91,10 +87,27 @@ WSGI_APPLICATION = 'edc_sync_files.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
 
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'OPTIONS': {
+#             'read_default_file': os.path.join(ETC_DIR, 'default.cnf'),
+#         },
+#     },
+#     'client': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'OPTIONS': {
+#             'read_default_file': os.path.join(ETC_DIR, 'client.cnf'),
+#         },
+#     },
+# }
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'OPTIONS': {'timeout': 20}
     },
     # required for tests when acting as a server but not attempting to
     # deserialize
@@ -106,6 +119,7 @@ DATABASES = {
     'client': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'OPTIONS': {'timeout': 20}
     },
     'test_server': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -132,30 +146,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-if 'test' in sys.argv:
-    # Ignore running migrations on unit tests -- speeds up tests.
-    MIGRATION_MODULES = {
-        "call_manager": None,
-        "edc_appointment": None,
-        "edc_code_lists": None,
-        "edc_configuration": None,
-        "edc_consent": None,
-        "edc_content_type_map": None,
-        "edc_data_manager": None,
-        "edc_death_report": None,
-        "edc_death_report": None,
-        "edc_identifier": None,
-        "edc_metadata": None,
-        "edc_registration": None,
-        "edc_sync": None,
-        "edc_sync_files": None,
-        "edc_visit_schedule": None,
-        "edc_visit_tracking": None,
-        "edc_lab": None,
-        "ba_namotswe": None,
-        'django_crypto_fields': None,
-        'edc_example': None,
-    }
+# if 'test' in sys.argv:
+#     # Ignore running migrations on unit tests -- speeds up tests.
+#     MIGRATION_MODULES = {
+#         "edc_sync": None,
+#         "edc_sync_files": None,
+#     }
 
 
 # Internationalization

@@ -1,5 +1,7 @@
 import uuid
 import os
+import tempfile
+
 from faker import Faker
 
 from django.db.utils import IntegrityError
@@ -14,7 +16,7 @@ from ..transaction.transaction_importer import (
     deserialize, BatchHistory, BatchHistoryError,
     BatchError, BatchIsEmpty, InvalidBatchSequence)
 from .models import TestModel
-import tempfile
+from edc_sync_files.transaction.transaction_importer import TransactionImporterError
 
 fake = Faker()
 
@@ -174,6 +176,7 @@ class TestTransactionImporter(TestCase):
             batch = tx_importer.import_batch(filename=batch.filename)
             self.assertIsNotNone(batch.batch_id)
 
+    @tag('1')
     def test_export_and_import_many_unordered(self):
         """Assert raises error if batches imported out of sequence.
         """
@@ -188,5 +191,14 @@ class TestTransactionImporter(TestCase):
             self.manually_move_export2import(batch.filename)
             filenames.append(batch.filename)
         tx_importer = TransactionImporter(import_path=self.import_path)
-        self.assertRaises(InvalidBatchSequence,
-                          tx_importer.import_batch, filename=filenames[3])
+
+        # in order, good
+        try:
+            tx_importer.import_batch(filename=filenames[0])
+        except TransactionImporterError:
+            self.fail('TransactionImporterError unexpectedly raised')
+
+        # out of order, bad
+        self.assertRaises(
+            TransactionImporterError,
+            tx_importer.import_batch, filename=filenames[3])

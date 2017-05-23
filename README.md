@@ -1,45 +1,40 @@
 # edc-sync-files
 
-### EDC Sync File Transfer
-
 Transfer `edc_sync` transactions as files using SFTP over an SSH connection.
 
 Data flows from client to server where a server is either a node server or the central server.
 
+see also `edc_sync`.
 
-#### Add above attributes for AppConfig in your Application in the child class of Edc Sync AppConfig
 
-```
-CLIENT MACHINE
+## Usage
 
-Connected to host edc.sample.com.
+    python manage.py incoming_observer
 
-patterns: *.json
-host: edc.sample.com
-Incoming folder: /Users/edc_user/source/bcpp/transactions/incoming
-Outgoing folder: /Users/edc_user/source/bcpp/transactions/outgoing
-Archive folder: /Users/edc_user/source/bcpp/transactions/archive
+    python manage.py deserialize_observer
 
-SERVER MACHINE
 
-Upload folder: remote_user@edc.sample.com:/Users/edc_user/source/bcpp/transactions/tmp
-Incoming folder: remote_user@edc.sample.com:/Users/edc_user/source/bcpp/transactions/incoming
-Outgoing folder: remote_user@edc.sample.com:/Users/edc_user/source/bcpp/transactions/outgoing
-Archive folder: remote_user@edc.sample.com:/Users/edc_user/source/bcpp/transactions/archive
+## FileQueueObservers
 
-### Start Watchdog Observer In The Server.
+Two FileQueueObservers do the work using use `watchdog` observers; `IncomingTransactionsFileQueueObserver` and `DeserializeTransactionsFileQueueObserver`. They are called using management commands:
 
-```
-	1. source myenv/bin/activate
-	2. cd source/my_project/
-	3. python manage.py start_observer
-```
+    python manage.py incoming_observer
 
-### Setup SSH Keys
-
-Generate public key for the server or client.
-
-    ssh-keygen -t rsa
-Copy public key to machine you want to connect to with ssh-copy-id.
+and
     
-    ssh-copy-id  user@device_ip
+    python manage.py deserialize_observer
+    
+### IncomingTransactionsFileQueueObserver
+
+The client exports data to JSON and sends to the server. Using `TransactionExporter`, data is exported into a JSON file from `edc_sync.models.OutgoingTransaction` on the client and sent to the server using `TransactionFileSender`.
+
+Once a file is sent to the server, the `IncomingTransactionsFileQueueObserver` detects it and adds the filename to the queue (`IncomingTransactionsFileQueue`). 
+
+### DeserializeTransactionsFileQueue
+
+Processed files in the queue `IncomingTransactionsFileQueue` are moved to the pending folder watched by `DeserializeTransactionsFileQueueObserver`.and added to the its queue, `DeserializeTransactionsFileQueue`. 
+
+
+## Processing queue items / filenames
+
+Each queue has a processor, (see `process_queue`). The processor calls the `next_task` method for each item in the queue in FIFO order infinitely or until it gets a `None` item.

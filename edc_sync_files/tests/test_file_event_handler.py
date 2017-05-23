@@ -5,8 +5,10 @@ from django.apps import apps as django_apps
 from django.test.testcases import TestCase
 from django.test.utils import tag
 
+from edc_device.constants import NODE_SERVER
 from edc_sync.models import OutgoingTransaction
 
+from ..file_queues import IncomingTransactionsFileQueue, DeserializeTransactionsFileQueue, process_queue
 from ..models import ImportedTransactionFileHistory, ExportedTransactionFileHistory
 from ..transaction import TransactionExporter, TransactionFileSender
 from .models import TestModel
@@ -21,7 +23,6 @@ class Event:
         self.src_path = os.path.join(src_path, filename)
 
 
-@tag('event')
 class TestFileEventHandler(TestCase):
 
     multi_db = True
@@ -31,56 +32,100 @@ class TestFileEventHandler(TestCase):
         ExportedTransactionFileHistory.objects.using('client').all().delete()
         OutgoingTransaction.objects.using('client').all().delete()
         TestModel.objects.using('client').all().delete()
-#         while not incoming_tx_queue.empty():
-#             incoming_tx_queue.get()
-#             incoming_tx_queue.task_done()
-#         while not deserialize_tx_queue.empty():
-#             deserialize_tx_queue.get()
-#             deserialize_tx_queue.task_done()
+        ImportedTransactionFileHistory.objects.all().delete()
 
-    def test_export_send_process(self):
-        TestModel.objects.using('client').create(f1=fake.name())
-        TestModel.objects.using('client').create(f1=fake.name())
-        self.assertEqual(TestModel.objects.all().count(), 0)
-        tx_exporter = TransactionExporter(
-            export_path=app_config.outgoing_folder,
-            using='client')
-        batch = tx_exporter.export_batch()
-
+    def send(self, filenames=None, history_model=None):
         tx_file_sender = TransactionFileSender(
             src_path=app_config.outgoing_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
-            history_model=tx_exporter.history_model,
+            history_model=history_model,
             using='client')
-        tx_file_sender.send([batch.filename])
+        tx_file_sender.send(filenames)
+
+    @tag('e')
+    def test_export_import_and_move(self):
+        """Asserts queue imports, updates history, moves the file.
+        """
+        TestModel.objects.using('client').create(f1=fake.name())
+        TestModel.objects.using('client').create(f1=fake.name())
+
+        tx_exporter = TransactionExporter(
+            export_path=app_config.incoming_folder, using='client')
+        batch = tx_exporter.export_batch()
+
+        self.assertTrue(os.path.join(
+            app_config.incoming_folder, batch.filename))
 
         src_path = app_config.incoming_folder
-        incoming_tx_handler = IncomingTransactionsFileHandler(
-            regexes=self.regexes,
-            src_path=src_path,
+        queue = IncomingTransactionsFileQueue(
+            src_path=app_config.incoming_folder,
             dst_path=app_config.pending_folder)
-        incoming_tx_handler.process(
-            Event(filename=batch.filename, src_path=src_path))
-        self.assertTrue(incoming_tx_handler.queue.all_tasks_done)
 
-        src_path = app_config.pending_folder
-        deserialize_tx_handler = DeserializeTransactionsFileHandler(
-            regexes=self.regexes,
-            src_path=src_path,
+        queue.put(os.path.join(src_path, batch.filename))
+        queue.put(None)
+        process_queue(queue=queue)
+        queue.join()
+
+        self.assertEqual(queue.unfinished_tasks, 0)
+        self.assertTrue(os.path.join(
+            app_config.pending_folder, batch.filename))
+        self.assertEqual(
+            ImportedTransactionFileHistory.objects.filter(
+                batch_id=batch.batch_id,
+                consumed=False).count(), 1)
+
+    @tag('e')
+    def test_deserialize_and_archive(self):
+        """Asserts queue deserializes, updates history, archives the file.
+        """
+        TestModel.objects.using('client').create(f1=fake.name())
+        TestModel.objects.using('client').create(f1=fake.name())
+
+        tx_exporter = TransactionExporter(
+            export_path=app_config.incoming_folder, using='client')
+        batch = tx_exporter.export_batch()
+
+        src_path = app_config.incoming_folder
+        queue = IncomingTransactionsFileQueue(
+            src_path=app_config.incoming_folder,
+            dst_path=app_config.pending_folder)
+
+        queue.put(os.path.join(src_path, batch.filename))
+        queue.put(None)
+        process_queue(queue=queue)
+        queue.join()
+
+        queue = DeserializeTransactionsFileQueue(
+            src_path=app_config.pending_folder,
             dst_path=app_config.archive_folder,
             history_model=ImportedTransactionFileHistory,
-            allow_any_role=True)
-        deserialize_tx_handler.process(
-            Event(filename=batch.filename, src_path=src_path))
-        self.assertTrue(deserialize_tx_handler.queue.all_tasks_done)
+            override_role=NODE_SERVER)
 
-        self.assertEqual(
-            ImportedTransactionFileHistory.objects.all().count(), 1)
-        self.assertTrue(deserialize_tx_handler.queue.empty())
-        self.assertEqual(deserialize_tx_handler.queue.qsize(), 0)
+        queue.put(os.path.join(src_path, batch.filename))
+        queue.put(None)
+        process_queue(queue=queue)
+        queue.join()
 
+        self.assertEqual(queue.unfinished_tasks, 0)
+
+        self.assertTrue(os.path.join(
+            app_config.archive_folder, batch.filename))
+
+        self.assertEqual(ImportedTransactionFileHistory.objects.filter(
+            batch_id=batch.batch_id,
+            consumed=True).count(), 1)
+
+    @tag('e')
     def test_export_send_process_many(self):
+        """Asserts export, send, import, archive."""
+
+        # queue
+        queue = IncomingTransactionsFileQueue(
+            src_path=app_config.incoming_folder,
+            dst_path=app_config.pending_folder)
+
+        # export
         filenames = []
         for _ in range(0, 5):
             TestModel.objects.using('client').create(f1=fake.name())
@@ -93,25 +138,32 @@ class TestFileEventHandler(TestCase):
             batch = tx_exporter.export_batch()
             filenames.append(batch.filename)
 
-        tx_file_sender = TransactionFileSender(
-            src_path=app_config.outgoing_folder,
-            dst_path=app_config.incoming_folder,
-            archive_path=app_config.archive_folder,
-            history_model=tx_exporter.history_model,
-            using='client')
-        tx_file_sender.send(filenames)
+        # send
+        self.send(filenames=filenames, history_model=tx_exporter.history_model)
 
-        incoming_tx_handler = IncomingTransactionsFileHandler(
-            src_path=app_config.incoming_folder,
-            dst_path=app_config.pending_folder)
+        # add to queue
         for filename in filenames:
-            incoming_tx_handler.process(
-                Event(filename=filename, src_path=app_config.incoming_folder))
-            self.assertTrue(incoming_tx_handler.queue.all_tasks_done)
+            queue.put(os.path.join(app_config.incoming_folder, filename))
+
+        # import
+        queue.put(None)
+        process_queue(queue=queue)
+        queue.join()
+
+        # assert
+        self.assertEqual(queue.unfinished_tasks, 0)
         self.assertEqual(
-            ImportedTransactionFileHistory.objects.all().count(), 5)
+            ImportedTransactionFileHistory.objects.filter(
+                consumed=False).count(), 5)
 
+    @tag('e')
     def test_export_send_process_with_delete(self):
+
+        # queue
+        queue = IncomingTransactionsFileQueue(
+            src_path=app_config.incoming_folder,
+            dst_path=app_config.pending_folder)
+
         obj1 = TestModel.objects.using('client').create(f1=fake.name())
         obj2 = TestModel.objects.using('client').create(f1=fake.name())
         obj1.delete()
@@ -124,91 +176,115 @@ class TestFileEventHandler(TestCase):
 
         batch = tx_exporter.export_batch()
 
-        tx_file_sender = TransactionFileSender(
-            src_path=app_config.outgoing_folder,
-            dst_path=app_config.incoming_folder,
-            archive_path=app_config.archive_folder,
-            history_model=tx_exporter.history_model,
-            using='client')
-        tx_file_sender.send([batch.filename])
+        self.send(filenames=[batch.filename],
+                  history_model=tx_exporter.history_model)
 
-        incoming_tx_handler = IncomingTransactionsFileHandler(
-            src_path=app_config.incoming_folder,
-            dst_path=app_config.pending_folder)
-        incoming_tx_handler.process(
-            Event(filename=batch.filename, src_path=app_config.incoming_folder))
-        self.assertTrue(incoming_tx_handler.queue.empty())
-        self.assertEqual(incoming_tx_handler.queue.qsize(), 0)
-        self.assertEqual(TestModel.objects.all().count(), 0)
+        # add to queue
+        queue.put(os.path.join(app_config.incoming_folder, batch.filename))
 
-    def test_deserialize_tx_queue_with_delete(self):
-        obj1 = TestModel.objects.using('client').create(f1=fake.name())
-        obj2 = TestModel.objects.using('client').create(f1=fake.name())
-        obj1.delete()
-        obj2.delete()
-        self.assertEqual(TestModel.objects.all().count(), 0)
+        # import
+        queue.put(None)
+        process_queue(queue=queue)
+        queue.join()
+
+        # assert
+        self.assertEqual(queue.unfinished_tasks, 0)
+        self.assertEqual(
+            ImportedTransactionFileHistory.objects.filter(
+                consumed=False).count(), 1)
+
+    @tag('e')
+    def test_deserialize_tx_queue_without_delete(self):
+
+        # create
+        TestModel.objects.using('client').create(f1=fake.name())
+        TestModel.objects.using('client').create(f1=fake.name())
+
+        # export
         tx_exporter = TransactionExporter(
             export_path=app_config.outgoing_folder,
             using='client')
         batch = tx_exporter.export_batch()
 
-        tx_file_sender = TransactionFileSender(
-            src_path=app_config.outgoing_folder,
-            dst_path=app_config.incoming_folder,
-            archive_path=app_config.archive_folder,
-            history_model=tx_exporter.history_model,
-            using='client')
-        tx_file_sender.send([batch.filename])
+        self.send(filenames=[batch.filename],
+                  history_model=tx_exporter.history_model)
 
-        incoming_tx_handler = IncomingTransactionsFileHandler(
-            regexes=self.regexes,
+        # queues
+        incoming_queue = IncomingTransactionsFileQueue(
             src_path=app_config.incoming_folder,
             dst_path=app_config.pending_folder)
-        incoming_tx_handler.process(
-            Event(filename=batch.filename, src_path=app_config.incoming_folder))
-        self.assertTrue(incoming_tx_handler.queue.empty())
 
-        deserialize_tx_handler = DeserializeTransactionsFileHandler(
-            regexes=self.regexes,
+        deserialize_queue = DeserializeTransactionsFileQueue(
             src_path=app_config.pending_folder,
             dst_path=app_config.archive_folder,
             history_model=ImportedTransactionFileHistory,
-            allow_any_role=True)
-        deserialize_tx_handler.process(
-            Event(filename=batch.filename, src_path=app_config.pending_folder))
-        self.assertEqual(TestModel.objects.all().count(), 0)
+            override_role=NODE_SERVER)
 
-    def test_deserialize_tx_queue(self):
-        TestModel.objects.using('client').create(f1=fake.name())
-        TestModel.objects.using('client').create(f1=fake.name())
-        self.assertEqual(TestModel.objects.all().count(), 0)
-        tx_exporter = TransactionExporter(
-            export_path=app_config.outgoing_folder,
-            using='client')
-        batch = tx_exporter.export_batch()
+        # add to incoming queue
+        incoming_queue.put(os.path.join(
+            app_config.incoming_folder, batch.filename))
 
-        tx_file_sender = TransactionFileSender(
-            src_path=app_config.outgoing_folder,
-            dst_path=app_config.incoming_folder,
-            archive_path=app_config.archive_folder,
-            history_model=tx_exporter.history_model,
-            using='client')
-        tx_file_sender.send([batch.filename])
+        # import
+        incoming_queue.put(None)
+        process_queue(queue=incoming_queue)
+        incoming_queue.join()
 
-        incoming_tx_handler = IncomingTransactionsFileHandler(
-            regexes=self.regexes,
-            src_path=app_config.incoming_folder,
-            dst_path=app_config.pending_folder)
-        incoming_tx_handler.process(
-            Event(filename=batch.filename, src_path=app_config.incoming_folder))
-        self.assertTrue(incoming_tx_handler.queue.empty())
+        # add to deserialize queue
+        deserialize_queue.put(os.path.join(
+            app_config.incoming_folder, batch.filename))
 
-        deserialize_tx_handler = DeserializeTransactionsFileHandler(
-            regexes=self.regexes,
-            src_path=app_config.pending_folder,
-            dst_path=app_config.archive_folder,
-            history_model=ImportedTransactionFileHistory,
-            allow_any_role=True)
-        deserialize_tx_handler.process(
-            Event(filename=batch.filename, src_path=app_config.pending_folder))
+        # deserialize
+        deserialize_queue.put(None)
+        process_queue(queue=deserialize_queue)
+        deserialize_queue.join()
+
         self.assertEqual(TestModel.objects.all().count(), 2)
+
+    @tag('e')
+    def test_deserialize_tx_queue_with_delete(self):
+
+        # create
+        obj1 = TestModel.objects.using('client').create(f1=fake.name())
+        obj2 = TestModel.objects.using('client').create(f1=fake.name())
+        obj1.delete()
+        obj2.delete()
+
+        # export
+        tx_exporter = TransactionExporter(
+            export_path=app_config.outgoing_folder,
+            using='client')
+        batch = tx_exporter.export_batch()
+
+        self.send(filenames=[batch.filename],
+                  history_model=tx_exporter.history_model)
+
+        # queues
+        incoming_queue = IncomingTransactionsFileQueue(
+            src_path=app_config.incoming_folder,
+            dst_path=app_config.pending_folder)
+
+        deserialize_queue = DeserializeTransactionsFileQueue(
+            src_path=app_config.pending_folder,
+            dst_path=app_config.archive_folder,
+            history_model=ImportedTransactionFileHistory,
+            override_role=NODE_SERVER)
+
+        # add to incoming queue
+        incoming_queue.put(os.path.join(
+            app_config.incoming_folder, batch.filename))
+
+        # import
+        incoming_queue.put(None)
+        process_queue(queue=incoming_queue)
+        incoming_queue.join()
+
+        # add to deserialize queue
+        deserialize_queue.put(os.path.join(
+            app_config.incoming_folder, batch.filename))
+
+        # deserialize
+        deserialize_queue.put(None)
+        process_queue(queue=deserialize_queue)
+        deserialize_queue.join()
+
+        self.assertEqual(TestModel.objects.all().count(), 0)

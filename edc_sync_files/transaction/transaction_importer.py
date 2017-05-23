@@ -253,6 +253,7 @@ class TransactionImporter:
     """Imports transactions from a file as incoming transaction.
     """
     batch_cls = ImportBatch
+    json_file_cls = JSONLoadFile
 
     def __init__(self, import_path=None, **kwargs):
         self.path = import_path
@@ -262,7 +263,7 @@ class TransactionImporter:
         model IncomingTransaction.
         """
         batch = self.batch_cls()
-        json_file = JSONLoadFile(name=filename, path=self.path)
+        json_file = self.json_file_cls(name=filename, path=self.path)
         try:
             deserialized_txs = json_file.deserialized_objects
         except JSONFileError as e:
