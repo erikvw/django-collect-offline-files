@@ -10,18 +10,16 @@ class ActionHandlerError(Exception):
 
 class ActionHandler:
 
-    def __init__(self, using=None, **kwargs):
+    def __init__(self, **kwargs):
         self.data = {}
-        self.using = using
+        self.using = kwargs.get('using')
         self.tx_exporter = TransactionExporter(
-            export_path=kwargs.get('src_path'),
-            using=self.using, **kwargs)
+            export_path=kwargs.get('src_path'), **kwargs)
         self.history_model = self.tx_exporter.history_model
         self.confirmation = Confirmation(
-            history_model=self.history_model, using=self.using)
+            history_model=self.history_model, **kwargs)
         self.tx_file_sender = TransactionFileSender(
-            history_model=self.history_model,
-            using=self.using, **kwargs)
+            history_model=self.history_model, **kwargs)
         self.sent_history = self.tx_exporter.history_model.objects.using(
             self.using).filter(sent=True).order_by('-sent_datetime')
         self.recently_sent_filenames = [

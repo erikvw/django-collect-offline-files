@@ -35,7 +35,7 @@ class BaseFileQueue(Queue):
     def reload(self, regexes=None, **kwargs):
         """Reloads /path/to/filenames into the queue that match the regexes.
         """
-        combined = "(" + ")|(".join(regexes) + ")"
+        combined = re.compile("(" + ")|(".join(regexes) + ")", re.I)
         for filename in os.listdir(self.src_path):
             if re.match(combined, filename):
                 self.put(os.path.join(self.src_path, filename))

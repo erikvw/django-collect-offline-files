@@ -1,3 +1,4 @@
+import os
 import logging
 import sys
 
@@ -18,15 +19,16 @@ def process_queue(queue=None, **kwargs):
             queue.task_done()
             logger.info(f'{queue}: exiting process queue.')
             break
+        filename = os.path.basename(item)
         try:
             queue.next_task(item, **kwargs)
         except Exception as e:
             queue.task_done()
-            logger.error(f'{queue}: item={item}. {e}\n')
+            logger.warn(f'{queue}: item={filename}. {e}\n')
             logger.exception(e)
-            sys.stdout.write(style.ERROR(f'{queue}. item={item}. {e}. Exception has been logged.\n'))
+            sys.stdout.write(style.ERROR(f'{queue}. item={filename}. {e}. Exception has been logged.\n'))
             sys.stdout.flush()
             break
         else:
-            logger.info(f'{queue}: Successfully processed {item}.\n')
+            logger.info(f'{queue}: Successfully processed {filename}.\n')
         queue.task_done()

@@ -37,8 +37,7 @@ class SSHClient(ClosingContextManager):
                 AuthenticationException, BadHostKeyException, ConnectionResetError,
                 SSHException, OSError) as e:
             raise SSHClientError(
-                f'An error occurred when connecting to {self.username}@{self.remote_host}. '
-                f'Got \'{e}\'') from e
+                f'{self.username}@{self.remote_host}: \'{e}\.') from e
         return self
 
     def close(self):

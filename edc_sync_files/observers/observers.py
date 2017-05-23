@@ -12,7 +12,7 @@ class IncomingTransactionsFileQueueObserver(FileQueueObserver):
 
     queue_cls = IncomingTransactionsFileQueue
     options = dict(
-        regexes=[r'\w+\.json$'],
+        regexes=[r'(\/\w+)+\.json$', '\w+\.json$'],
         src_path=app_config.incoming_folder,
         dst_path=app_config.pending_folder)
 
@@ -21,7 +21,7 @@ class DeserializeTransactionsFileQueueObserver(FileQueueObserver):
 
     queue_cls = DeserializeTransactionsFileQueue
     options = dict(
-        regexes=[r'\w+\.json$'],
+        regexes=[r'(\/\w+)+\.json$', '\w+\.json$'],
         src_path=app_config.pending_folder,
         dst_path=app_config.archive_folder,
         history_model=ImportedTransactionFileHistory)

@@ -18,7 +18,7 @@ class Confirmation:
     """A class to manage confirmation of sent / transferred transaction files.
     """
 
-    def __init__(self, history_model=None, using=None):
+    def __init__(self, history_model=None, using=None, **kwargs):
         self.history_model = history_model
         self.using = using
 
