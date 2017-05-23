@@ -17,7 +17,6 @@ from .models import TestModel
 logger = logging.getLogger('edc_sync_files')
 
 
-@tag('q')
 class TestQueues(TestCase):
 
     multi_db = True

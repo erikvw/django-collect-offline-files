@@ -9,6 +9,11 @@ see also `edc_sync`.
 
 ## Usage
 
+On the client:
+
+    python manage.py export_transactions
+
+
 On the server or receiving host:
 
     python manage.py incoming_observer
