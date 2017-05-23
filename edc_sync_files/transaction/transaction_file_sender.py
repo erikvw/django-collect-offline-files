@@ -11,14 +11,15 @@ class TransactionFileSenderError(Exception):
 
 class TransactionFileSender:
 
-    def __init__(self, remote_host=None, src_path=None, dst_path=None, archive_path=None,
+    def __init__(self, remote_host=None, username=None, src_path=None, dst_path=None, archive_path=None,
                  history_model=None, using=None, update_history_model=None, **kwargs):
         self.using = using
         self.update_history_model = True if update_history_model is None else update_history_model
         self.file_archiver = FileArchiver(
             src_path=src_path, dst_path=archive_path)
         self.history_model = history_model
-        self.ssh_client = SSHClient(remote_host=remote_host, **kwargs)
+        self.ssh_client = SSHClient(
+            username=username, remote_host=remote_host, **kwargs)
         self.sftp_client = SFTPClient(
             src_path=src_path, dst_path=dst_path, **kwargs)
 

@@ -146,12 +146,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# if 'test' in sys.argv:
-#     # Ignore running migrations on unit tests -- speeds up tests.
-#     MIGRATION_MODULES = {
-#         "edc_sync": None,
-#         "edc_sync_files": None,
-#     }
+if 'test' in sys.argv:
+    # Ignore running migrations on unit tests -- speeds up tests.
+    MIGRATION_MODULES = {
+        "edc_sync": None,
+        "edc_sync_files": None,
+    }
 
 
 # Internationalization

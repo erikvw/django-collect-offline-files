@@ -4,6 +4,7 @@ from django.apps import apps as django_apps
 from django.core.management.base import BaseCommand
 from edc_device.constants import NODE_SERVER, CENTRAL_SERVER
 
+from ...file_queues import process_queue
 from ...observers import DeserializeTransactionsFileQueueObserver
 
 
@@ -26,5 +27,6 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        file_observer = self.file_observer_cls(**options)
+        file_observer = self.file_observer_cls(
+            task_processor=process_queue, **options)
         file_observer.start()

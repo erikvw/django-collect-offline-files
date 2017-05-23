@@ -9,6 +9,8 @@ see also `edc_sync`.
 
 ## Usage
 
+On the server or receiving host:
+
     python manage.py incoming_observer
 
     python manage.py deserialize_observer

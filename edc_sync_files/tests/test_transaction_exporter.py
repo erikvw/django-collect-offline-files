@@ -170,9 +170,9 @@ class TestTransactionExporter2(TestCase):
         tx_exporter = TransactionExporter(
             export_path=self.export_path,
             using='client')
-        history = tx_exporter.export_batch()
+        batch = tx_exporter.export_batch()
         for obj in OutgoingTransaction.objects.using(
-                'client').filter(batch_id=history.batch_id):
+                'client').filter(batch_id=batch.batch_id):
             self.assertEqual(obj.batch_id, obj.prev_batch_id)
 
     def test_next_prev_batch_id(self):
@@ -183,35 +183,35 @@ class TestTransactionExporter2(TestCase):
         tx_exporter = TransactionExporter(
             export_path=self.export_path,
             using='client')
-        history = tx_exporter.export_batch()
-        batch_id = history.batch_id
+        batch = tx_exporter.export_batch()
+        batch_id = batch.batch_id
         TestModel.objects.using('client').create(f1=fake.name())
         TestModel.objects.using('client').create(f1=fake.name())
-        history = tx_exporter.export_batch()
+        batch = tx_exporter.export_batch()
         for obj in OutgoingTransaction.objects.using(
-                'client').filter(batch_id=history.batch_id):
+                'client').filter(batch_id=batch.batch_id):
             self.assertEqual(batch_id, obj.prev_batch_id)
 
     def test_prev_batch_id(self):
         """Assert sets prev batch id to batch id for new tx's
         otherwise to the previous batch id.
         """
-        history = []
+        batches = []
         tx_exporter = TransactionExporter(
             export_path=self.export_path,
             using='client')
         for _ in range(0, 3):
             TestModel.objects.using('client').create(f1=fake.name())
             TestModel.objects.using('client').create(f1=fake.name())
-            history.append(tx_exporter.export_batch())
+            batches.append(tx_exporter.export_batch())
         for obj in OutgoingTransaction.objects.using(
-                'client').filter(batch_id=history[0].batch_id):
+                'client').filter(batch_id=batches[0].batch_id):
             self.assertEqual(obj.batch_id, obj.prev_batch_id)
         for obj in OutgoingTransaction.objects.using(
-                'client').filter(batch_id=history[1].batch_id):
+                'client').filter(batch_id=batches[1].batch_id):
             self.assertEqual(
-                history[0].batch_id, obj.prev_batch_id)
+                batches[0].batch_id, obj.prev_batch_id)
         for obj in OutgoingTransaction.objects.using(
-                'client').filter(batch_id=history[2].batch_id):
+                'client').filter(batch_id=batches[2].batch_id):
             self.assertEqual(
-                history[1].batch_id, obj.prev_batch_id)
+                batches[1].batch_id, obj.prev_batch_id)

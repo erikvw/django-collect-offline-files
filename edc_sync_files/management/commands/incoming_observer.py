@@ -3,8 +3,8 @@ import logging
 from django.apps import apps as django_apps
 from django.core.management.base import BaseCommand
 
+from ...file_queues import process_queue
 from ...observers import IncomingTransactionsFileQueueObserver
-from edc_sync_files.file_queues.process_queue import process_queue
 
 
 app_config = django_apps.get_app_config('edc_sync_files')

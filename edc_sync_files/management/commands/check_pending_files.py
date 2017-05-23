@@ -6,6 +6,7 @@ from django.apps import apps as django_apps
 from django.core.management import BaseCommand, call_command
 
 from ...models import ImportedTransactionFileHistory
+from django.core.management.base import CommandError
 
 
 class Command(BaseCommand):
@@ -17,6 +18,8 @@ class Command(BaseCommand):
     help = ''
 
     def handle(self, *args, **options):
+
+        CommandError('this command is not in use.')
         edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
         for filename in self.incoming_files():
             try:
