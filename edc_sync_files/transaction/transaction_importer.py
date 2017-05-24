@@ -6,7 +6,7 @@ from django.db.utils import IntegrityError
 
 from edc_base.utils import get_utcnow
 from edc_sync.models import IncomingTransaction
-from edc_sync.transaction_deserializer import deserialize
+from edc_sync.transaction import deserialize
 
 from ..models import ImportedTransactionFileHistory
 

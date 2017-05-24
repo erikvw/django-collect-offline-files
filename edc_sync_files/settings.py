@@ -15,7 +15,7 @@ import os
 from django.utils import timezone
 from pathlib import PurePath
 
-from .logging import LOGGING
+from .loggers import LOGGING
 
 LOGGING = LOGGING
 

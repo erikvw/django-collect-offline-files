@@ -2,8 +2,7 @@ import os
 
 from django.core.serializers.base import DeserializationError
 
-from edc_sync.transaction_deserializer import TransactionDeserializer
-from edc_sync.transaction_deserializer import TransactionDeserializerError
+from edc_sync.transaction import TransactionDeserializer, TransactionDeserializerError
 
 from ..transaction import TransactionImporterBatch
 from .base_file_queue import BaseFileQueue

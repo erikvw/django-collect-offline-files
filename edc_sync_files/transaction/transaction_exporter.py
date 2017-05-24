@@ -1,11 +1,11 @@
 import os
 
 from django.apps import apps as django_apps
-from django.core import serializers
 from django.utils import timezone
 
 from edc_base.utils import get_utcnow
 from edc_sync.models import OutgoingTransaction
+from edc_sync.transaction import serialize
 
 from ..models import ExportedTransactionFileHistory
 
@@ -36,13 +36,6 @@ class TransactionExporterError(Exception):
 
 class JSONDumpFileError(Exception):
     pass
-
-
-def serialize(objects=None):
-    return serializers.serialize(
-        'json', objects,
-        ensure_ascii=True, use_natural_foreign_keys=True,
-        use_natural_primary_keys=False)
 
 
 class JSONDumpFile:

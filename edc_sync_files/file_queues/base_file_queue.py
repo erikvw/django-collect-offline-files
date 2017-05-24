@@ -3,7 +3,7 @@ import re
 
 from queue import Queue
 
-from edc_sync.transaction_deserializer import TransactionDeserializerError
+from edc_sync.transaction import TransactionDeserializerError
 
 from ..transaction import FileArchiver, FileArchiverError
 from .exceptions import TransactionsFileQueueError

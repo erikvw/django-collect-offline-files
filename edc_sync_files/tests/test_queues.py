@@ -54,7 +54,6 @@ class TestQueues(TestCase):
         q.reload(regexes=self.regexes)
         self.assertEqual(q.qsize(), 0)
 
-    @tag('1')
     def test_incoming_tx_queue_reload(self):
         for _ in range(0, 5):
             tempfile.mkstemp(suffix='.json', dir=self.src_path)
@@ -63,22 +62,6 @@ class TestQueues(TestCase):
             dst_path=self.dst_path)
         q.reload(regexes=self.regexes)
         self.assertEqual(q.qsize(), 5)
-
-#     def test_incoming_tx_queue_task_logs_error(self):
-#         for _ in range(0, 5):
-#             tempfile.mkstemp(suffix='.json', dir=self.src_path)
-#         q = IncomingTransactionsFileQueue(
-#             src_path=self.src_path,
-#             dst_path=self.dst_path,
-#             regexes=[self.regexes])
-#         q.reload()
-#         while not q.empty():
-#             with self.assertLogs(logger=logger, level=logging.INFO) as cm:
-#                 q.next_task()
-#             self.assertIn('TransactionImporterError', ''.join(cm.output))
-#             self.assertIn('JSONDecodeError', ''.join(cm.output))
-#         self.assertEqual(q.qsize(), 0)
-#         self.assertEqual(q.unfinished_tasks, 5)
 
     def test_deserialize_tx_queue_reload_empty(self):
         q = DeserializeTransactionsFileQueue(
