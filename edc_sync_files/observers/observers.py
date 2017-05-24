@@ -24,5 +24,4 @@ class DeserializeTransactionsFileQueueObserver(FileQueueObserver):
         regexes=[r'(\/\w+)+\.json$', '\w+\.json$'],
         src_path=app_config.pending_folder,
         dst_path=app_config.archive_folder,
-        override_role=django_apps.get_app_config('edc_device').role,
         history_model=ImportedTransactionFileHistory)

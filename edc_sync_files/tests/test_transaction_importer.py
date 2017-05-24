@@ -13,35 +13,11 @@ from edc_sync.models import OutgoingTransaction
 from ..models import ExportedTransactionFileHistory
 from ..transaction import TransactionImporter, TransactionExporter, TransactionImporterBatch
 from ..transaction.transaction_importer import (
-    deserialize, BatchHistory, BatchHistoryError,
-    BatchError, BatchIsEmpty, InvalidBatchSequence)
+    BatchHistory, BatchHistoryError, BatchError, BatchIsEmpty)
 from .models import TestModel
 from edc_sync_files.transaction.transaction_importer import TransactionImporterError
 
 fake = Faker()
-
-
-@tag('deserialize')
-class TestDeserializer(TestCase):
-
-    def setUp(self):
-        TestModel.objects.using('client').create(f1=fake.name())
-        TestModel.objects.using('client').create(f1=fake.name())
-        tx_exporter = TransactionExporter(
-            export_path=tempfile.gettempdir(),
-            using='client')
-        history = tx_exporter.export_batch()
-        self.filename = history.filename
-        self.path = tx_exporter.path
-
-    def test_deserializer(self):
-        with open(os.path.join(self.path, self.filename)) as f:
-            json_text = f.read()
-        objects = deserialize(json_text=json_text)
-        try:
-            next(objects)
-        except StopIteration:
-            self.fail('StopIteration unexpectedly raised')
 
 
 @tag('batch_history')
