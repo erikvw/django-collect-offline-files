@@ -13,7 +13,7 @@ from ..transaction import TransactionExporter
 from .models import TestModel
 from edc_sync.transaction.transaction_deserializer import TransactionDeserializer,\
     TransactionDeserializerError
-from edc_device.constants import NODE_SERVER
+from edc_device.constants import NODE_SERVER, CLIENT, CENTRAL_SERVER
 
 fake = Faker()
 
@@ -45,6 +45,7 @@ class TestDeserializer(TestCase):
         """Asserts raises if not a server.
         """
         django_apps.app_configs['edc_device'].device_id = '15'
+        django_apps.app_configs['edc_device'].device_role = CLIENT
         self.assertRaises(TransactionDeserializerError,
                           TransactionDeserializer)
 
@@ -53,6 +54,7 @@ class TestDeserializer(TestCase):
         """Asserts raises if not a server.
         """
         django_apps.app_configs['edc_device'].device_id = '15'
+        django_apps.app_configs['edc_device'].device_role = CLIENT
         self.assertRaises(TransactionDeserializerError,
                           TransactionDeserializer)
 
@@ -61,6 +63,7 @@ class TestDeserializer(TestCase):
         """Asserts OK if is a server.
         """
         django_apps.app_configs['edc_device'].device_id = '99'
+        django_apps.app_configs['edc_device'].device_role = CENTRAL_SERVER
         try:
             TransactionDeserializer()
         except TransactionDeserializerError as e:
@@ -78,6 +81,7 @@ class TestDeserializer(TestCase):
         self.assertGreater(
             len(django_apps.app_configs['edc_device'].server_id_list), 0)
         django_apps.app_configs['edc_device'].device_id = '15'
+        django_apps.app_configs['edc_device'].device_role = CLIENT
         try:
             TransactionDeserializer(override_role=NODE_SERVER)
         except TransactionDeserializerError as e:

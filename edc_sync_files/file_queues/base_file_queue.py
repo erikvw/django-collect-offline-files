@@ -3,8 +3,6 @@ import re
 
 from queue import Queue
 
-from edc_sync.transaction import TransactionDeserializerError
-
 from ..transaction import FileArchiver, FileArchiverError
 from .exceptions import TransactionsFileQueueError
 
@@ -21,7 +19,7 @@ class BaseFileQueue(Queue):
             self.file_archiver = self.file_archiver_cls(
                 src_path=src_path, dst_path=dst_path, **kwargs)
         except FileArchiverError as e:
-            raise TransactionDeserializerError(e) from e
+            raise TransactionsFileQueueError(e) from e
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self.src_path}, {self.dst_path})'
