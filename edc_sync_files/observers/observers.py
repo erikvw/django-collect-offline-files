@@ -14,7 +14,8 @@ class IncomingTransactionsFileQueueObserver(FileQueueObserver):
     options = dict(
         regexes=[r'(\/\w+)+\.json$', '\w+\.json$'],
         src_path=app_config.incoming_folder,
-        dst_path=app_config.pending_folder)
+        dst_path=app_config.pending_folder,
+        override_role=django_apps.get_app_config('edc_device').device_role)
 
 
 class DeserializeTransactionsFileQueueObserver(FileQueueObserver):
