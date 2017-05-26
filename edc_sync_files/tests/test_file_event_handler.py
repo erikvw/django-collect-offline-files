@@ -28,7 +28,6 @@ class TestFileEventHandler(TestCase):
     multi_db = True
 
     def setUp(self):
-        self.regexes = [r'^\w+\.json$']
         ExportedTransactionFileHistory.objects.using('client').all().delete()
         OutgoingTransaction.objects.using('client').all().delete()
         TestModel.objects.using('client').all().delete()
