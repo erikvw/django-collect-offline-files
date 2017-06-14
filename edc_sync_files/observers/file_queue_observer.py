@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from watchdog.observers import Observer
 
-from ..file_queues import RegexFileQueueHandler
+from ..file_queues import RegexFileQueueHandlerPending
 
 logger = logging.getLogger('edc_sync_files')
 
@@ -14,7 +14,7 @@ class FileQueueObserver:
     options = {}
     queue_cls = None
 
-    handler_cls = RegexFileQueueHandler
+    handler_cls = None
     observer_cls = Observer
 
     def __init__(self, task_processor=None, **options):

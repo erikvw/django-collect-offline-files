@@ -4,12 +4,15 @@ from ..file_queues import DeserializeTransactionsFileQueue
 from ..file_queues import IncomingTransactionsFileQueue
 from ..models import ImportedTransactionFileHistory
 from .file_queue_observer import FileQueueObserver
+from ..file_queues.file_queue_handlers import (
+    RegexFileQueueHandlerIncoming, RegexFileQueueHandlerPending)
 
 app_config = django_apps.get_app_config('edc_sync_files')
 
 
 class IncomingTransactionsFileQueueObserver(FileQueueObserver):
 
+    handler_cls = RegexFileQueueHandlerIncoming
     queue_cls = IncomingTransactionsFileQueue
     options = dict(
         regexes=[r'(\/\w+)+\.json$', '\w+\.json$'],
@@ -19,6 +22,7 @@ class IncomingTransactionsFileQueueObserver(FileQueueObserver):
 
 class DeserializeTransactionsFileQueueObserver(FileQueueObserver):
 
+    handler_cls = RegexFileQueueHandlerPending
     queue_cls = DeserializeTransactionsFileQueue
     options = dict(
         regexes=[r'(\/\w+)+\.json$', '\w+\.json$'],
