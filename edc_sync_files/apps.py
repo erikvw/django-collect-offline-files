@@ -50,4 +50,4 @@ class AppConfig(DjangoAppConfig):
         Role is configured through edc_device.
         See edc_device.apps.AppConfig.
         """
-        return django_apps.get_app_config('edc_device').role
+        return django_apps.get_app_config('edc_device').device_role
