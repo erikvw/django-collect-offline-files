@@ -78,7 +78,6 @@ class ExportedTransactionFileHistory(BaseUuidModel):
         return (self.filename, self.hostname)
 
     class Meta:
-        app_label = 'edc_sync_files'
         ordering = ('created', )
         verbose_name = 'Sent History'
         verbose_name_plural = 'Sent History'

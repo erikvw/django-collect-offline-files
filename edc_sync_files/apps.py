@@ -2,12 +2,7 @@ import os
 import sys
 
 from django.apps import AppConfig as DjangoAppConfig
-from django.apps import apps as django_apps
 from django.conf import settings
-from django.core.management.color import color_style
-
-
-style = color_style()
 
 
 class AppConfig(DjangoAppConfig):
@@ -32,22 +27,16 @@ class AppConfig(DjangoAppConfig):
         settings.MEDIA_ROOT, 'transactions', 'log')
 
     def ready(self):
-        sys.stdout.write('Loading {} ...\n'.format(self.verbose_name))
+        sys.stdout.write(f'Loading {self.verbose_name} ...\n')
+        self.make_required_folders()
+        sys.stdout.write(f'Done loading {self.verbose_name}.\n')
+
+    def make_required_folders(self):
+        """Makes all folders declared in the config if they
+        do not exist.
+        """
         for folder in [
             self.pending_folder, self.usb_incoming_folder, self.outgoing_folder,
                 self.incoming_folder, self.archive_folder, self.log_folder]:
             if not os.path.exists(folder):
                 os.makedirs(folder)
-        if not self.role:
-            sys.stdout.write(style.NOTICE(
-                ' Warning: Project uses \'edc_sync_files\' but has '
-                'not defined a role for this app instance. See AppConfig.\n'))
-
-    @property
-    def role(self):
-        """Return the role of this device.
-
-        Role is configured through edc_device.
-        See edc_device.apps.AppConfig.
-        """
-        return django_apps.get_app_config('edc_device').device_role

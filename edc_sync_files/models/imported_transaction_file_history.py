@@ -50,5 +50,4 @@ class ImportedTransactionFileHistory(BaseUuidModel):
     objects = models.Manager()
 
     class Meta:
-        app_label = 'edc_sync_files'
         ordering = ('-created', )

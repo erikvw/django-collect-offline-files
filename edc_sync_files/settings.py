@@ -19,6 +19,8 @@ from .loggers import LOGGING
 
 LOGGING = LOGGING
 
+APP_NAME = 'edc_sync_files'
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 ETC_DIR = os.path.join(str(PurePath(BASE_DIR).parent), 'etc')
@@ -146,14 +148,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-if 'test' in sys.argv:
-    # Ignore running migrations on unit tests -- speeds up tests.
-    MIGRATION_MODULES = {
-        "edc_sync": None,
-        "edc_sync_files": None,
-    }
-
-
 # Internationalization
 # https://docs.djangoproject.com/en/1.9/topics/i18n/
 
@@ -188,3 +182,16 @@ SERVER_DEVICE_ID_LIST = ['99']
 
 APP_LABEL = 'edc_sync_files'
 COMMUNITY = ''
+
+if 'test' in sys.argv:
+
+    class DisableMigrations:
+        def __contains__(self, item):
+            return True
+
+        def __getitem__(self, item):
+            return None
+
+    MIGRATION_MODULES = DisableMigrations()
+    PASSWORD_HASHERS = ('django.contrib.auth.hashers.MD5PasswordHasher', )
+    DEFAULT_FILE_STORAGE = 'inmemorystorage.InMemoryStorage'
