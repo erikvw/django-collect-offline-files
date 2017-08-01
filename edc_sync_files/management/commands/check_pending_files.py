@@ -5,7 +5,8 @@ import shutil
 from django.apps import apps as django_apps
 from django.core.management import BaseCommand, call_command
 
-from ...models import UploadTransactionFile
+from ...models import ImportedTransactionFileHistory
+from django.core.management.base import CommandError
 
 
 class Command(BaseCommand):
@@ -17,11 +18,13 @@ class Command(BaseCommand):
     help = ''
 
     def handle(self, *args, **options):
+
+        CommandError('this command is not in use.')
         edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
         for filename in self.incoming_files():
             try:
                 source_filename = os.path.join(
-                    edc_sync_file_app.destination_folder, filename)
+                    edc_sync_file_app.incoming_folder, filename)
                 destination_filename = os.path.join(
                     edc_sync_file_app.pending_folder, filename)
                 shutil.move(source_filename, destination_filename)
@@ -34,21 +37,22 @@ class Command(BaseCommand):
                     source_filename = os.path.join(
                         edc_sync_file_app.pending_folder, filename)
                     destination_filename = os.path.join(
-                        edc_sync_file_app.destination_folder, filename)
+                        edc_sync_file_app.incoming_folder, filename)
                     shutil.move(source_filename, destination_filename)
                 except FileNotFoundError as e:
                     print('Error occurred Got {}'.format(str(e)))
 
     def incoming_files(self):
         edc_sync_file_app = django_apps.get_app_config('edc_sync_files')
-        files = os.listdir(edc_sync_file_app.destination_folder)
+        files = os.listdir(edc_sync_file_app.incoming_folder)
         incoming_files = []
         pattern = re.compile(r'^\w+\_\d{14}\.json$')
         for filename in files:
             if pattern.match(filename):
                 try:
-                    UploadTransactionFile.objects.get(file_name=filename)
-                except UploadTransactionFile.DoesNotExist:
+                    ImportedTransactionFileHistory.objects.get(
+                        filename=filename)
+                except ImportedTransactionFileHistory.DoesNotExist:
                     incoming_files.append(filename)
         return incoming_files
 

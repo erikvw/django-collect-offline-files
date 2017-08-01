@@ -1,61 +1,47 @@
 # edc-sync-files
 
-### EDC Sync File Transfer
+Transfer `edc_sync` transactions as files using SFTP over an SSH connection.
 
-Transfer user generated media files as part of the synchronization process managed by `edc_sync`.
+Data flows from client to server where a server is either a node server or the central server.
+
+see also `edc_sync`.
 
 
-### Data Flow
+## Usage
 
-client -> node -> server
-client -> server
+On the client:
 
-### Setup SSH Keys
+    python manage.py export_transactions
 
-1. Generate public key for the server or client.
-    * ssh-keygen -t rsa
-2. Copy public key to machine you want to connect to with ssh-copy-id.
-    * ssh-copy-id  user@device_ip
 
-- user
-- device_ip
-- source_folder where/to/copy/files/from
-- destination_folder where/to/copy/files/to
-- archive_folder where/to/copy/files/to/archive
+On the server or receiving host:
 
-#### Add above attributes for AppConfig in your Application in the child class of Edc Sync AppConfig
+    python manage.py incoming_observer
 
-```
-CLIENT MACHINE
+    python manage.py deserialize_observer
 
-Connected to host edc.sample.com.
 
-patterns: *.json
-host: edc.sample.com
-Incoming folder: /Users/edc_user/source/bcpp/transactions/incoming
-Outgoing folder: /Users/edc_user/source/bcpp/transactions/outgoing
-Archive folder: /Users/edc_user/source/bcpp/transactions/archive
+## FileQueueObservers
 
-SERVER MACHINE
+Two FileQueueObservers do the work using use `watchdog` observers; `IncomingTransactionsFileQueueObserver` and `DeserializeTransactionsFileQueueObserver`. They are called using management commands:
 
-Upload folder: remote_user@edc.sample.com:/Users/edc_user/source/bcpp/transactions/tmp
-Incoming folder: remote_user@edc.sample.com:/Users/edc_user/source/bcpp/transactions/incoming
-Outgoing folder: remote_user@edc.sample.com:/Users/edc_user/source/bcpp/transactions/outgoing
-Archive folder: remote_user@edc.sample.com:/Users/edc_user/source/bcpp/transactions/archive
+    python manage.py incoming_observer
 
-```
+and
+    
+    python manage.py deserialize_observer
+    
+### IncomingTransactionsFileQueueObserver
 
-### Setup USB
+The client exports data to JSON and sends to the server. Using `TransactionExporter`, data is exported into a JSON file from `edc_sync.models.OutgoingTransaction` on the client and sent to the server using `TransactionFileSender`.
 
-```
-	1. Renamed USB to BCPP.
-	2. mkdir -p /Volumes/BCPP/transactions/incoming
-	3. mkdir -p /Volumes/BCPP/transactions/archive
-```
-### Start Watchdog Observer In The Server.
+Once a file is sent to the server, the `IncomingTransactionsFileQueueObserver` detects it and adds the filename to the queue (`IncomingTransactionsFileQueue`). 
 
-```
-	1. workon bcpp
-	2. cd source/bcpp/
-	3. python manage.py start_observer
-```
+### DeserializeTransactionsFileQueue
+
+Processed files in the queue `IncomingTransactionsFileQueue` are moved to the pending folder watched by `DeserializeTransactionsFileQueueObserver`.and added to the its queue, `DeserializeTransactionsFileQueue`. 
+
+
+## Processing queue items / filenames
+
+Each queue has a processor, (see `process_queue`). The processor calls the `next_task` method for each item in the queue in FIFO order infinitely or until it gets a `None` item.
