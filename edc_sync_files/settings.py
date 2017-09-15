@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_crypto_fields.apps.AppConfig',
     'edc_base.apps.AppConfig',
+    'edc_protocol.apps.AppConfig',
     'edc_device.apps.AppConfig',
     'edc_sync.apps.AppConfig',
     'edc_sync_files.apps.AppConfig',
@@ -193,5 +194,5 @@ if 'test' in sys.argv:
             return None
 
     MIGRATION_MODULES = DisableMigrations()
-    PASSWORD_HASHERS = ('django.contrib.auth.hashers.MD5PasswordHasher', )
+    PASSWORD_HASHERS = ('django.contrib.auth.hashers.MD5PasswordHasher',)
     DEFAULT_FILE_STORAGE = 'inmemorystorage.InMemoryStorage'
