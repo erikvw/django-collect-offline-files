@@ -62,11 +62,13 @@ class JSONDumpFile:
 class ExportBatch:
 
     def __init__(self, device_id=None, using=None, model=None,
-                 history_model=None, **kwargs):
+                 history_model=None, site_code=None, **kwargs):
         edc_device_app_config = django_apps.get_app_config('edc_device')
+        edc_protocol_app_config = django_apps.get_app_config('edc_protocol')
         self.closed = False
         self.batch_id = None
         self.device_id = device_id or edc_device_app_config.device_id
+        self.site_code = site_code or edc_protocol_app_config.site_code
         self.filename = None
         self.history = None
         self.history_model = history_model or ExportedTransactionFileHistory
@@ -87,7 +89,7 @@ class ExportBatch:
         if self.batch_id:
             raise BatchAlreadyOpen('Batch is already open.')
         timestamp = timezone.now().strftime("%Y%m%d%H%M%S%f")
-        batch_id = f'{self.device_id}{timestamp}'
+        batch_id = f'{self.device_id}{self.site_code}{timestamp}'
         history_obj = self.history_model.objects.using(self.using).last()
         if history_obj:
             prev_batch_id = history_obj.batch_id
