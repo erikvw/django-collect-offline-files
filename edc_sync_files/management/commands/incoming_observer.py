@@ -17,6 +17,22 @@ class Command(BaseCommand):
 
     file_observer_cls = IncomingTransactionsFileQueueObserver
 
+    def add_arguments(self, parser):
+
+        parser.add_argument(
+            '--src_path',
+            dest='src_path',
+            default=app_config.incoming_folder,
+            help=(f'Target path on remote host. (Default: {app_config.incoming_folder}. See app_config.)'),
+        )
+
+        parser.add_argument(
+            '--dst_path',
+            dest='dst_path',
+            default=app_config.pending_folder,
+            help=(f'Archive path on localhost. (Default: {app_config.archive_folder}. See app_config.)'),
+        )
+
     def handle(self, *args, **options):
         file_observer = self.file_observer_cls(
             task_processor=process_queue, **options)
