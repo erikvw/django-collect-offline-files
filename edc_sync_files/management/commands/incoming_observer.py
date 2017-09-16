@@ -30,7 +30,7 @@ class Command(BaseCommand):
             '--dst_path',
             dest='dst_path',
             default=app_config.pending_folder,
-            help=(f'Archive path on localhost. (Default: {app_config.archive_folder}. See app_config.)'),
+            help=(f'Pending path on localhost. (Default: {app_config.archive_folder}. See app_config.)'),
         )
 
     def handle(self, *args, **options):
