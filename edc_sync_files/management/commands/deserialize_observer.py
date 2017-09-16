@@ -26,6 +26,20 @@ class Command(BaseCommand):
                   f'({NODE_SERVER}, {CENTRAL_SERVER}). Not recommended. '),
         )
 
+        parser.add_argument(
+            '--src_path',
+            dest='src_path',
+            default=app_config.pending_folder,
+            help=(f'Target path on remote host. (Default: {app_config.pending_folder}. See app_config.)'),
+        )
+
+        parser.add_argument(
+            '--dst_path',
+            dest='dst_path',
+            default=app_config.archive_folder,
+            help=(f'Archive path on localhost. (Default: {app_config.archive_folder}. See app_config.)'),
+        )
+
     def handle(self, *args, **options):
         file_observer = self.file_observer_cls(
             task_processor=process_queue, **options)
