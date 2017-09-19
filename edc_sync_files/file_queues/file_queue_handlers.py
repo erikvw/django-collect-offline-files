@@ -21,14 +21,14 @@ class RegexFileQueueHandlerIncoming(RegexMatchingEventHandler):
     def __str__(self):
         return str(self.queue)
 
-    def on_moved(self, event):
+    def on_created(self, event):
         self.process(event)
 
     def process(self, event):
         """Put and process tasks in queue.
         """
-        logger.info(f'{self}: put {event.dest_path}')
-        self.queue.put(os.path.basename(event.dest_path))
+        logger.info(f'{self}: put {event.src_path}')
+        self.queue.put(os.path.basename(event.src_path))
 
 
 class RegexFileQueueHandlerPending(RegexMatchingEventHandler):
