@@ -150,6 +150,7 @@ class TestConnector(TestCase):
             sftp_client = SFTPClient(
                 verbose=True,
                 dst_path=dst_path,
+                dst_tmp=dst_tmp_path,
                 dst_tmp_path=dst_tmp_path,
                 src_path=src_path)
             with sftp_client.connect(ssh_conn=ssh_conn) as sftp_conn:

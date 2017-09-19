@@ -36,6 +36,7 @@ class TestFileEventHandler(TestCase):
     def send(self, filenames=None, history_model=None):
         tx_file_sender = TransactionFileSender(
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
             history_model=history_model,
