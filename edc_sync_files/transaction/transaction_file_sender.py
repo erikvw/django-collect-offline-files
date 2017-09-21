@@ -11,8 +11,9 @@ class TransactionFileSenderError(Exception):
 
 class TransactionFileSender:
 
-    def __init__(self, remote_host=None, username=None, src_path=None, dst_path=None, archive_path=None,
-                 history_model=None, using=None, update_history_model=None, **kwargs):
+    def __init__(self, remote_host=None, username=None, src_path=None, dst_tmp=None,
+                 dst_path=None, archive_path=None, history_model=None, using=None,
+                 update_history_model=None, **kwargs):
         self.using = using
         self.update_history_model = True if update_history_model is None else update_history_model
         self.file_archiver = FileArchiver(
@@ -21,7 +22,7 @@ class TransactionFileSender:
         self.ssh_client = SSHClient(
             username=username, remote_host=remote_host, **kwargs)
         self.sftp_client = SFTPClient(
-            src_path=src_path, dst_path=dst_path, **kwargs)
+            src_path=src_path, dst_tmp=dst_tmp, dst_path=dst_path, **kwargs)
 
     def send(self, filenames=None):
         """Sends the file to the remote host and archives the sent file locally.

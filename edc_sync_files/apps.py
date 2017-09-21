@@ -13,6 +13,9 @@ class AppConfig(DjangoAppConfig):
     remote_host = None
     usb_volume = '/Volumes/BCPP'
 
+    tmp_folder = os.path.join(
+        settings.MEDIA_ROOT, 'transactions', 'tmp')
+
     pending_folder = os.path.join(
         settings.MEDIA_ROOT, 'transactions', 'pending')
     usb_incoming_folder = os.path.join(
@@ -37,6 +40,7 @@ class AppConfig(DjangoAppConfig):
         """
         for folder in [
             self.pending_folder, self.usb_incoming_folder, self.outgoing_folder,
-                self.incoming_folder, self.archive_folder, self.log_folder]:
+                self.incoming_folder, self.archive_folder, self.tmp_folder,
+                self.log_folder]:
             if not os.path.exists(folder):
                 os.makedirs(folder)

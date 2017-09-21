@@ -14,6 +14,7 @@ class TestTransactionFileSender(TestCase):
     def test_init(self):
         _, src = tempfile.mkstemp(text=True)
         src_path = os.path.dirname(src)
+        dst_tmp = f'{tempfile.gettempdir()}/tmp'
         dst_path = f'{tempfile.gettempdir()}/dst'
         archive_path = f'{tempfile.gettempdir()}/archive'
         if not os.path.exists(dst_path):
@@ -22,6 +23,7 @@ class TestTransactionFileSender(TestCase):
             history_model=ExportedTransactionFileHistory,
             update_history_model=False,
             src_path=src_path, dst_path=dst_path,
+            dst_tmp=dst_tmp,
             archive_path=archive_path)
 
     def test_send_custom_paths(self):
@@ -31,6 +33,7 @@ class TestTransactionFileSender(TestCase):
         src_filename = os.path.basename(src)
         src_path = os.path.dirname(src)
         dst_path = f'{tempfile.gettempdir()}/dst'
+        dst_tmp = f'{tempfile.gettempdir()}/tmp'
         if not os.path.exists(dst_path):
             os.mkdir(dst_path)
         archive_path = f'{tempfile.gettempdir()}/archive'
@@ -40,6 +43,7 @@ class TestTransactionFileSender(TestCase):
             history_model=ExportedTransactionFileHistory,
             update_history_model=False,
             src_path=src_path,
+            dst_tmp=dst_tmp,
             dst_path=dst_path,
             archive_path=archive_path)
         tx_file_sender.send(filenames=[src_filename])
@@ -55,6 +59,7 @@ class TestTransactionFileSender(TestCase):
             history_model=ExportedTransactionFileHistory,
             update_history_model=False,
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder)
         tx_file_sender.send(filenames=[src_filename])
@@ -72,6 +77,7 @@ class TestTransactionFileSender(TestCase):
         tx_file_sender = TransactionFileSender(
             history_model=ExportedTransactionFileHistory,
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder)
         tx_file_sender.send(filenames=[src_filename])
@@ -91,6 +97,7 @@ class TestTransactionFileSender(TestCase):
             history_model=ExportedTransactionFileHistory,
             update_history_model=False, username=app_config.user, trusted_host=False,
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder)
         self.assertRaises(
@@ -106,6 +113,7 @@ class TestTransactionFileSender(TestCase):
             history_model=ExportedTransactionFileHistory,
             update_history_model=False, username=username, trusted_host=False,
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder)
         self.assertEqual(tx_file_sender.ssh_client.username, username)
