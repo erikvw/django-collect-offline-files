@@ -36,6 +36,13 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
+            '--tmp_path',
+            dest='tmp_path',
+            default=app_config.tmp_folder,
+            help=(f'tmp path on remote host. (Default: {app_config.tmp_folder}. See app_config.)'),
+        )
+
+        parser.add_argument(
             '--target_path',
             dest='target_path',
             default=app_config.incoming_folder,
@@ -76,7 +83,7 @@ class Command(BaseCommand):
                 remote_host=options.get('user').split('@')[1],
                 trusted_host=True,
                 src_path=options.get('export_path'),
-                dst_tmp=app_config.tmp_folder,
+                dst_tmp=options.get('tmp_path'),
                 dst_path=options.get('target_path'),
                 archive_path=options.get('archive_path'))
             filenames = [
