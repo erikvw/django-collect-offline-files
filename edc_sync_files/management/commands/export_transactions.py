@@ -76,6 +76,7 @@ class Command(BaseCommand):
                 remote_host=options.get('user').split('@')[1],
                 trusted_host=True,
                 src_path=options.get('export_path'),
+                dst_tmp=app_config.tmp_folder,
                 dst_path=options.get('target_path'),
                 archive_path=options.get('archive_path'))
             filenames = [
