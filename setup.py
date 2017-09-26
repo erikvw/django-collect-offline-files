@@ -11,11 +11,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='edc-sync-files',
-<<<<<<< HEAD
     version='0.1.15',
-=======
-    version='0.1.14',
->>>>>>> 87a25b1eb4d439e27c3a16c77466ce2a5352d195
     author=u'Erik van Widenfelt',
     author_email='ew2789@gmail.com',
     packages=find_packages(),
