@@ -45,7 +45,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--archive_path',
             dest='archive_path',
-            default=app_config.incoming_folder,
+            default=app_config.archive_folder,
             help=(f'Archive path on localhost. (Default: {app_config.archive_folder}. See app_config.)'),
         )
 
