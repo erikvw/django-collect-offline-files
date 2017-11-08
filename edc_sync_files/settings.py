@@ -182,6 +182,10 @@ SERVER_DEVICE_ID_LIST = ['99']
 
 APP_LABEL = 'edc_sync_files'
 COMMUNITY = ''
+EDC_SYNC_SERVER_IP = None
+EDC_SYNC_FILES_REMOTE_HOST = None
+EDC_SYNC_FILES_USER = 'django'
+EDC_SYNC_FILES_USB_VOLUME = '/Volumes/BCPP'
 
 if 'test' in sys.argv:
 

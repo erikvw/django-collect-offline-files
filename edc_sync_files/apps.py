@@ -9,9 +9,10 @@ class AppConfig(DjangoAppConfig):
 
     name = 'edc_sync_files'
     verbose_name = 'File support for data synchronization'
-    user = None
-    remote_host = None
-    usb_volume = '/Volumes/BCPP'
+    edc_sync_files_using = True
+    user = settings.EDC_SYNC_FILES_USER
+    remote_host = settings.EDC_SYNC_FILES_REMOTE_HOST
+    usb_volume = settings.EDC_SYNC_FILES_USB_VOLUME
 
     pending_folder = os.path.join(
         settings.MEDIA_ROOT, 'transactions', 'pending')
