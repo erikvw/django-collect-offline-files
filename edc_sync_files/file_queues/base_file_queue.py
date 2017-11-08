@@ -34,7 +34,9 @@ class BaseFileQueue(Queue):
         """Reloads /path/to/filenames into the queue that match the regexes.
         """
         combined = re.compile("(" + ")|(".join(regexes) + ")", re.I)
-        for filename in os.listdir(self.src_path):
+        pending_files = os.listdir(self.src_path) or []
+        pending_files.sort()
+        for filename in pending_files:
             if re.match(combined, filename):
                 self.put(os.path.join(self.src_path, filename))
 

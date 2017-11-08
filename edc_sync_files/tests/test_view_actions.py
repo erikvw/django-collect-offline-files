@@ -33,6 +33,7 @@ class TestActionHandler(TestCase):
         kwargs = dict(
             using='client',
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
             remote_host='localhost')
@@ -44,6 +45,7 @@ class TestActionHandler(TestCase):
         kwargs = dict(
             using='client',
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
             remote_host='localhost')
@@ -60,6 +62,7 @@ class TestActionHandler(TestCase):
         kwargs = dict(
             using='client',
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
             remote_host='localhost')
@@ -73,6 +76,7 @@ class TestActionHandler(TestCase):
         kwargs = dict(
             using='client',
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
             remote_host='localhost')
@@ -88,6 +92,7 @@ class TestActionHandler(TestCase):
         kwargs = dict(
             using='client',
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
             remote_host='localhost')
@@ -104,6 +109,7 @@ class TestActionHandler(TestCase):
         kwargs = dict(
             using='client',
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
             remote_host=remote_host)
@@ -122,6 +128,7 @@ class TestActionHandler(TestCase):
         kwargs = dict(
             using='client',
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
             remote_host='localhost')
@@ -141,6 +148,7 @@ class TestActionHandler(TestCase):
         kwargs = dict(
             using='client',
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
             remote_host='localhost')
@@ -157,6 +165,7 @@ class TestActionHandler(TestCase):
         kwargs = dict(
             using='client',
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
             remote_host='localhost')
@@ -173,6 +182,7 @@ class TestActionHandler(TestCase):
         kwargs = dict(
             using='client',
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
             remote_host='localhost')
@@ -190,6 +200,7 @@ class TestActionHandler(TestCase):
         kwargs = dict(
             using='client',
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
             remote_host='localhost')
@@ -206,6 +217,7 @@ class TestActionHandler(TestCase):
         kwargs = dict(
             using='client',
             src_path=app_config.outgoing_folder,
+            dst_tmp=app_config.tmp_folder,
             dst_path=app_config.incoming_folder,
             archive_path=app_config.archive_folder,
             remote_host='localhost')
