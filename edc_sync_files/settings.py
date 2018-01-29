@@ -23,7 +23,8 @@ APP_NAME = 'edc_sync_files'
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
-ETC_DIR = os.path.join(str(PurePath(BASE_DIR).parent), 'etc')
+ETC_DIR = os.path.join(BASE_DIR, 'etc')
+SITE_ID = 40
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
 
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
     'rest_framework',
     'rest_framework.authtoken',
     'django_crypto_fields.apps.AppConfig',
@@ -183,6 +185,10 @@ SERVER_DEVICE_ID_LIST = ['99']
 
 APP_LABEL = 'edc_sync_files'
 COMMUNITY = ''
+EDC_SYNC_SERVER_IP = None
+EDC_SYNC_FILES_REMOTE_HOST = None
+EDC_SYNC_FILES_USER = 'django'
+EDC_SYNC_FILES_USB_VOLUME = '/Volumes/BCPP'
 
 if 'test' in sys.argv:
 
