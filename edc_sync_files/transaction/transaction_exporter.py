@@ -8,6 +8,7 @@ from edc_sync.models import OutgoingTransaction
 from edc_sync.transaction import serialize
 
 from ..models import ExportedTransactionFileHistory
+from django.contrib.sites.models import Site
 
 
 class BatchAlreadyOpen(Exception):
@@ -64,11 +65,10 @@ class ExportBatch:
     def __init__(self, device_id=None, using=None, model=None,
                  history_model=None, site_code=None, **kwargs):
         edc_device_app_config = django_apps.get_app_config('edc_device')
-        edc_protocol_app_config = django_apps.get_app_config('edc_protocol')
         self.closed = False
         self.batch_id = None
         self.device_id = device_id or edc_device_app_config.device_id
-        self.site_code = site_code or edc_protocol_app_config.site_code
+        self.site_code = site_code or Site.objects.get_current()
         self.filename = None
         self.history = None
         self.history_model = history_model or ExportedTransactionFileHistory
