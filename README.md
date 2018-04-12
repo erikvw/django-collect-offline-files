@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.org/clinicedc/edc-sync-files.svg?branch=develop)](https://travis-ci.org/clinicedc/edc-sync-files)
+[![Coverage Status](https://coveralls.io/repos/clinicedc/edc-sync-files/badge.svg?branch=develop&service=github)](https://coveralls.io/github/clinicedc/edc-sync-files?branch=develop)
+
+
 # edc-sync-files
 
 Transfer `edc_sync` transactions as files using SFTP over an SSH connection.
