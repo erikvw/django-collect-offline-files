@@ -6,6 +6,8 @@ python:
 services:
 - mysql
 
+sudo: required
+
 branches:
   only:
   - develop
