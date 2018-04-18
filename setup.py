@@ -16,7 +16,7 @@ setup(
     author_email='ew2789@gmail.com',
     packages=find_packages(),
     include_package_data=True,
-    url='https://github.com/botswana-harvard/edc-sync-files',
+    url='https://github.com/clinicedc/edc-sync-files',
     license='GPL license, see LICENSE',
     description='Sync models instances between client and server.',
     long_description=README,
