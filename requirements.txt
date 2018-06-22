@@ -1,11 +1,5 @@
-djangorestframework
-django-cors-headers
-requests
-paramiko
-hurry.filesize
-watchdog
+.
 git+https://github.com/clinicedc/edc-base@develop#egg=edc-base
-# git+https://github.com/erikvw/django-appconfig-ini@develop#egg=django-appconfig-ini
 git+https://github.com/erikvw/django-crypto-fields.git@develop#egg=django_crypto_fields
 git+https://github.com/erikvw/django-revision.git@develop#egg=django_revision
 git+https://github.com/erikvw/django-offline@develop#egg=django-offline
