@@ -8,7 +8,8 @@ from django.test.utils import tag
 from edc_device.constants import NODE_SERVER
 from django_offline.models import OutgoingTransaction
 
-from ..file_queues import IncomingTransactionsFileQueue, DeserializeTransactionsFileQueue, process_queue
+from ..file_queues import IncomingTransactionsFileQueue
+from ..file_queues import DeserializeTransactionsFileQueue, process_queue
 from ..models import ImportedTransactionFileHistory, ExportedTransactionFileHistory
 from ..transaction import TransactionExporter, TransactionFileSender
 from .models import TestModel

@@ -18,7 +18,8 @@ class SFTPClient(ClosingContextManager):
     Copy is two steps; put then rename.
     """
 
-    def __init__(self, src_path=None, dst_path=None, dst_tmp=None, verbose=None, **kwargs):
+    def __init__(self, src_path=None, dst_path=None, dst_tmp=None,
+                 verbose=None, **kwargs):
         self.src_path = src_path
         self.dst_tmp = dst_tmp
         self.dst_path = dst_path
@@ -34,11 +35,12 @@ class SFTPClient(ClosingContextManager):
         self._sftp_client.close()
 
     def copy(self, filename=None):
-        """Puts on destination as a temp file, renames on the destination.
+        """Puts on destination as a temp file, renames on
+        the destination.
         """
         dst = os.path.join(self.dst_path, filename)
         src = os.path.join(self.src_path, filename)
-        dst_tmp = os.path.join(self.dst_tmp, f'{filename}')
+        dst_tmp = os.path.join(self.dst_tmp, filename)
         self.put(src=src, dst=dst_tmp,
                  callback=self.update_progress, confirm=True)
         self.rename(src=dst_tmp, dst=dst)

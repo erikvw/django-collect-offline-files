@@ -9,7 +9,8 @@ from edc_device.constants import NODE_SERVER
 from django_offline.models import OutgoingTransaction, IncomingTransaction
 
 from ..models import ImportedTransactionFileHistory, ExportedTransactionFileHistory
-from ..file_queues import IncomingTransactionsFileQueue, DeserializeTransactionsFileQueue, process_queue
+from ..file_queues import IncomingTransactionsFileQueue
+from ..file_queues import DeserializeTransactionsFileQueue, process_queue
 from ..transaction import TransactionExporter, TransactionImporter
 from .models import TestModel
 

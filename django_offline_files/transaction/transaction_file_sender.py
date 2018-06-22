@@ -15,7 +15,8 @@ class TransactionFileSender:
                  dst_path=None, archive_path=None, history_model=None, using=None,
                  update_history_model=None, **kwargs):
         self.using = using
-        self.update_history_model = True if update_history_model is None else update_history_model
+        self.update_history_model = (
+            True if update_history_model is None else update_history_model)
         self.file_archiver = FileArchiver(
             src_path=src_path, dst_path=archive_path)
         self.history_model = history_model
@@ -25,7 +26,8 @@ class TransactionFileSender:
             src_path=src_path, dst_tmp=dst_tmp, dst_path=dst_path, **kwargs)
 
     def send(self, filenames=None):
-        """Sends the file to the remote host and archives the sent file locally.
+        """Sends the file to the remote host and archives
+        the sent file locally.
         """
         try:
             with self.ssh_client.connect() as ssh_conn:

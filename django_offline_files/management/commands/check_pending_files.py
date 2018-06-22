@@ -4,9 +4,9 @@ import shutil
 
 from django.apps import apps as django_apps
 from django.core.management import BaseCommand, call_command
-
-from django_offline_files import ImportedTransactionFileHistory
 from django.core.management.base import CommandError
+
+from ...models import ImportedTransactionFileHistory
 
 
 class Command(BaseCommand):

@@ -1,1 +1,2 @@
-from .observers import IncomingTransactionsFileQueueObserver, DeserializeTransactionsFileQueueObserver
+from .observers import IncomingTransactionsFileQueueObserver
+from .observers import DeserializeTransactionsFileQueueObserver
