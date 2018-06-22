@@ -1,3 +1,3 @@
 include AUTHORS CHANGES README.md LICENCE
-recursive-include edc_sync_files/templates *
-recursive-include edc_sync_files/static *
+recursive-include django_offline_files/templates *
+recursive-include django_offline_files/static *

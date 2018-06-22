@@ -13,12 +13,9 @@ install:
 - pip install flake8
 - pip install coveralls
 before_script:
-- flake8 edc_device
+- flake8 django_offline_files
 - mysql -e 'create database edc character set utf8;'
 script:
-- coverage run --source=edc_sync_files manage.py test
+- coverage run --source=django_offline_files manage.py test
 after_success:
 - coveralls
-notifications:
-  slack:
-    secure: ZC6LF2rSblkQFpxQseaiYnVEGZv4wdx8JB0TQIwAjymw+AsTlbdFrVqaOAwsYNVLG1upjiyRkY0C4dtodP+cF6eztRyF1qK50x2g6S5y0Mx5OSP6BkCFcpn5SwGeKebwh+Vbi0J3Oa5E8rYH6wY5UYAKyLbUEoBjWnChzmSiyAn1Yc6zPG6svfEv6VMph0BTYui8H18FWcNrAGiLHOhle05tlDU9jZZGXNsXOSMGKW/fcdle2yghHAEg9sHDmxw+eQHuFllGZS5jA3sGWIU2ls7XL+p7VKIvppeVwnFau46uprtmx/q6yX7ZfOqDhNVTHJaZZghbYjgKC3jEwV7559a3uDW8eZ4fzd57i6oOrB/GAZwy1Ysj0E5DS8T8BDnBeyHYsgx/xHsmh1t0shIVAzUAmWalu1oJXvDw8xrdhhRYjRwgbezlMbOibsrpWqjMmifMltNFSPEE14MIOIjGWW1Z3VdGko2V1oRePBzcBMjI6fRDMFbXzQgsAMFGmDmhljDT0rsf64CRmSo5AphpIM7eFDniJetmIr2OLEm/YtRbWXV/poS/kBaARmdPjwldX4BDBKqC0LAhzM18u4D67wwHoMpTp3+uHaitXCOs4/lk41lBM3lTZYnxbaPeLyPGAtMOTCPIVlGVlJDrR3kF11AiOwl7/Lg6HuOs+z+k1yg=
