@@ -21,8 +21,7 @@ LOGGING = LOGGING
 
 APP_NAME = 'django_offline_files'
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ETC_DIR = os.path.join(BASE_DIR, 'etc')
 SITE_ID = 40
 # Quick-start development settings - unsuitable for production
@@ -170,7 +169,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
 GIT_DIR = str(PurePath(BASE_DIR).parent)
-KEY_PATH = os.path.join(str(PurePath(BASE_DIR).parent), 'crypto_fields')
+# KEY_PATH = os.path.join(BASE_DIR, 'crypto_fields')
 EDC_CRYPTO_FIELDS_CLIENT_USING = 'client'
 SHOW_CRYPTO_FORM_DATA = True
 STUDY_OPEN_DATETIME = timezone.datetime(2016, 1, 18)
@@ -187,9 +186,9 @@ APP_LABEL = 'django_offline_files'
 COMMUNITY = ''
 
 EDC_SYNC_SERVER_IP = None
-EDC_SYNC_FILES_REMOTE_HOST = None
-EDC_SYNC_FILES_USER = 'django'
-EDC_SYNC_FILES_USB_VOLUME = '/Volumes/BCPP'
+DJANGO_OFFLINE_FILES_REMOTE_HOST = None
+DJANGO_OFFLINE_FILES_USER = 'django'
+DJANGO_OFFLINE_FILES_USB_VOLUME = '/Volumes/BCPP'
 
 if 'test' in sys.argv:
 
