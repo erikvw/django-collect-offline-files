@@ -20,13 +20,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         CommandError('this command is not in use.')
-        edc_sync_file_app = django_apps.get_app_config('django_offline_files')
+        django_offline_file_app = django_apps.get_app_config('django_offline_files')
         for filename in self.incoming_files():
             try:
                 source_filename = os.path.join(
-                    edc_sync_file_app.incoming_folder, filename)
+                    django_offline_file_app.incoming_folder, filename)
                 destination_filename = os.path.join(
-                    edc_sync_file_app.pending_folder, filename)
+                    django_offline_file_app.pending_folder, filename)
                 shutil.move(source_filename, destination_filename)
             except FileNotFoundError as e:
                 print('Error occurred Got {}'.format(str(e)))
@@ -35,16 +35,16 @@ class Command(BaseCommand):
             for filename in pending_files.sort() or []:
                 try:
                     source_filename = os.path.join(
-                        edc_sync_file_app.pending_folder, filename)
+                        django_offline_file_app.pending_folder, filename)
                     destination_filename = os.path.join(
-                        edc_sync_file_app.incoming_folder, filename)
+                        django_offline_file_app.incoming_folder, filename)
                     shutil.move(source_filename, destination_filename)
                 except FileNotFoundError as e:
                     print('Error occurred Got {}'.format(str(e)))
 
     def incoming_files(self):
-        edc_sync_file_app = django_apps.get_app_config('django_offline_files')
-        files = os.listdir(edc_sync_file_app.incoming_folder)
+        django_offline_file_app = django_apps.get_app_config('django_offline_files')
+        files = os.listdir(django_offline_file_app.incoming_folder)
         incoming_files = []
         pattern = re.compile(r'^\w+\_\d{14}\.json$')
         for filename in files:
@@ -57,8 +57,8 @@ class Command(BaseCommand):
         return incoming_files
 
     def pending_files(self):
-        edc_sync_file_app = django_apps.get_app_config('django_offline_files')
-        files = os.listdir(edc_sync_file_app.pending_folder)
+        django_offline_file_app = django_apps.get_app_config('django_offline_files')
+        files = os.listdir(django_offline_file_app.pending_folder)
         pending_files = []
         for filename in files:
             pending_files.append(filename)
