@@ -31,7 +31,7 @@ function edcSyncMediaFilesReady(hosts, url) {
 		$('#id-table-body tr').each(function() {
 		    var filename = $(this).find("td").eq(1).html();
 		    mediaFiles.push(filename);
-		    $(this).find("td").eq(3).append("<span class='fa fa-spinner fa-spin'></span>");
+		    $(this).find("td").eq(3).append("<span class='fas fa-spinner fa-spin'></span>");
 		    iconElement = $(this);
 		    transferFile(ip_address, filename, url, iconElement);
 		});
