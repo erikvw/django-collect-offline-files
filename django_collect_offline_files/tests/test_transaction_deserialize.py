@@ -4,7 +4,8 @@ import tempfile
 from django.apps import apps as django_apps
 from django.test.testcases import TestCase
 from django.test.utils import tag, override_settings
-from django_collect_offline.transaction import TransactionDeserializer, TransactionDeserializerError
+from django_collect_offline.transaction import TransactionDeserializer
+from django_collect_offline.transaction import TransactionDeserializerError
 from django_collect_offline.transaction import deserialize
 from edc_device.constants import NODE_SERVER, CLIENT, CENTRAL_SERVER
 from faker import Faker
