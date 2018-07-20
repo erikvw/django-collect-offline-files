@@ -14,7 +14,7 @@ Session.vim
 *~
 # Auto-generated tag files
 tags
-django_offline_files/media
+django_collect_offline_files/media
 .DS_Store
 # Byte-compiled / optimized / DLL files
 __pycache__/

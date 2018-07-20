@@ -1,14 +1,14 @@
-[![Build Status](https://travis-ci.com/erikvw/django-offline-files.svg?branch=develop)](https://travis-ci.com/erikvw/django-offline-files?branch=develop)
-[![Coverage Status](https://coveralls.io/repos/erikvw/django-offline-files/badge.svg?branch=develop&service=github)](https://coveralls.io/github/erikvw/django-offline-files?branch=develop)
+[![Build Status](https://travis-ci.com/erikvw/django-collect-offline-files.svg?branch=develop)](https://travis-ci.com/erikvw/django-collect-offline-files?branch=develop)
+[![Coverage Status](https://coveralls.io/repos/erikvw/django-collect-offline-files/badge.svg?branch=develop&service=github)](https://coveralls.io/github/erikvw/django-collect-offline-files?branch=develop)
 
 
-# django-offline-files
+# django-collect-offline-files
 
-Transfer `django_offline` transactions as files using SFTP over an SSH connection.
+Transfer `django_collect_offline` transactions as files using SFTP over an SSH connection.
 
 Data flows from client to server where a server is either a node server or the central server.
 
-see also `django_offline`.
+see also `django_collect_offline`.
 
 
 ## Usage
@@ -37,7 +37,7 @@ and
     
 ### IncomingTransactionsFileQueueObserver
 
-The client exports data to JSON and sends to the server. Using `TransactionExporter`, data is exported into a JSON file from `django_offline.models.OutgoingTransaction` on the client and sent to the server using `TransactionFileSender`.
+The client exports data to JSON and sends to the server. Using `TransactionExporter`, data is exported into a JSON file from `django_collect_offline.models.OutgoingTransaction` on the client and sent to the server using `TransactionFileSender`.
 
 Once a file is sent to the server, the `IncomingTransactionsFileQueueObserver` detects it and adds the filename to the queue (`IncomingTransactionsFileQueue`). 
 
