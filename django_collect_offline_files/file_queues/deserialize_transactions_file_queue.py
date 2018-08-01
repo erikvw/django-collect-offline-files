@@ -2,7 +2,8 @@ import os
 
 from django.core.serializers.base import DeserializationError
 
-from django_collect_offline.transaction import TransactionDeserializer, TransactionDeserializerError
+from django_collect_offline.transaction import TransactionDeserializer
+from django_collect_offline.transaction import TransactionDeserializerError
 
 from ..transaction import TransactionImporterBatch
 from .base_file_queue import BaseFileQueue
@@ -14,7 +15,8 @@ class DeserializeTransactionsFileQueue(BaseFileQueue):
     batch_cls = TransactionImporterBatch
     tx_deserializer_cls = TransactionDeserializer
 
-    def __init__(self, history_model=None, allow_self=None, override_role=None, **kwargs):
+    def __init__(self, history_model=None, allow_self=None,
+                 override_role=None, **kwargs):
         super().__init__(**kwargs)
         self.history_model = history_model
         self.allow_self = allow_self
