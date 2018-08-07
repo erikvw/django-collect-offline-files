@@ -32,6 +32,10 @@ setup(
         'paramiko',
         'hurry.filesize',
         'watchdog',
+        'django-collect-offline',
+        'edc_device',
+        'edc-base',
+        'edc-identifier',
     ],
     classifiers=[
         'Environment :: Web Environment',

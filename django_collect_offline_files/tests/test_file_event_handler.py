@@ -1,12 +1,11 @@
 import os
 
-from faker import Faker
 from django.apps import apps as django_apps
 from django.test.testcases import TestCase
 from django.test.utils import tag
-
-from edc_device.constants import NODE_SERVER
 from django_collect_offline.models import OutgoingTransaction
+from edc_device.constants import NODE_SERVER
+from faker import Faker
 
 from ..file_queues import IncomingTransactionsFileQueue
 from ..file_queues import DeserializeTransactionsFileQueue, process_queue

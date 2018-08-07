@@ -1,7 +1,6 @@
 import os
 
 from django.core.serializers.base import DeserializationError
-
 from django_collect_offline.transaction import TransactionDeserializer
 from django_collect_offline.transaction import TransactionDeserializerError
 

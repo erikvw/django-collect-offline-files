@@ -2,7 +2,6 @@ import logging
 
 from django.apps import apps as django_apps
 from django.core.management.base import BaseCommand, CommandError
-
 from django_collect_offline_files import ExportedTransactionFileHistory
 from django_collect_offline_files import TransactionExporter, TransactionFileSender, TransactionFileSenderError
 
@@ -25,35 +24,40 @@ class Command(BaseCommand):
             '--user',
             dest='user',
             default=f'{app_config.user}@{app_config.remote_host}',
-            help=(f'username@remotehost (Default: {app_config.user}@{app_config.remote_host}. See app_config.)'),
+            help=(
+                f'username@remotehost (Default: {app_config.user}@{app_config.remote_host}. See app_config.)'),
         )
 
         parser.add_argument(
             '--export_path',
             dest='export_path',
             default=app_config.outgoing_folder,
-            help=(f'Export path on localhost. (Default: {app_config.outgoing_folder}. See app_config.)'),
+            help=(
+                f'Export path on localhost. (Default: {app_config.outgoing_folder}. See app_config.)'),
         )
 
         parser.add_argument(
             '--tmp_path',
             dest='tmp_path',
             default=app_config.tmp_folder,
-            help=(f'tmp path on remote host. (Default: {app_config.tmp_folder}. See app_config.)'),
+            help=(
+                f'tmp path on remote host. (Default: {app_config.tmp_folder}. See app_config.)'),
         )
 
         parser.add_argument(
             '--target_path',
             dest='target_path',
             default=app_config.incoming_folder,
-            help=(f'Target path on remote host. (Default: {app_config.incoming_folder}. See app_config.)'),
+            help=(
+                f'Target path on remote host. (Default: {app_config.incoming_folder}. See app_config.)'),
         )
 
         parser.add_argument(
             '--archive_path',
             dest='archive_path',
             default=app_config.archive_folder,
-            help=(f'Archive path on localhost. (Default: {app_config.archive_folder}. See app_config.)'),
+            help=(
+                f'Archive path on localhost. (Default: {app_config.archive_folder}. See app_config.)'),
         )
 
         parser.add_argument(
