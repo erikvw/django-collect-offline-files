@@ -2,9 +2,8 @@ import os
 
 from django.test.testcases import TestCase
 from django.test.utils import tag
-from faker import Faker
-
 from django_collect_offline.models import OutgoingTransaction
+from faker import Faker
 
 from ..models import ExportedTransactionFileHistory
 from ..transaction import TransactionExporterBatch, JSONDumpFile

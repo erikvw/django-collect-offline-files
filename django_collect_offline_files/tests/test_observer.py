@@ -2,11 +2,10 @@ import os
 import logging
 import tempfile
 
-from tempfile import mkstemp
-from unittest.case import skip
-
 from django.apps import apps as django_apps
 from django.test import TestCase, tag
+from tempfile import mkstemp
+from unittest.case import skip
 
 from ..loggers import LOGGING
 from ..observers import IncomingTransactionsFileQueueObserver as TransactionFileObserver

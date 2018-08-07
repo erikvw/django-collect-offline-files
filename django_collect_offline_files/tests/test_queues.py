@@ -5,8 +5,8 @@ import tempfile
 
 from django.apps import apps as django_apps
 from django.test import TestCase, tag
-from edc_device.constants import NODE_SERVER
 from django_collect_offline.models import OutgoingTransaction, IncomingTransaction
+from edc_device.constants import NODE_SERVER
 
 from ..models import ImportedTransactionFileHistory, ExportedTransactionFileHistory
 from ..file_queues import IncomingTransactionsFileQueue

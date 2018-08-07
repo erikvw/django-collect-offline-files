@@ -3,8 +3,8 @@ import logging
 from django.apps import apps as django_apps
 from django.core.management.base import BaseCommand
 
-from django_collect_offline_files import process_queue
-from django_collect_offline_files import IncomingTransactionsFileQueueObserver
+from ...file_queues import process_queue
+from ...observers import IncomingTransactionsFileQueueObserver
 
 
 app_config = django_apps.get_app_config('django_collect_offline_files')
@@ -23,14 +23,16 @@ class Command(BaseCommand):
             '--src_path',
             dest='src_path',
             default=app_config.incoming_folder,
-            help=(f'Target path on remote host. (Default: {app_config.incoming_folder}. See app_config.)'),
+            help=(
+                f'Target path on remote host. (Default: {app_config.incoming_folder}. See app_config.)'),
         )
 
         parser.add_argument(
             '--dst_path',
             dest='dst_path',
             default=app_config.pending_folder,
-            help=(f'Pending path on localhost. (Default: {app_config.archive_folder}. See app_config.)'),
+            help=(
+                f'Pending path on localhost. (Default: {app_config.archive_folder}. See app_config.)'),
         )
 
     def handle(self, *args, **options):
