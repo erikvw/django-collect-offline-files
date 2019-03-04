@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from watchdog.observers import Observer
 
-logger = logging.getLogger('django_collect_offline_files')
+logger = logging.getLogger("django_collect_offline_files")
 
 
 class FileQueueObserver:
@@ -27,27 +27,27 @@ class FileQueueObserver:
 
         # watchdog observer
         observer = self.observer_cls()
-        sys.stdout.write(f'\n{observer}\n')
+        sys.stdout.write(f"\n{observer}\n")
 
         watch = observer.schedule(handler, queue.src_path)
-        sys.stdout.write(f'{watch.__class__.__name__} {watch.path}\n')
+        sys.stdout.write(f"{watch.__class__.__name__} {watch.path}\n")
         observer.start()
 
-        dt = datetime.now().strftime('%Y-%m-%d %H:%M')
-        sys.stdout.write(f'\nStarted {dt}\n')
-        sys.stdout.write('\nReady. Press CTRL-C to stop.\n\n')
-        logger.info(f'{observer} started')
+        dt = datetime.now().strftime("%Y-%m-%d %H:%M")
+        sys.stdout.write(f"\nStarted {dt}\n")
+        sys.stdout.write("\nReady. Press CTRL-C to stop.\n\n")
+        logger.info(f"{observer} started")
 
         try:
             self.task_processor(queue=queue, **self.options)
         except KeyboardInterrupt:
-            logger.info('CTRL-C pressed')
+            logger.info("CTRL-C pressed")
         except Exception as e:
             logger.exception(e)
         finally:
             observer.stop()
         observer.join()
         queue.join()
-        logger.info(f'{observer} stopped')
-        dt = datetime.now().strftime('%Y-%m-%d %H:%M')
-        sys.stdout.write(f'\n{observer} stopped {dt}\n')
+        logger.info(f"{observer} stopped")
+        dt = datetime.now().strftime("%Y-%m-%d %H:%M")
+        sys.stdout.write(f"\n{observer} stopped {dt}\n")

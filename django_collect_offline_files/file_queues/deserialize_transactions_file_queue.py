@@ -14,8 +14,9 @@ class DeserializeTransactionsFileQueue(BaseFileQueue):
     batch_cls = TransactionImporterBatch
     tx_deserializer_cls = TransactionDeserializer
 
-    def __init__(self, history_model=None, allow_self=None,
-                 override_role=None, **kwargs):
+    def __init__(
+        self, history_model=None, allow_self=None, override_role=None, **kwargs
+    ):
         super().__init__(**kwargs)
         self.history_model = history_model
         self.allow_self = allow_self
@@ -28,10 +29,12 @@ class DeserializeTransactionsFileQueue(BaseFileQueue):
         filename = os.path.basename(item)
         batch = self.get_batch(filename)
         tx_deserializer = self.tx_deserializer_cls(
-            allow_self=self.allow_self, override_role=self.override_role)
+            allow_self=self.allow_self, override_role=self.override_role
+        )
         try:
             tx_deserializer.deserialize_transactions(
-                transactions=batch.saved_transactions)
+                transactions=batch.saved_transactions
+            )
         except (DeserializationError, TransactionDeserializerError) as e:
             raise TransactionsFileQueueError(e) from e
         else:
@@ -45,10 +48,12 @@ class DeserializeTransactionsFileQueue(BaseFileQueue):
             history = self.history_model.objects.get(filename=filename)
         except self.history_model.DoesNotExist as e:
             raise TransactionsFileQueueError(
-                f'Batch history not found for \'{filename}\'.') from e
+                f"Batch history not found for '{filename}'."
+            ) from e
         if history.consumed:
             raise TransactionsFileQueueError(
-                f'Batch closed for \'{filename}\'. Got consumed=True')
+                f"Batch closed for '{filename}'. Got consumed=True"
+            )
         batch = self.batch_cls()
         batch.batch_id = history.batch_id
         batch.filename = history.filename

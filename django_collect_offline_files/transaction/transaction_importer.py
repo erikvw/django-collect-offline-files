@@ -5,7 +5,7 @@ from django.core.serializers.base import DeserializationError
 from django.db.utils import IntegrityError
 from django_collect_offline.models import IncomingTransaction
 from django_collect_offline.transaction import deserialize
-from edc_base.utils import get_utcnow
+from edc_utils import get_utcnow
 
 from ..models import ImportedTransactionFileHistory
 
@@ -47,7 +47,6 @@ class JSONFileError(Exception):
 
 
 class JSONLoadFile:
-
     def __init__(self, name=None, path=None, **kwargs):
         self._deserialized_objects = None
         self.deserialize = deserialize
@@ -58,7 +57,7 @@ class JSONLoadFile:
         return os.path.join(self.path, self.name)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}(name={self.name})'
+        return f"{self.__class__.__name__}(name={self.name})"
 
     def read(self):
         """Returns the file contents as validated JSON text.
@@ -72,7 +71,7 @@ class JSONLoadFile:
         try:
             json.loads(json_text)
         except (json.JSONDecodeError, TypeError) as e:
-            raise JSONFileError(f'{e} Got {p}') from e
+            raise JSONFileError(f"{e} Got {p}") from e
         return json_text
 
     @property
@@ -81,13 +80,11 @@ class JSONLoadFile:
         """
         if not self._deserialized_objects:
             json_text = self.read()
-            self._deserialized_objects = self.deserialize(
-                json_text=json_text)
+            self._deserialized_objects = self.deserialize(json_text=json_text)
         return self._deserialized_objects
 
 
 class BatchHistory:
-
     def __init__(self, model=None):
         self.model = model or ImportedTransactionFileHistory
 
@@ -106,22 +103,28 @@ class BatchHistory:
         obj.consumed_datetime = get_utcnow()
         obj.save()
 
-    def update(self, filename=None, batch_id=None, prev_batch_id=None,
-               producer=None, count=None):
+    def update(
+        self,
+        filename=None,
+        batch_id=None,
+        prev_batch_id=None,
+        producer=None,
+        count=None,
+    ):
         """Creates an history model instance.
         """
         # TODO: refactor model enforce unique batch_id
         # TODO: refactor model to not allow NULLs
         if not filename:
-            raise BatchHistoryError('Invalid filename. Got None')
+            raise BatchHistoryError("Invalid filename. Got None")
         if not batch_id:
-            raise BatchHistoryError('Invalid batch_id. Got None')
+            raise BatchHistoryError("Invalid batch_id. Got None")
         if not prev_batch_id:
-            raise BatchHistoryError('Invalid prev_batch_id. Got None')
+            raise BatchHistoryError("Invalid prev_batch_id. Got None")
         if not producer:
-            raise BatchHistoryError('Invalid producer. Got None')
+            raise BatchHistoryError("Invalid producer. Got None")
         if self.exists(batch_id=batch_id):
-            raise IntegrityError('Duplicate batch_id')
+            raise IntegrityError("Duplicate batch_id")
         try:
             obj = self.model.objects.get(batch_id=batch_id)
         except self.model.DoesNotExist:
@@ -130,14 +133,14 @@ class BatchHistory:
                 batch_id=batch_id,
                 prev_batch_id=prev_batch_id,
                 producer=producer,
-                total=count)
+                total=count,
+            )
             obj.transaction_file.name = filename
             obj.save()
         return obj
 
 
 class ImportBatch:
-
     def __init__(self, **kwargs):
         self._valid_sequence = None
         self.filename = None
@@ -149,21 +152,20 @@ class ImportBatch:
         self.model = IncomingTransaction
 
     def __str__(self):
-        return f'Batch(batch_id={self.batch_id}, filename={self.filename})'
+        return f"Batch(batch_id={self.batch_id}, filename={self.filename})"
 
     def __repr__(self):
-        return f'Batch(batch_id={self.batch_id}, filename={self.filename})'
+        return f"Batch(batch_id={self.batch_id}, filename={self.filename})"
 
     def populate(self, deserialized_txs=None, filename=None, retry=None):
         """Populates the batch with unsaved model instances
         from a generator of deserialized objects.
         """
         if not deserialized_txs:
-            raise BatchError(
-                'Failed to populate batch. There are no objects to add.')
+            raise BatchError("Failed to populate batch. There are no objects to add.")
         self.filename = filename
         if not self.filename:
-            raise BatchError('Invalid filename. Got None')
+            raise BatchError("Invalid filename. Got None")
         try:
             for deserialized_tx in deserialized_txs:
                 self.peek(deserialized_tx)
@@ -184,20 +186,22 @@ class ImportBatch:
         self.producer = deserialized_tx.object.producer
         if self.batch_history.exists(batch_id=self.batch_id):
             raise BatchAlreadyProcessed(
-                f'Batch {self.batch_id} has already been processed')
+                f"Batch {self.batch_id} has already been processed"
+            )
         if self.prev_batch_id != self.batch_id:
             if not self.batch_history.exists(batch_id=self.prev_batch_id):
                 raise InvalidBatchSequence(
-                    f'Invalid import sequence. History does not exist for prev_batch_id. '
-                    f'Got file=\'{self.filename}\', prev_batch_id='
-                    f'{self.prev_batch_id}, batch_id={self.batch_id}.')
+                    f"Invalid import sequence. History does not exist for prev_batch_id. "
+                    f"Got file='{self.filename}', prev_batch_id="
+                    f"{self.prev_batch_id}, batch_id={self.batch_id}."
+                )
 
     def save(self):
         """Saves all model instances in the batch as model.
         """
         saved = 0
         if not self.objects:
-            raise BatchError('Save failed. Batch is empty')
+            raise BatchError("Save failed. Batch is empty")
         for deserialized_tx in self.objects:
             try:
                 self.model.objects.get(pk=deserialized_tx.pk)
@@ -205,8 +209,7 @@ class ImportBatch:
                 data = {}
                 for field in self.model._meta.get_fields():
                     try:
-                        data.update({field.name: getattr(
-                            deserialized_tx, field.name)})
+                        data.update({field.name: getattr(deserialized_tx, field.name)})
                     except AttributeError:
                         pass
                 self.model.objects.create(**data)
@@ -215,16 +218,16 @@ class ImportBatch:
 
     def update_history(self):
         if not self.objects:
-            raise BatchIsEmpty('Update history failed. Batch is empty')
+            raise BatchIsEmpty("Update history failed. Batch is empty")
         if self.objects_unsaved:
-            raise BatchUnsaved(
-                'Update history failed. Batch has unsaved objects')
+            raise BatchUnsaved("Update history failed. Batch has unsaved objects")
         self.batch_history.update(
             filename=self.filename,
             batch_id=self.batch_id,
             prev_batch_id=self.prev_batch_id,
             producer=self.producer,
-            count=self.saved_transactions.count())
+            count=self.saved_transactions.count(),
+        )
 
     @property
     def saved_transactions(self):
@@ -251,6 +254,7 @@ class ImportBatch:
 class TransactionImporter:
     """Imports transactions from a file as incoming transaction.
     """
+
     batch_cls = ImportBatch
     json_file_cls = JSONLoadFile
 
@@ -268,10 +272,12 @@ class TransactionImporter:
         except JSONFileError as e:
             raise TransactionImporterError(e) from e
         try:
-            batch.populate(
-                deserialized_txs=deserialized_txs,
-                filename=json_file.name)
-        except (BatchDeserializationError, InvalidBatchSequence, BatchAlreadyProcessed) as e:
+            batch.populate(deserialized_txs=deserialized_txs, filename=json_file.name)
+        except (
+            BatchDeserializationError,
+            InvalidBatchSequence,
+            BatchAlreadyProcessed,
+        ) as e:
             raise TransactionImporterError(e) from e
         batch.save()
         batch.update_history()
