@@ -3,7 +3,10 @@ import socket
 
 from paramiko import AutoAddPolicy
 from paramiko.ssh_exception import (
-    BadHostKeyException, AuthenticationException, SSHException)
+    BadHostKeyException,
+    AuthenticationException,
+    SSHException,
+)
 from paramiko.util import ClosingContextManager
 
 
@@ -12,9 +15,16 @@ class SSHClientError(Exception):
 
 
 class SSHClient(ClosingContextManager):
-
-    def __init__(self, remote_host=None, trusted_host=None, username=None, timeout=None,
-                 banner_timeout=None, compress=None, **kwargs):
+    def __init__(
+        self,
+        remote_host=None,
+        trusted_host=None,
+        username=None,
+        timeout=None,
+        banner_timeout=None,
+        compress=None,
+        **kwargs,
+    ):
         self.banner_timeout = banner_timeout or 5
         self.compress = True if compress is None else compress
         self.remote_host = remote_host
@@ -32,12 +42,19 @@ class SSHClient(ClosingContextManager):
                 username=self.username,
                 timeout=self.timeout,
                 banner_timeout=self.banner_timeout,
-                compress=self.compress)
-        except (ConnectionRefusedError, socket.timeout, socket.gaierror,
-                AuthenticationException, BadHostKeyException, ConnectionResetError,
-                SSHException, OSError) as e:
-            raise SSHClientError(
-                f'{self.username}@{self.remote_host}: \'{e}\.') from e
+                compress=self.compress,
+            )
+        except (
+            ConnectionRefusedError,
+            socket.timeout,
+            socket.gaierror,
+            AuthenticationException,
+            BadHostKeyException,
+            ConnectionResetError,
+            SSHException,
+            OSError,
+        ) as e:
+            raise SSHClientError(f"{self.username}@{self.remote_host}: '{e}\.") from e
         return self
 
     def close(self):

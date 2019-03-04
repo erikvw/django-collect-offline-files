@@ -5,14 +5,12 @@ from ..models import ExportedTransactionFileHistory
 
 
 @admin.register(ExportedTransactionFileHistory, site=django_collect_offline_files_admin)
-class ExportedTransactionFileHistoryAdmin (admin.ModelAdmin):
+class ExportedTransactionFileHistoryAdmin(admin.ModelAdmin):
 
-    ordering = ('-created', )
+    ordering = ("-created",)
 
-    list_display = (
-        'filename', 'hostname', 'created', )
+    list_display = ("filename", "hostname", "created")
 
-    list_filter = (
-        'hostname', )
+    list_filter = ("hostname",)
 
-    search_fields = ('filename',)
+    search_fields = ("filename",)

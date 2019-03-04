@@ -12,15 +12,14 @@ from .models import TestModel
 fake = Faker()
 
 
-@tag('json')
+@tag("json")
 class TestJSONLoadFile(TestCase):
-
     def setUp(self):
-        TestModel.objects.using('client').create(f1=fake.name())
-        TestModel.objects.using('client').create(f1=fake.name())
+        TestModel.objects.using("client").create(f1=fake.name())
+        TestModel.objects.using("client").create(f1=fake.name())
         tx_exporter = TransactionExporter(
-            export_path=tempfile.gettempdir(),
-            using='client')
+            export_path=tempfile.gettempdir(), using="client"
+        )
         batch = tx_exporter.export_batch()
         self.filename = batch.filename
         self.path = tx_exporter.path
@@ -32,8 +31,8 @@ class TestJSONLoadFile(TestCase):
 
     def test_bad_json_file(self):
         _, p = tempfile.mkstemp()
-        with open(p, 'w') as f:
-            f.write('][][][][][sdfsdfs')
+        with open(p, "w") as f:
+            f.write("][][][][][sdfsdfs")
         filename = os.path.basename(p)
         path = os.path.dirname(p)
         json_file = JSONLoadFile(name=filename, path=path)
@@ -41,5 +40,4 @@ class TestJSONLoadFile(TestCase):
 
     def test_deserialize_file(self):
         json_file = JSONLoadFile(name=self.filename, path=self.path)
-        self.assertGreater(
-            len([obj for obj in json_file.deserialized_objects]), 0)
+        self.assertGreater(len([obj for obj in json_file.deserialized_objects]), 0)

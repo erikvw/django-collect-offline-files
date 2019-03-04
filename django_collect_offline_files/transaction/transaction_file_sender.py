@@ -1,4 +1,4 @@
-from edc_base.utils import get_utcnow
+from edc_utils import get_utcnow
 
 from ..ssh_client import SSHClient, SSHClientError
 from ..sftp_client import SFTPClient, SFTPClientError
@@ -10,20 +10,31 @@ class TransactionFileSenderError(Exception):
 
 
 class TransactionFileSender:
-
-    def __init__(self, remote_host=None, username=None, src_path=None, dst_tmp=None,
-                 dst_path=None, archive_path=None, history_model=None, using=None,
-                 update_history_model=None, **kwargs):
+    def __init__(
+        self,
+        remote_host=None,
+        username=None,
+        src_path=None,
+        dst_tmp=None,
+        dst_path=None,
+        archive_path=None,
+        history_model=None,
+        using=None,
+        update_history_model=None,
+        **kwargs,
+    ):
         self.using = using
         self.update_history_model = (
-            True if update_history_model is None else update_history_model)
-        self.file_archiver = FileArchiver(
-            src_path=src_path, dst_path=archive_path)
+            True if update_history_model is None else update_history_model
+        )
+        self.file_archiver = FileArchiver(src_path=src_path, dst_path=archive_path)
         self.history_model = history_model
         self.ssh_client = SSHClient(
-            username=username, remote_host=remote_host, **kwargs)
+            username=username, remote_host=remote_host, **kwargs
+        )
         self.sftp_client = SFTPClient(
-            src_path=src_path, dst_tmp=dst_tmp, dst_path=dst_path, **kwargs)
+            src_path=src_path, dst_tmp=dst_tmp, dst_path=dst_path, **kwargs
+        )
 
     def send(self, filenames=None):
         """Sends the file to the remote host and archives
@@ -45,11 +56,11 @@ class TransactionFileSender:
 
     def update_history(self, filename=None):
         try:
-            obj = self.history_model.objects.using(
-                self.using).get(filename=filename)
+            obj = self.history_model.objects.using(self.using).get(filename=filename)
         except self.history_model.DoesNotExist as e:
             raise TransactionFileSenderError(
-                f'History does not exist for file \'{filename}\'. Got {e}') from e
+                f"History does not exist for file '{filename}'. Got {e}"
+            ) from e
         else:
             obj.sent = True
             obj.sent_datetime = get_utcnow()

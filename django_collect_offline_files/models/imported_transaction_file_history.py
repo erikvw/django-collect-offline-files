@@ -1,6 +1,6 @@
 from django.db import models
 
-from edc_base.model_mixins import BaseUuidModel
+from edc_model.models import BaseUuidModel
 
 
 class ImportedTransactionFileHistory(BaseUuidModel):
@@ -10,44 +10,28 @@ class ImportedTransactionFileHistory(BaseUuidModel):
 
     transaction_file = models.FileField()
 
-    filename = models.CharField(
-        max_length=50,
-        null=True,
-        editable=False,
-        unique=True)
+    filename = models.CharField(max_length=50, null=True, editable=False, unique=True)
 
-    batch_id = models.CharField(
-        max_length=100,
-        null=True)
+    batch_id = models.CharField(max_length=100, null=True)
 
-    prev_batch_id = models.CharField(
-        max_length=100,
-        null=True)
+    prev_batch_id = models.CharField(max_length=100, null=True)
 
-    filedate = models.DateField(
-        null=True,
-        editable=False)
+    filedate = models.DateField(null=True, editable=False)
 
-    total = models.IntegerField(
-        editable=False,
-        default=0)
+    total = models.IntegerField(editable=False, default=0)
 
-    consumed = models.IntegerField(
-        editable=False,
-        default=0)
+    consumed = models.IntegerField(editable=False, default=0)
 
     producer = models.TextField(
         max_length=1000,
         null=True,
         editable=False,
-        help_text='List of producers detected from the file.')
+        help_text="List of producers detected from the file.",
+    )
 
-    comment = models.CharField(
-        max_length=250,
-        null=True,
-        blank=True)
+    comment = models.CharField(max_length=250, null=True, blank=True)
 
     objects = models.Manager()
 
     class Meta:
-        ordering = ('-created', )
+        ordering = ("-created",)

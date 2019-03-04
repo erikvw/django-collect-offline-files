@@ -5,19 +5,17 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('django_collect_offline_files', '0002_auto_20180731_2241'),
-    ]
+    dependencies = [("django_collect_offline_files", "0002_auto_20180731_2241")]
 
     operations = [
         migrations.AlterField(
-            model_name='exportedtransactionfilehistory',
-            name='exported',
+            model_name="exportedtransactionfilehistory",
+            name="exported",
             field=models.BooleanField(blank=True, default=False),
         ),
         migrations.AlterField(
-            model_name='exportedtransactionfilehistory',
-            name='sent',
+            model_name="exportedtransactionfilehistory",
+            name="sent",
             field=models.BooleanField(blank=True, default=False),
         ),
     ]
