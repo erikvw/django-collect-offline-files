@@ -34,7 +34,6 @@ setup(
         'watchdog',
         'django-collect-offline',
         'edc_device',
-        'edc-base',
         'edc-identifier',
     ],
     classifiers=[
