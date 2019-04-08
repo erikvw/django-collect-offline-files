@@ -1,4 +1,13 @@
-from edc_base.logging import verbose_formatter, file_handler
+file_handler = {
+    "level": "DEBUG",
+    "class": "logging.FileHandler",
+    "filename": "/tmp/django_collect_offline_files.log",
+    "formatter": "verbose",
+}
+
+verbose_formatter = {
+    "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s"
+}
 
 
 loggers = {
@@ -8,8 +17,6 @@ loggers = {
         "propagate": True,
     }
 }
-
-file_handler["filename"] = "/tmp/django_collect_offline_files.log"
 
 LOGGING = {
     "version": 1,

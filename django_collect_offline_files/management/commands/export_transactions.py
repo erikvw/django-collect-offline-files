@@ -16,7 +16,10 @@ logger = logging.getLogger("django_collect_offline_files")
 
 class Command(BaseCommand):
 
-    help = "On localhost, export outgoing transactions to file and send to username@remote_host."
+    help = (
+        "On localhost, export outgoing transactions to file "
+        "and send to username@remote_host."
+    )
 
     tx_exporter_cls = TransactionExporter
     tx_file_sender_cls = TransactionFileSender
@@ -29,7 +32,8 @@ class Command(BaseCommand):
             dest="user",
             default=f"{app_config.user}@{app_config.remote_host}",
             help=(
-                f"username@remotehost (Default: {app_config.user}@{app_config.remote_host}. See app_config.)"
+                f"username@remotehost (Default: {app_config.user}@"
+                f"{app_config.remote_host}. See app_config.)"
             ),
         )
 
@@ -38,7 +42,8 @@ class Command(BaseCommand):
             dest="export_path",
             default=app_config.outgoing_folder,
             help=(
-                f"Export path on localhost. (Default: {app_config.outgoing_folder}. See app_config.)"
+                f"Export path on localhost. (Default: {app_config.outgoing_folder}. "
+                "See app_config.)"
             ),
         )
 
@@ -47,7 +52,8 @@ class Command(BaseCommand):
             dest="tmp_path",
             default=app_config.tmp_folder,
             help=(
-                f"tmp path on remote host. (Default: {app_config.tmp_folder}. See app_config.)"
+                f"tmp path on remote host. (Default: {app_config.tmp_folder}. "
+                "See app_config.)"
             ),
         )
 
@@ -56,7 +62,8 @@ class Command(BaseCommand):
             dest="target_path",
             default=app_config.incoming_folder,
             help=(
-                f"Target path on remote host. (Default: {app_config.incoming_folder}. See app_config.)"
+                f"Target path on remote host. (Default: {app_config.incoming_folder}. "
+                "See app_config.)"
             ),
         )
 
@@ -65,7 +72,8 @@ class Command(BaseCommand):
             dest="archive_path",
             default=app_config.archive_folder,
             help=(
-                f"Archive path on localhost. (Default: {app_config.archive_folder}. See app_config.)"
+                f"Archive path on localhost. (Default: {app_config.archive_folder}. "
+                "See app_config.)"
             ),
         )
 

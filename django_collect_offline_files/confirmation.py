@@ -1,7 +1,6 @@
 from django.db.models import Q
-
-from edc_utils import get_utcnow
 from edc_identifier.simple_identifier import SimpleIdentifier
+from edc_utils import get_utcnow
 
 
 class ConfirmationError(Exception):

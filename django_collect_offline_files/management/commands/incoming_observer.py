@@ -24,7 +24,8 @@ class Command(BaseCommand):
             dest="src_path",
             default=app_config.incoming_folder,
             help=(
-                f"Target path on remote host. (Default: {app_config.incoming_folder}. See app_config.)"
+                f"Target path on remote host. (Default: {app_config.incoming_folder}. "
+                "See app_config.)"
             ),
         )
 
@@ -33,7 +34,8 @@ class Command(BaseCommand):
             dest="dst_path",
             default=app_config.pending_folder,
             help=(
-                f"Pending path on localhost. (Default: {app_config.archive_folder}. See app_config.)"
+                f"Pending path on localhost. (Default: {app_config.archive_folder}. "
+                "See app_config.)"
             ),
         )
 
