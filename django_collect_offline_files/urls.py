@@ -7,6 +7,6 @@ from .admin_site import django_collect_offline_files_admin
 app_name = "django_collect_offline_files"
 
 urlpatterns = [
-    url(r"^admin/", django_collect_offline_files_admin.urls),
-    url(r"", RedirectView.as_view(url="admin/")),
+    url("admin/", django_collect_offline_files_admin.urls),
+    url("", RedirectView.as_view(url="admin/")),
 ]

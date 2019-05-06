@@ -8,7 +8,7 @@ app_config = django_apps.get_app_config("django_collect_offline_files")
 class OfflineFilesAdminSite(AdminSite):
     site_header = app_config.verbose_name
     site_title = app_config.verbose_name
-    index_title = app_config.verbose_name + " " + "Admin"
+    index_title = f"{app_config.verbose_name} Admin"
     site_url = "/django_collect_offline_files/"
 
 
