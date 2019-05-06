@@ -2,8 +2,8 @@ import logging
 
 from django.apps import apps as django_apps
 from django.core.management.base import BaseCommand, CommandError
-from django_collect_offline_files import ExportedTransactionFileHistory
-from django_collect_offline_files import (
+from django_collect_offline_files.models import ExportedTransactionFileHistory
+from django_collect_offline_files.transaction import (
     TransactionExporter,
     TransactionFileSender,
     TransactionFileSenderError,
