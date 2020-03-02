@@ -25,7 +25,7 @@ class Event:
 
 class TestFileEventHandler(TestCase):
 
-    multi_db = True
+    databases = "__all__"
 
     def setUp(self):
         ExportedTransactionFileHistory.objects.using("client").all().delete()

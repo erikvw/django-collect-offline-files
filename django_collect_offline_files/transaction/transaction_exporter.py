@@ -161,7 +161,6 @@ class ExportBatch:
 
 
 class TransactionExporter:
-
     """Export pending OutgoingTransactions to a file in JSON format
     and update the export `History` model.
     """
