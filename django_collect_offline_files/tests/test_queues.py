@@ -19,7 +19,7 @@ logger = logging.getLogger("django_collect_offline_files")
 
 class TestQueues(TestCase):
 
-    multi_db = True
+    databases = "__all__"
 
     def setUp(self):
         self.regexes = [r"(\/\w+)+\.json$", "\w+\.json$"]

@@ -59,6 +59,7 @@ DEFAULT_SETTINGS = DefaultTestSettings(
     BASE_DIR=base_dir,
     APP_NAME=app_name,
     ETC_DIR=os.path.join(base_dir, app_name, "tests", "etc"),
+    DJANGO_COLLECT_OFFLINE_ENABLED=True,
     INSTALLED_APPS=[
         'django.contrib.admin',
         'django.contrib.auth',
@@ -70,6 +71,7 @@ DEFAULT_SETTINGS = DefaultTestSettings(
         "rest_framework",
         "rest_framework.authtoken",
         "django_crypto_fields.apps.AppConfig",
+        "edc_sites.apps.AppConfig",
         "edc_protocol.apps.AppConfig",
         "edc_device.apps.AppConfig",
         "django_collect_offline.apps.AppConfig",

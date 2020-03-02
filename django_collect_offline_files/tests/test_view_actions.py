@@ -20,7 +20,7 @@ app_config = django_apps.get_app_config("django_collect_offline_files")
 @tag("actions")
 class TestActionHandler(TestCase):
 
-    multi_db = True
+    databases = "__all__"
 
     def setUp(self):
         ExportedTransactionFileHistory.objects.using("client").all().delete()

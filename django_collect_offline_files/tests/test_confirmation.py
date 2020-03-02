@@ -11,7 +11,7 @@ from .models import TestModel
 
 class TestConfirmation(TestCase):
 
-    multi_db = True
+    databases = "__all__"
 
     def setUp(self):
         self.using = "client"
