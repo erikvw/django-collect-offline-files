@@ -1,0 +1,2 @@
+edc_device
+edc-identifier
